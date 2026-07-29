@@ -1,0 +1,17 @@
+CV REWRITE - UPDATE (progress countdown + all recent fixes)
+
+This folder has the 3 things that changed. To apply:
+
+1. Unzip this folder.
+2. Open your existing "cv-rewrite-app" folder (the one you publish from GitHub Desktop).
+3. From this UPDATE folder, drag these THREE items into your cv-rewrite-app folder:
+      - the "lib" folder
+      - the "public" folder
+      - the file "server.js"
+   When macOS asks, choose "Replace".
+   (These folders are complete, so replacing them is safe.)
+4. Open GitHub Desktop, type a summary like "Add progress countdown", click
+   "Commit to main", then "Push origin".
+5. Wait for Render to say "Live", then reload your site.
+
+Your hidden .git folder and everything else stay untouched.

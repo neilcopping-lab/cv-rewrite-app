@@ -15,6 +15,42 @@ function showStep(n) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 function busy(el, on, msg) { el.innerHTML = on ? `<span class="spinner"></span> ${msg || "Working…"}` : (msg || ""); }
+
+// Progress countdown shown while a long step runs. Fills a bar toward ~92%
+// over an estimate, counts seconds up, and rotates reassuring messages. The
+// returned object's done()/fail() finish it. Never claims 100% until done.
+function startProgress(hostId, estimate, messages) {
+  let host = document.getElementById(hostId);
+  if (!host) {
+    host = document.createElement("div");
+    host.id = hostId;
+    const anchor = document.getElementById(hostId.replace("prog", "go")) || document.body;
+    (anchor.parentNode || document.body).appendChild(host);
+  }
+  host.innerHTML =
+    '<div class="progress"><div class="bar"><i></i></div>' +
+    '<div class="meta"><span class="msg"></span><span class="secs">0s</span></div></div>';
+  const fill = host.querySelector(".bar > i");
+  const secsEl = host.querySelector(".secs");
+  const msgEl = host.querySelector(".msg");
+  const t0 = Date.now();
+  let mi = 0;
+  msgEl.textContent = messages[0] || "Working";
+  const timer = setInterval(() => {
+    const sec = (Date.now() - t0) / 1000;
+    secsEl.textContent = Math.floor(sec) + "s";
+    const pct = Math.min(92, (1 - Math.exp(-sec / (estimate * 0.55))) * 100);
+    fill.style.width = pct.toFixed(1) + "%";
+    const step = estimate / messages.length;
+    if (sec > (mi + 1) * step && mi < messages.length - 1) msgEl.textContent = messages[++mi];
+    if (sec > estimate * 1.3) msgEl.textContent = "Almost there, thanks for your patience";
+  }, 300);
+  return {
+    done() { clearInterval(timer); fill.style.width = "100%"; msgEl.textContent = "Done"; setTimeout(() => { host.innerHTML = ""; }, 600); },
+    fail(m) { clearInterval(timer); host.innerHTML = '<div class="notice">⚠ ' + m + '</div>'; }
+  };
+}
+
 async function api(url, opts) {
   const r = await fetch(url, opts);
   const j = await r.json().catch(() => ({}));
@@ -24,7 +60,11 @@ async function api(url, opts) {
 
 // ── STEP 1 ──
 $("#go1").onclick = async () => {
-  const s = $("#s1"); busy(s, true, "Reading your CV and the advert…");
+  const s = $("#s1"); s.textContent = "";
+  const prog = startProgress("prog1", 25, [
+    "Reading your CV", "Reading the job advert",
+    "Comparing them line by line", "Spotting the gaps"
+  ]);
   try {
     const fd = new FormData();
     if ($("#cvFile").files[0]) fd.append("cvFile", $("#cvFile").files[0]);
@@ -36,10 +76,9 @@ $("#go1").onclick = async () => {
     // Show the extracted text in the boxes so you can see it worked and edit it.
     if (ex.cvText) $("#cvText").value = ex.cvText;
     if (ex.advertText) $("#advertText").value = ex.advertText;
-    busy(s, true, "Comparing the advert against your CV…");
     const g = await api("/api/gaps", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
-    renderGaps(g); busy(s, false, ""); showStep(2);
-  } catch (e) { busy(s, false, "⚠ " + e.message); }
+    renderGaps(g); prog.done(); showStep(2);
+  } catch (e) { prog.fail(e.message); }
 };
 
 function renderGaps(g) {
@@ -68,7 +107,12 @@ function renderGaps(g) {
 
 // ── STEP 2 ──
 $("#go2").onclick = async () => {
-  const s = $("#s2"); busy(s, true, "Writing your CV, then checking it for anything invented…");
+  const s = $("#s2"); s.textContent = "";
+  const prog = startProgress("prog2", 45, [
+    "Pulling out your achievements", "Writing in your own voice",
+    "Tailoring it to the role", "Checking every claim traces back to you",
+    "Final polish"
+  ]);
   try {
     const answers = STATE.questions.map((q) => {
       const id = q.id;
@@ -77,8 +121,8 @@ $("#go2").onclick = async () => {
     }).filter((a) => a.answer);
     STATE.answers = answers;
     const j = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers }) });
-    STATE.cv = j.cv; renderDraft(j); busy(s, false, ""); showStep(3);
-  } catch (e) { busy(s, false, "⚠ " + e.message); }
+    STATE.cv = j.cv; renderDraft(j); prog.done(); showStep(3);
+  } catch (e) { prog.fail(e.message); }
 };
 
 function renderDraft(j) {
@@ -109,7 +153,15 @@ function renderDraft(j) {
 }
 
 async function resolveMissing() {
-  const s = $("#sr"); busy(s, true, "Re-checking…");
+  // Place the progress bar next to the re-check button.
+  const sr = document.getElementById("sr");
+  if (sr && !document.getElementById("progr")) {
+    const d = document.createElement("div"); d.id = "progr"; sr.parentNode.appendChild(d);
+  }
+  const prog = startProgress("progr", 30, [
+    "Taking your answers on board", "Rewriting the affected lines",
+    "Re-checking every claim"
+  ]);
   try {
     const resolutions = [], acceptLeaveOut = [];
     (STATE.cv.missing || []).forEach((m, i) => {
@@ -119,16 +171,19 @@ async function resolveMissing() {
       if (drop && drop.checked) acceptLeaveOut.push(m.item);
     });
     const j = await api("/api/resolve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resolutions, acceptLeaveOut }) });
-    STATE.cv = j.cv; renderDraft(j); busy(s, false, "");
-  } catch (e) { busy(s, false, "⚠ " + e.message); }
+    STATE.cv = j.cv; renderDraft(j); prog.done();
+  } catch (e) { prog.fail(e.message); }
 }
 
 $("#regen").onclick = async () => {
-  const s = $("#s3"); busy(s, true, "Regenerating…");
+  const prog = startProgress("prog3", 45, [
+    "Starting your CV fresh", "Writing in your own voice",
+    "Tailoring it to the role", "Checking every claim traces back to you"
+  ]);
   try {
     const j = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers: STATE.answers }) });
-    STATE.cv = j.cv; renderDraft(j); busy(s, false, "");
-  } catch (e) { busy(s, false, "⚠ " + e.message); }
+    STATE.cv = j.cv; renderDraft(j); prog.done();
+  } catch (e) { prog.fail(e.message); }
 };
 
 async function previewDraft() {
