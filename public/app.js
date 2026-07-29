@@ -199,10 +199,15 @@ async function recordAnswer(id) {
     rec.onstop = async () => {
       stream.getTracks().forEach((t) => t.stop());
       label.innerHTML = '<span class="spinner"></span> Transcribing…';
-      const fd = new FormData(); fd.append("audio", new Blob(chunks, { type: "audio/webm" }), "a.webm");
+      // Use the browser's actual recording type + matching file extension so
+      // OpenAI recognises the audio format (Safari records mp4, Chrome webm).
+      const mime = (rec.mimeType || (chunks[0] && chunks[0].type) || "audio/webm").split(";")[0];
+      const ext = mime.includes("mp4") ? "mp4" : mime.includes("ogg") ? "ogg" : mime.includes("wav") ? "wav" : mime.includes("mpeg") ? "mp3" : "webm";
+      const fd = new FormData();
+      fd.append("audio", new Blob(chunks, { type: mime }), "answer." + ext);
       try { const j = await api("/api/transcribe", { method: "POST", body: fd });
         document.querySelector(`[data-answer="${id}"]`).value = j.text; label.textContent = "Transcribed."; }
-      catch (e) { label.textContent = "⚠ " + e.message; }
+      catch (e) { label.textContent = "⚠ " + e.message + " — you can type your answer instead."; }
     };
     rec.start(); label.textContent = "Recording… click again to stop.";
     const btn = document.querySelector(`[data-rec="${id}"]`);
