@@ -1,0 +1,96 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rewrite My CV - The Com'mon People</title>
+<link rel="icon" href="/img/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Arvo:wght@400;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css">
+</head><body>
+
+<header class="site"><nav class="nav">
+  <a class="cp-logo" href="/" aria-label="The Com'mon People"><span class="blk b1">The</span><span class="blk b2">Com'mon</span><span class="blk b3">People</span></a>
+  <div class="links">
+    <a href="https://the-common-people.com/guide-cv.html">CV Guide</a>
+    <a href="https://the-common-people.com/prep-report.html">Interview Prep Report</a>
+    <a class="active" href="/">CV Rewrite</a>
+  </div>
+</nav></header>
+
+<main><section style="border:none"><div class="wrap">
+  <div class="eyebrow">CV Rewrite &middot; £12.50, one-off</div>
+  <div class="steps">
+    <div class="s active" data-step="1">1 &middot; Paste</div>
+    <div class="s" data-step="2">2 &middot; The gaps</div>
+    <div class="s" data-step="3">3 &middot; Review and check</div>
+    <div class="s" data-step="4">4 &middot; Design and download</div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="panel active" id="p1">
+    <h2>Paste your CV and the job advert</h2>
+    <p class="muted">Upload a file (PDF or Word) or paste the text. Either works. Files are deleted from our server the moment we've read them.</p>
+    <label>Your current CV</label>
+    <input type="file" id="cvFile" accept=".pdf,.docx,.txt">
+    <textarea id="cvText" placeholder="…or paste your CV text here"></textarea>
+    <label>The job advert</label>
+    <input type="file" id="advertFile" accept=".pdf,.docx,.txt">
+    <input type="url" id="advertUrl" placeholder="…or paste a link to the live listing" style="margin-top:8px">
+    <textarea id="advertText" placeholder="…or paste the advert text here"></textarea>
+    <p style="margin-top:18px"><button class="btn accent" id="go1">Find the gaps →</button> <span id="s1" class="muted"></span></p>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="panel" id="p2">
+    <h2>Answer a few questions</h2>
+    <p class="muted">We compared the advert against your CV. These are the only things we couldn't already see. Short answers are fine. Type, or record and we'll transcribe.</p>
+    <div id="gapNote" class="notice hidden"></div>
+    <div id="reqSummary"></div>
+    <div id="questions"></div>
+    <p style="margin-top:18px"><button class="btn accent" id="go2">Write my CV →</button> <span id="s2" class="muted"></span></p>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="panel" id="p3">
+    <h2>Your rewritten CV</h2>
+    <div id="checkBanner" class="notice"></div>
+    <div id="missingBox"></div>
+    <div id="reviewBox"></div>
+    <div class="previewbox" id="draftPreview"></div>
+    <p style="margin-top:18px"><button class="btn accent" id="go3">Choose a design →</button> <button class="btn ghost" id="regen">Regenerate</button> <span id="s3" class="muted"></span></p>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="panel" id="p4">
+    <h2>Choose a design</h2>
+    <p class="muted">Pick one, preview it, switch as often as you like. The download gives you Word and PDF, with an ATS-safe version on request.</p>
+    <div class="design-grid" id="designGrid"></div>
+    <h3 style="margin-top:26px">Preview</h3>
+    <div class="previewbox" id="livePreview"></div>
+
+    <div class="notice" style="margin-top:22px">
+      <strong>£12.50, one-off.</strong> Stated up front, nothing auto-charged. You pay once, then download and re-download as much as you need this session.
+      <div style="margin-top:12px">
+        <label>Email for your confirmation (optional)</label>
+        <input type="email" id="email" placeholder="you@email.com" style="max-width:340px">
+      </div>
+    </div>
+    <p style="margin-top:16px"><button class="btn accent" id="pay">Pay £12.50 and unlock download</button> <span id="s4" class="muted"></span></p>
+
+    <div id="downloads" class="hidden">
+      <div class="notice" style="border-color:var(--gold)"><strong>Paid. Your downloads are unlocked.</strong></div>
+      <div class="dlrow">
+        <button class="btn" data-dl="docx">Download Word</button>
+        <button class="btn" data-dl="pdf">Download PDF</button>
+        <button class="btn ghost" data-dl="ats-pdf">ATS-safe PDF</button>
+      </div>
+    </div>
+  </div>
+</div></section></main>
+
+<footer class="footer" style="padding:30px 0"><div class="wrap">
+  <p class="muted" style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-size:13px">© 2026 The Com'mon People. Built on mutual aid. Uploaded files are deleted as soon as text is extracted.</p>
+</div></footer>
+
+<script src="/js/app.js"></script>
+</body></html>

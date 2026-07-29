@@ -1,0 +1,37 @@
+# Render blueprint. Docker runtime so LibreOffice is present for PDF export.
+# After pushing to GitHub: Render Dashboard -> New -> Blueprint -> pick the repo.
+services:
+  - type: web
+    name: common-people-cv-rewrite
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PUBLIC_BASE_URL
+        sync: false            # e.g. https://cv.the-common-people.com
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-5
+      - key: OPENAI_API_KEY
+        sync: false            # voice transcription (optional)
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: CV_PRICE_GBP
+        value: "12.50"
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        value: "The Com'mon People <cv@the-common-people.com>"
+      - key: NOTIFY_EMAIL
+        sync: false            # where internal purchase notices go
