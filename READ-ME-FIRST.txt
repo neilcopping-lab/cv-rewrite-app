@@ -1,17 +1,18 @@
-CV REWRITE - UPDATE (progress countdown + all recent fixes)
+CV REWRITE - UPDATE
 
-This folder has the 3 things that changed. To apply:
+Fixes the "Empty model response" on the CV-writing step, and includes the
+progress countdown and all earlier fixes.
 
+To apply:
 1. Unzip this folder.
-2. Open your existing "cv-rewrite-app" folder (the one you publish from GitHub Desktop).
-3. From this UPDATE folder, drag these THREE items into your cv-rewrite-app folder:
+2. Open your "cv-rewrite-app" folder (the one you publish from GitHub Desktop).
+3. Drag these THREE items from here into your cv-rewrite-app folder, choosing
+   "Replace" when asked:
       - the "lib" folder
       - the "public" folder
       - the file "server.js"
-   When macOS asks, choose "Replace".
-   (These folders are complete, so replacing them is safe.)
-4. Open GitHub Desktop, type a summary like "Add progress countdown", click
-   "Commit to main", then "Push origin".
-5. Wait for Render to say "Live", then reload your site.
+4. GitHub Desktop: type a summary "Fix CV writing", Commit to main, Push origin.
+5. Wait for Render to say "Live", reload your site, try "Write my CV" again.
 
-Your hidden .git folder and everything else stay untouched.
+Note: the CV-writing step may take a little longer now (up to ~1 minute) because
+it gives the AI more room to work. The progress bar will keep you posted.
