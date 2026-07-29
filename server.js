@@ -79,19 +79,42 @@ app.post(
       } else if (req.body.cvText) {
         st.cvText = req.body.cvText.trim();
       }
-      // Advert: file, URL, or pasted text
+      // Advert: file, URL, or pasted text. A failed URL should not blow up the
+      // whole request — tell the user to paste the text instead.
+      let advertUrlFailed = false;
       if (req.files?.advertFile?.[0]) {
         const f = req.files.advertFile[0];
         st.advertText = await extract.fromFile(f.path, f.mimetype, f.originalname);
       } else if (req.body.advertUrl) {
-        st.advertText = await extract.fromURL(req.body.advertUrl.trim());
+        try {
+          const fetched = await extract.fromURL(req.body.advertUrl.trim());
+          if (fetched && fetched.length > 60) st.advertText = fetched;
+          else advertUrlFailed = true;
+        } catch (_) {
+          advertUrlFailed = true;
+        }
       } else if (req.body.advertText) {
         st.advertText = req.body.advertText.trim();
       }
-      if (!st.cvText || !st.advertText) {
-        return res.status(400).json({ error: "Both a CV and a job advert are required." });
+
+      if (!st.cvText) {
+        return res.status(400).json({ error: "Please add your CV (upload a file or paste the text)." });
       }
-      res.json({ ok: true, cvChars: st.cvText.length, advertChars: st.advertText.length });
+      if (!st.advertText) {
+        return res.status(400).json({
+          error: advertUrlFailed
+            ? "We couldn't read that job advert link (many sites block automatic reading). Please copy the advert text and paste it into the box instead."
+            : "Please add the job advert (upload a file, paste a link, or paste the text)."
+        });
+      }
+      // Return the extracted text so the page can show it in the boxes.
+      res.json({
+        ok: true,
+        cvText: st.cvText,
+        advertText: st.advertText,
+        cvChars: st.cvText.length,
+        advertChars: st.advertText.length
+      });
     } catch (e) {
       res.status(500).json({ error: e.message });
     }
