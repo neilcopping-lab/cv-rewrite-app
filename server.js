@@ -144,7 +144,7 @@ app.post("/api/gaps", async (req, res) => {
 app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No audio uploaded." });
-    const text = await transcribe(req.file.path);
+    const text = await transcribe(req.file.path, req.file.originalname, req.file.mimetype);
     res.json({ ok: true, text });
   } catch (e) {
     res.status(500).json({ error: e.message });
