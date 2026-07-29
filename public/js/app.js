@@ -32,7 +32,10 @@ $("#go1").onclick = async () => {
     if ($("#advertFile").files[0]) fd.append("advertFile", $("#advertFile").files[0]);
     if ($("#advertUrl").value.trim()) fd.append("advertUrl", $("#advertUrl").value.trim());
     if ($("#advertText").value.trim()) fd.append("advertText", $("#advertText").value.trim());
-    await api("/api/extract", { method: "POST", body: fd });
+    const ex = await api("/api/extract", { method: "POST", body: fd });
+    // Show the extracted text in the boxes so you can see it worked and edit it.
+    if (ex.cvText) $("#cvText").value = ex.cvText;
+    if (ex.advertText) $("#advertText").value = ex.advertText;
     busy(s, true, "Comparing the advert against your CV…");
     const g = await api("/api/gaps", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
     renderGaps(g); busy(s, false, ""); showStep(2);
@@ -196,10 +199,15 @@ async function recordAnswer(id) {
     rec.onstop = async () => {
       stream.getTracks().forEach((t) => t.stop());
       label.innerHTML = '<span class="spinner"></span> Transcribing…';
-      const fd = new FormData(); fd.append("audio", new Blob(chunks, { type: "audio/webm" }), "a.webm");
+      // Use the browser's actual recording type + matching file extension so
+      // OpenAI recognises the audio format (Safari records mp4, Chrome webm).
+      const mime = (rec.mimeType || (chunks[0] && chunks[0].type) || "audio/webm").split(";")[0];
+      const ext = mime.includes("mp4") ? "mp4" : mime.includes("ogg") ? "ogg" : mime.includes("wav") ? "wav" : mime.includes("mpeg") ? "mp3" : "webm";
+      const fd = new FormData();
+      fd.append("audio", new Blob(chunks, { type: mime }), "answer." + ext);
       try { const j = await api("/api/transcribe", { method: "POST", body: fd });
         document.querySelector(`[data-answer="${id}"]`).value = j.text; label.textContent = "Transcribed."; }
-      catch (e) { label.textContent = "⚠ " + e.message; }
+      catch (e) { label.textContent = "⚠ " + e.message + " — you can type your answer instead."; }
     };
     rec.start(); label.textContent = "Recording… click again to stop.";
     const btn = document.querySelector(`[data-rec="${id}"]`);
