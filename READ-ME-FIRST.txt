@@ -1,23 +1,19 @@
-CV REWRITE - CREATIVE STYLE, PHOTO, LINKS + REGEN CAP
+CV REWRITE - FIX + FEATURES UPDATE
 
-WHAT'S NEW
-- New "Creative / Portfolio" design (16th design), available to everyone, with a
-  bold header and a clickable "Online" block for LinkedIn/portfolio/website/GitHub.
-- Clickable links now work on EVERY design's contact line (human version); the
-  ATS version keeps them as plain text so it still parses cleanly.
-- Optional PHOTO: on step 1, "Add links and a photo (optional)". The photo shows
-  on the designed CV, and NEVER on the ATS version.
-- Optional LINKS: enter LinkedIn / portfolio / website / GitHub; they appear
-  exactly as typed and are added after the honesty check so they're never flagged.
-- REGENERATION CAP: a session gets 8 free AI rewrites (about 3 regenerations)
-  before it asks you to download (spend a credit) or come back later. This
-  protects your AI costs. Change it with the REGEN_CAP setting in Render.
+FIXES
+- "Leave them all out and continue" no longer gets stuck. It now clears the
+  flagged items WITHOUT re-running the AI and takes you straight to the design
+  step. (Previously it regenerated, which could surface new flags in a loop.)
+- Font sizes now match the main the-common-people.com site (16px body,
+  44px H1, 30px H2, 12px eyebrows, matching buttons).
 
-APPLY (same as before):
-1. Replace in your cv-rewrite-app folder (drag in, Replace):
-   lib, public, server.js, render.yaml, DEPLOY.md
-2. GitHub Desktop: Commit to main, Push origin. Wait for Live.
+FEATURES (from this round)
+- New "Creative / Portfolio" design with a clickable links block (all users).
+- Clickable links on every design (human version); ATS keeps plain URLs.
+- Optional photo (human CV only, never on the ATS version).
+- Optional links (LinkedIn / portfolio / website / GitHub) on step 1.
+- Regeneration cap (REGEN_CAP, default 8) to protect your AI costs.
 
-(If you haven't yet done the accounts setup: in Render add a Disk name "data"
-mount "/data" 1GB, set DB_PATH=/data/app.json, and make sure RESEND_API_KEY is
-set. Full steps + test in DEPLOY.md.)
+APPLY: replace lib, public, server.js, render.yaml, DEPLOY.md in your
+cv-rewrite-app folder (Replace) -> GitHub Desktop: Commit -> Push.
+(Accounts still need the Render disk + DB_PATH + Resend - see DEPLOY.md.)

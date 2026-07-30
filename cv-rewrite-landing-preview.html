@@ -1,0 +1,268 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CV Rewrite - The Com'mon People</title>
+<meta name="description" content="Paste your current CV and the job advert. Answer a few questions where we spot the gaps. Get back a CV rewritten to align with this specific role, pick your design, download as Word or PDF. Buy credits: £5 for 4 CVs, £10 for 10.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Arvo:wght@400;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* The Com'mon People - CV Rewrite. Matched to the live site:
+   dark navy canvas, cream text, gold accent, Anton / Oswald / Arvo. */
+:root{
+  --navy:#161F29; --navy-deep:#0F151C; --panel:#2A333D;
+  --cream:#ECE6D8; --cream-muted:#A9A293; --muted:#7A7466; --line:#2E3945;
+  --gold:#E0B03C; --gold-deep:#C69A2E; --teal:#5AA9C2; --orange:#D2691E;
+  --ink:#161F29;
+  --font-display:'Anton',Impact,sans-serif;
+  --font-label:'Oswald',system-ui,sans-serif;
+  --font-body:'Arvo',Georgia,'Times New Roman',serif;
+  --maxw:1080px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--navy);color:var(--cream);font-family:var(--font-body);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
+a{color:var(--cream);text-decoration:none}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+/* headings - Anton, uppercase */
+h1,h2,h3{font-family:var(--font-display);font-weight:400;text-transform:uppercase;letter-spacing:.01em;line-height:1.05;color:var(--cream)}
+h1{font-size:clamp(30px,5.5vw,44px);margin:.15em 0}
+h2{font-size:clamp(24px,3.4vw,30px);margin:.6em 0 .35em}
+h3{font-size:18px}
+.lead{font-size:18px;color:var(--cream);max-width:44em}
+.muted{color:var(--cream-muted)}
+
+/* eyebrow / labels - Oswald, uppercase, gold */
+.eyebrow{font-family:var(--font-label);text-transform:uppercase;letter-spacing:2px;font-size:12px;font-weight:500;color:var(--gold)}
+
+/* the sticker logo - three angled coloured blocks */
+.cp-logo{display:inline-flex;align-items:center;gap:6px;line-height:1}
+.cp-logo .blk{font-family:var(--font-display);text-transform:uppercase;color:#fff;
+  padding:6px 10px 4px;border:2px solid var(--navy-deep);box-shadow:2px 2px 0 rgba(0,0,0,.35);
+  font-size:22px;letter-spacing:.01em;display:inline-block}
+.cp-logo .b1{background:var(--gold);transform:rotate(-3deg)}
+.cp-logo .b2{background:var(--teal);transform:rotate(1.5deg)}
+.cp-logo .b3{background:var(--orange);transform:rotate(-1.5deg)}
+.cp-logo.sm .blk{font-size:16px;padding:4px 7px 3px;border-width:1.5px}
+
+/* buttons - square, gold, Oswald uppercase */
+.btn{display:inline-block;font-family:var(--font-label);font-weight:600;font-size:16px;text-transform:uppercase;letter-spacing:1px;
+  background:var(--gold);color:var(--ink);padding:18px 36px;border:2px solid var(--gold);cursor:pointer;border-radius:0;transition:background .15s,border-color .15s}
+.btn:hover{background:var(--gold-deep);border-color:var(--gold-deep)}
+.btn.ghost{background:transparent;color:var(--teal);border-color:transparent;text-decoration:underline;text-underline-offset:6px;padding:18px 6px}
+.btn.ghost:hover{background:transparent;color:#7cc0d6}
+.btn.accent{background:var(--gold);color:var(--ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* nav */
+header.site{border-bottom:1px solid var(--line);background:var(--navy);position:sticky;top:0;z-index:20}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 24px;max-width:var(--maxw);margin:0 auto;flex-wrap:wrap}
+.nav .links{display:flex;gap:22px;font-family:var(--font-label);font-size:15px;text-transform:uppercase;letter-spacing:.08em;flex-wrap:wrap}
+.nav .links a{color:var(--cream)}
+.nav .links a:hover,.nav .links a.active{color:var(--gold)}
+
+/* sections - alternating dark shades */
+section{padding:56px 0;border-bottom:1px solid var(--line)}
+section:nth-of-type(even){background:var(--navy-deep)}
+.hero{padding:64px 0 58px}
+.hero .fine{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.08em;font-size:13px;color:var(--cream-muted);margin-top:16px}
+.cols{display:grid;gap:26px}
+@media(min-width:760px){.grid2{grid-template-columns:1fr 1fr}.grid4{grid-template-columns:repeat(4,1fr)}.grid3{grid-template-columns:repeat(3,1fr)}}
+.tile{background:var(--panel);border:1px solid var(--line);padding:22px}
+.tile .n{font-family:var(--font-display);font-size:34px;color:var(--gold);line-height:1}
+.tile h3{font-family:var(--font-display);font-size:19px;margin:.45em 0 .35em;color:var(--cream)}
+.tile p{font-size:15px;color:var(--cream-muted);margin:0}
+.whatlist p{margin:.55em 0;border-bottom:1px solid var(--line);padding-bottom:.55em}
+.whatlist strong{font-weight:700;color:var(--cream)}
+.faq h3{font-family:var(--font-label);text-transform:none;font-size:19px;font-weight:600;margin:1.2em 0 .2em;color:var(--cream)}
+.price-flag{display:inline-block;background:var(--gold);color:var(--ink);font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05em;font-weight:600;padding:5px 12px;font-size:15px}
+
+/* footer */
+.footer{background:var(--navy-deep);color:var(--cream);border:none}
+.footer a{color:var(--cream-muted);font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:13px}
+.footer a:hover{color:var(--gold)}
+.footcols{display:grid;gap:22px}
+@media(min-width:760px){.footcols{grid-template-columns:2fr 1fr 1fr 1fr}}
+.footer h4{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:var(--gold);font-weight:600}
+.footer .col a{display:block;margin:.4em 0}
+
+/* app flow */
+.steps{display:flex;gap:8px;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05em;font-size:13px;flex-wrap:wrap;margin:10px 0 26px}
+.steps .s{padding:8px 13px;border:1px solid var(--line);background:var(--panel);color:var(--cream-muted)}
+.steps .s.active{background:var(--gold);color:var(--ink);border-color:var(--gold)}
+.steps .s.done{border-color:var(--gold);color:var(--gold)}
+.panel{display:none}
+.panel.active{display:block}
+textarea,input[type=text],input[type=email],input[type=url]{width:100%;font-family:var(--font-body);font-size:15px;padding:12px;border:1px solid var(--line);background:#111923;color:var(--cream);border-radius:0}
+textarea{min-height:150px;resize:vertical}
+textarea:focus,input:focus{outline:2px solid var(--gold);border-color:var(--gold)}
+input[type=file]{font-family:var(--font-label);color:var(--cream-muted)}
+label{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05em;font-weight:600;font-size:14px;display:block;margin:16px 0 6px;color:var(--cream)}
+.q{background:var(--panel);border:1px solid var(--line);padding:14px;margin:12px 0}
+.q .qtext{font-family:var(--font-body);font-weight:700;font-size:15px;color:var(--cream)}
+.q .tag{font-family:var(--font-label);font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--gold)}
+.flag{background:#3a2417;border-left:4px solid var(--orange);padding:12px;margin:10px 0;font-size:15px}
+.design-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.design-card{border:1px solid var(--line);background:var(--panel);cursor:pointer;overflow:hidden}
+.design-card.sel{outline:3px solid var(--gold);outline-offset:-1px}
+.design-card .thumb{height:150px;background:#fff;border-bottom:1px solid var(--line);display:block;width:100%}
+.design-card .meta{padding:10px}
+.design-card .meta h4{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.04em;font-size:14px;margin:0 0 4px;color:var(--cream)}
+.design-card .meta p{font-size:12px;color:var(--cream-muted);margin:0}
+.previewbox{border:1px solid var(--line);background:#3a4048;padding:20px;margin-top:16px;max-height:640px;overflow:auto}
+.dlrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.spinner{display:inline-block;width:16px;height:16px;border:3px solid rgba(236,230,216,.25);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* progress countdown shown while the CV is analysed / written */
+.progress{margin-top:14px;max-width:520px}
+.progress .bar{height:12px;background:var(--panel);border:1px solid var(--line);overflow:hidden}
+.progress .bar > i{display:block;height:100%;width:0;background:var(--gold);transition:width .35s linear}
+.progress .meta{display:flex;justify-content:space-between;align-items:center;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:12px;margin-top:8px}
+.progress .msg{color:var(--gold)}
+.progress .secs{color:var(--cream-muted)}
+.notice{font-family:var(--font-body);font-size:15px;background:var(--panel);border:1px solid var(--line);padding:12px;margin:12px 0;color:var(--cream)}
+.notice strong{color:var(--gold)}
+.hidden{display:none}
+
+</style>
+</head><body>
+
+<header class="site"><nav class="nav">
+  <a class="cp-logo" href="/" aria-label="The Com'mon People"><span class="blk b1">The</span><span class="blk b2">Com'mon</span><span class="blk b3">People</span></a>
+  <div class="links">
+    <a href="https://the-common-people.com/guides.html">Guides</a>
+    <a href="https://the-common-people.com/dispatches.html">Dispatches</a>
+    <a href="https://the-common-people.com/loudspeaker.html">Loudspeaker</a>
+    <a href="https://the-common-people.com/about.html">About</a>
+    <a class="active" href="/">CV Rewrite</a>
+  </div>
+</nav></header>
+
+<main>
+<section class="hero"><div class="wrap">
+  <div class="eyebrow">CV Rewrite</div>
+  <h1>A CV That Fits The Job. Not A Template With Your Name In It.</h1>
+  <p class="lead">Paste your current CV and the job advert. Answer a few short questions where we spot the gaps. Get back a CV rewritten to align with this specific role, in a design you choose. Downloads as Word and PDF.</p>
+  <p style="margin:20px 0"><span class="price-flag">£5 = 4 CVs &middot; £10 = 10 CVs</span> &nbsp;<span class="muted" style="font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:14px">No subscription. Credits saved to your account.</span></p>
+  <p><a class="btn accent" href="/app.html">Rewrite My CV</a> <a class="btn ghost" href="https://the-common-people.com/guide-cv.html">Read the free CV guide →</a></p>
+  <p class="fine">About 10 minutes to fill in. Your rewritten CV is usually ready in under 2 minutes.</p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>What You Actually Get</h2>
+  <p class="lead">Every CV is built fresh from your CV and the actual advert, not a generic layout everyone gets. Written in your own words where it matters, tailored to one role, checked for honesty before it reaches you.</p>
+  <div class="whatlist cols" style="margin-top:20px">
+    <p><strong>A tailored rewrite.</strong> Your CV re-aligned to this specific advert, mirroring its language where you genuinely have the experience.</p>
+    <p><strong>A gap check first.</strong> We compare the advert against your CV line by line and only ask about what's genuinely missing.</p>
+    <p><strong>The seven stops, done properly.</strong> Header, personal statement, key skills with proof, career history, interests, education, and the skills-match answer key.</p>
+    <p><strong>A personal statement that sounds like you.</strong> Built from your own words, never buzzword salad.</p>
+    <p><strong>Key skills with receipts.</strong> Each skill paired with a short prove-it line: what you did, what happened.</p>
+    <p><strong>A fabrication check.</strong> Every figure and claim is traced back to something you actually told us. Nothing invented, no inflated numbers.</p>
+    <p><strong>Your choice of 15 designs.</strong> So two people using this don't walk out with the same-looking document.</p>
+    <p><strong>Word and PDF.</strong> Plus an ATS-safe version for application portals, on request.</p>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>How It Works</h2>
+  <div class="cols grid4" style="margin-top:22px">
+    <div class="tile"><div class="n">1</div><h3>Paste your CV and the advert</h3><p>Upload a file or paste the text, either works. The advert can be a link too.</p></div>
+    <div class="tile"><div class="n">2</div><h3>Answer a few questions</h3><p>We read both documents, spot where your CV is thin against the role, and only ask what's needed. Type it, or just talk and we'll transcribe it.</p></div>
+    <div class="tile"><div class="n">3</div><h3>We rewrite, then check it</h3><p>Section by section, in your own words. Then a fabrication check makes sure nothing was invented or inflated.</p></div>
+    <div class="tile"><div class="n">4</div><h3>Choose a design, download</h3><p>Pick from 15 designs, preview it, download as Word and PDF. ATS-safe version on request.</p></div>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Simple Credit Packs</h2>
+  <p class="lead">Buy credits and spend one each time you download a finished CV. No subscription, and credits never expire. Sign in with your email so your balance is always there when you come back.</p>
+  <div class="cols grid2" style="margin-top:24px">
+    <div class="tile"><div class="n">£5</div><h3>4 CVs</h3><p>Four finished CV downloads, for tailoring to a handful of roles. Works out at about £1.25 a CV.</p></div>
+    <div class="tile"><div class="n">£10</div><h3>10 CVs</h3><p>Ten finished CV downloads, the best value at £1 a CV. Ideal if you're applying widely.</p></div>
+  </div>
+  <p class="muted" style="margin-top:18px;font-size:15px">One credit = one finished CV. Every file format of that CV (Word, PDF and the ATS-safe version) is included, and you can re-download them free. Making a fresh version and downloading it uses another credit.</p>
+  <p style="margin-top:14px"><a class="btn accent" href="/app.html">Rewrite My CV</a></p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>No Subscription. No Catch.</h2>
+  <p class="lead">Most CV builders lock you into a monthly subscription, often after a cheap trial that quietly renews. We don't. You buy credits, spend one per finished CV, and that's it.</p>
+  <div class="cols grid2" style="margin-top:24px">
+    <div class="tile" style="border:2px solid var(--gold)">
+      <h3 style="color:var(--gold)">The Com'mon People</h3>
+      <ul style="margin:8px 0 0 1.1em;font-size:15px;line-height:1.6;color:var(--cream)">
+        <li>Pay per CV: £5 for 4, or £10 for 10</li>
+        <li>No subscription. Nothing auto-renews, ever</li>
+        <li>Credits never expire, saved to your account</li>
+        <li>Written to your exact job advert, in your own words</li>
+        <li>Honesty check: nothing invented, no inflated numbers</li>
+        <li>Word, PDF and an ATS-safe version all included</li>
+      </ul>
+    </div>
+    <div class="tile">
+      <h3>Typical CV subscriptions</h3>
+      <ul style="margin:8px 0 0 1.1em;font-size:15px;line-height:1.6;color:var(--cream-muted)">
+        <li>Around £15 to £30 a month, billed until you cancel</li>
+        <li>Often a £2 "trial" that rolls into the full price</li>
+        <li>Charged whether you used it that month or not</li>
+        <li>Frequently generic templates, not advert-specific</li>
+        <li>Little or no check on invented claims</li>
+        <li>Some formats or features locked to higher tiers</li>
+      </ul>
+    </div>
+  </div>
+  <p class="muted" style="margin-top:16px;font-size:14px">The "typical" figures are the common range across popular résumé subscription tools in 2026. Other tools' prices change; ours are stated plainly and don't hide.</p>
+  <p style="margin-top:14px"><a class="btn accent" href="/app.html">Rewrite My CV</a></p>
+</div></section>
+
+<section><div class="wrap faq">
+  <h2>Questions</h2>
+  <h3>Is this actually AI, or a template with my name stuck in?</h3>
+  <p>It's a real rewrite built from your specific CV and the actual advert each time, not a fixed template. We use AI to tidy grammar and sharpen your sentences, never to write your personal statement or career story in its own voice. If we can't ground something in what you told us, we say so plainly rather than filling it with filler.</p>
+  <h3>Will it make things up to sound impressive?</h3>
+  <p>No, and we built a hard check specifically to stop that. Every number, employer, title, qualification and skill in the finished CV has to trace back to something you actually provided. Anything that doesn't gets stripped out and shown to you as a question to answer, not quietly left in.</p>
+  <h3>Is my data safe?</h3>
+  <p>Uploaded files are deleted from our server as soon as the text has been pulled out. Same policy as the Interview Prep Report.</p>
+  <h3>What's the ATS version?</h3>
+  <p>Online application portals parse your CV with software before a human sees it. The ATS version strips your chosen design down to a single column with standard headings, no tables, no icons and no header or footer, so it parses cleanly. You get it from the same design you picked.</p>
+  <h3>How does pricing work?</h3>
+  <p>You buy a pack of credits: £5 for 4 CVs, or £10 for 10 CVs. One credit is spent each time you download a finished CV. Every file format of that same CV (Word, PDF and the ATS-safe version) is included in that one credit, so you can grab all three free. Making a fresh version and downloading it uses another credit. Credits are saved to your account and never expire.</p>
+  <h3>Do I need an account?</h3>
+  <p>Yes, a light one. You sign in with your email, we send you a link, no password to remember. That's how your credit balance follows you between visits.</p>
+  <h3>What if something's not right after I've downloaded?</h3>
+  <p>You can tweak the Word file yourself, it's yours. If the service genuinely failed to give you a usable CV, get in touch and we'll put it right or refund the credit.</p>
+  <h3>How is the rest of the site still free?</h3>
+  <p>Every guide, dispatch and Loudspeaker email stays free, always. This is the one thing we charge for: doing the rewrite for you rather than teaching you to do it yourself.</p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Ready When You Are</h2>
+  <p class="lead">Paste your CV and the advert. We'll do the rest.</p>
+  <p style="margin-top:18px"><a class="btn accent" href="/app.html">Rewrite My CV</a></p>
+</div></section>
+</main>
+
+<footer class="footer" style="padding:44px 0"><div class="wrap">
+  <div class="footcols">
+    <div><a class="cp-logo sm" href="/" aria-label="The Com'mon People"><span class="blk b1">The</span><span class="blk b2">Com'mon</span><span class="blk b3">People</span></a>
+      <p class="muted" style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-size:14px;max-width:22em;margin-top:14px">A free resource centre for marketing, HR, finance, events and operations people. Built on mutual aid.</p></div>
+    <div class="col"><h4>Guides</h4>
+      <a href="https://the-common-people.com/guide-cv.html">The CV that gets read</a>
+      <a href="https://the-common-people.com/guide-video-intro.html">The intro video</a>
+      <a href="https://the-common-people.com/guide-interview-prep.html">Interview prep</a>
+      <a href="https://the-common-people.com/guide-linkedin.html">LinkedIn, properly</a></div>
+    <div class="col"><h4>Dispatches</h4>
+      <a href="https://the-common-people.com/dispatch-ai-cvs.html">AI CVs, the honest truth</a>
+      <a href="https://the-common-people.com/dispatch-recruitment-rethink.html">The recruitment rethink</a>
+      <a href="https://the-common-people.com/dispatch-stop-ghosting.html">Stop ghosting job seekers</a></div>
+    <div class="col"><h4>About</h4>
+      <a href="https://the-common-people.com/resources.html">Resources</a>
+      <a href="https://the-common-people.com/about.html">Our story</a>
+      <a href="mailto:neil.copping@thecommonpeople.co.uk">Get in touch</a>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms &amp; Conditions</a></div>
+  </div>
+  <p class="muted" style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-size:13px;margin-top:28px">© 2026 The Com'mon People. Built on mutual aid. Free, always (this one bit excepted).</p>
+</div></footer>
+</body></html>

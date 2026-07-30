@@ -317,6 +317,16 @@ app.post("/api/resolve", async (req, res) => {
   }
 });
 
+// "Leave them all out" — drop the outstanding flags WITHOUT re-running the AI
+// (the fabricated content was already stripped; this just clears the questions),
+// so the user can proceed straight to choosing a design. No cost, no new flags.
+app.post("/api/drop-flags", (req, res) => {
+  const st = S(req);
+  if (!st.cv) return res.status(400).json({ error: "Generate a draft first." });
+  st.cv.missing = [];
+  res.json({ ok: true, cv: st.cv, downloadBlocked: false });
+});
+
 // ─── Step 4 — designs, preview, pay, download ───────────────────────────────
 app.get("/api/designs", (req, res) => res.json({ designs }));
 

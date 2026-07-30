@@ -178,7 +178,7 @@ function renderDraft(j) {
     : "";
   if (missing.length) {
     const rb = $("#resolveBtn"); if (rb) rb.onclick = resolveMissing;
-    $("#leaveAllBtn").onclick = () => { $$("[data-mdrop]").forEach((c) => (c.checked = true)); resolveMissing(); };
+    const la = $("#leaveAllBtn"); if (la) la.onclick = leaveAllAndContinue;
   }
   // Block "Choose a design" until nothing is outstanding.
   const go3 = $("#go3");
@@ -195,6 +195,20 @@ function renderDraft(j) {
   prog.filter((p) => p.severity !== "info").forEach((p) => notes.push(p.detail));
   $("#reviewBox").innerHTML = notes.length ? `<div class="notice sans"><strong>Automated checks:</strong><br>${notes.map((n) => "• " + n).join("<br>")}</div>` : `<div class="notice sans">Automated checks passed: UK spelling, no banned punctuation, standard headings, every figure traced to your source.</div>`;
   previewDraft();
+}
+
+// Drop all flagged items without re-running the AI, then go straight to design.
+async function leaveAllAndContinue() {
+  const sr = document.getElementById("sr");
+  if (sr) busy(sr, true, "Finishing up…");
+  try {
+    const j = await api("/api/drop-flags", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    STATE.cv = j.cv;
+    $("#missingBox").innerHTML = "";
+    $("#checkBanner").innerHTML = '<span>Ready. Pick a design and download.</span>';
+    const go3 = $("#go3"); if (go3) go3.disabled = false;
+    await loadDesigns(); await refreshAccount(); showStep(4);
+  } catch (e) { if (sr) busy(sr, false, "⚠ " + e.message); }
 }
 
 async function resolveMissing() {

@@ -12,20 +12,20 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{background:var(--navy);color:var(--cream);font-family:var(--font-body);line-height:1.65;font-size:17px;-webkit-font-smoothing:antialiased}
+body{background:var(--navy);color:var(--cream);font-family:var(--font-body);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
 a{color:var(--cream);text-decoration:none}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px}
 
 /* headings - Anton, uppercase */
-h1,h2,h3{font-family:var(--font-display);font-weight:400;text-transform:uppercase;letter-spacing:.01em;line-height:1.02;color:var(--cream)}
-h1{font-size:clamp(38px,6.2vw,60px);margin:.15em 0}
-h2{font-size:clamp(26px,3.6vw,38px);margin:.6em 0 .35em}
-h3{font-size:20px}
-.lead{font-size:19px;color:var(--cream);max-width:44em}
+h1,h2,h3{font-family:var(--font-display);font-weight:400;text-transform:uppercase;letter-spacing:.01em;line-height:1.05;color:var(--cream)}
+h1{font-size:clamp(30px,5.5vw,44px);margin:.15em 0}
+h2{font-size:clamp(24px,3.4vw,30px);margin:.6em 0 .35em}
+h3{font-size:18px}
+.lead{font-size:18px;color:var(--cream);max-width:44em}
 .muted{color:var(--cream-muted)}
 
 /* eyebrow / labels - Oswald, uppercase, gold */
-.eyebrow{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.16em;font-size:13px;font-weight:500;color:var(--gold)}
+.eyebrow{font-family:var(--font-label);text-transform:uppercase;letter-spacing:2px;font-size:12px;font-weight:500;color:var(--gold)}
 
 /* the sticker logo - three angled coloured blocks */
 .cp-logo{display:inline-flex;align-items:center;gap:6px;line-height:1}
@@ -38,8 +38,8 @@ h3{font-size:20px}
 .cp-logo.sm .blk{font-size:16px;padding:4px 7px 3px;border-width:1.5px}
 
 /* buttons - square, gold, Oswald uppercase */
-.btn{display:inline-block;font-family:var(--font-label);font-weight:600;font-size:16px;text-transform:uppercase;letter-spacing:.06em;
-  background:var(--gold);color:var(--ink);padding:18px 34px;border:2px solid var(--gold);cursor:pointer;border-radius:0;transition:background .15s,border-color .15s}
+.btn{display:inline-block;font-family:var(--font-label);font-weight:600;font-size:16px;text-transform:uppercase;letter-spacing:1px;
+  background:var(--gold);color:var(--ink);padding:18px 36px;border:2px solid var(--gold);cursor:pointer;border-radius:0;transition:background .15s,border-color .15s}
 .btn:hover{background:var(--gold-deep);border-color:var(--gold-deep)}
 .btn.ghost{background:transparent;color:var(--teal);border-color:transparent;text-decoration:underline;text-underline-offset:6px;padding:18px 6px}
 .btn.ghost:hover{background:transparent;color:#7cc0d6}
