@@ -16,10 +16,25 @@ function showStep(n) {
 }
 function busy(el, on, msg) { el.innerHTML = on ? `<span class="spinner"></span> ${msg || "Working…"}` : (msg || ""); }
 
+// A pool of warm, plain-spoken messages that pop up while the AI works. Shown
+// in a random order each time so it feels alive, not scripted.
+const FUN_MESSAGES = [
+  "Pop the kettle on, this bit can take a minute or two.",
+  "Reading your CV properly, not just skimming it.",
+  "Lining you up against the advert, line by line.",
+  "Writing it in your own voice, not robot-speak.",
+  "Double-checking every number traces back to you.",
+  "No inventing, no fluff. Just the real you, sharpened.",
+  "Good CVs are worth a short wait. Nearly there.",
+  "Making you look brilliant on paper. Hang tight."
+];
+function shuffle(a) { const b = a.slice(); for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; }
+
 // Progress countdown shown while a long step runs. Fills a bar toward ~92%
-// over an estimate, counts seconds up, and rotates reassuring messages. The
-// returned object's done()/fail() finish it. Never claims 100% until done.
+// over an estimate, counts seconds up, and rotates reassuring messages (in a
+// random order). The returned object's done()/fail() finish it.
 function startProgress(hostId, estimate, messages) {
+  messages = shuffle(messages && messages.length ? messages : FUN_MESSAGES);
   let host = document.getElementById(hostId);
   if (!host) {
     host = document.createElement("div");
@@ -67,10 +82,7 @@ function mapErr(m) {
 // ── STEP 1 ──
 $("#go1").onclick = async () => {
   const s = $("#s1"); s.textContent = "";
-  const prog = startProgress("prog1", 25, [
-    "Reading your CV", "Reading the job advert",
-    "Comparing them line by line", "Spotting the gaps"
-  ]);
+  const prog = startProgress("prog1", 25, FUN_MESSAGES);
   try {
     const fd = new FormData();
     if ($("#cvFile").files[0]) fd.append("cvFile", $("#cvFile").files[0]);
@@ -103,31 +115,34 @@ function renderGaps(g) {
   const thin = reqs.filter((r) => r.status === "thin").length;
   const missing = reqs.filter((r) => r.status === "missing").length;
   $("#reqSummary").innerHTML = reqs.length
-    ? `<div class="notice sans">Advert requirements: <strong>${covered}</strong> already covered, <strong>${thin}</strong> thin, <strong>${missing}</strong> missing. We only ask about the last two.</div>`
+    ? `<div class="notice">Against the advert, <strong>${covered}</strong> requirements are already covered by your CV, <strong>${thin}</strong> are thin and <strong>${missing}</strong> are missing. We only ask about genuine gaps.</div>`
     : "";
   STATE.questions = [...(g.gapQuestions || []), ...(g.sectionQuestions || [])];
-  $("#questions").innerHTML = STATE.questions.map((q, i) => {
-    const tag = q.requirement ? "Gap" : (q.section || "Section");
-    const id = q.id || "q" + i;
-    return `<div class="q" data-qid="${id}">
-      <div class="tag">${tag}</div>
-      <div class="qtext">${q.question}</div>
-      <textarea data-answer="${id}" placeholder="Your answer (optional but it makes the rewrite better)"></textarea>
-      <button class="btn ghost sans" style="font-size:13px;padding:8px 12px" data-rec="${id}">● Record answer</button>
-      <span class="sans muted" data-recs="${id}"></span>
-    </div>`;
-  }).join("");
+  if (!STATE.questions.length) {
+    // Nothing genuinely missing — don't invent questions.
+    $("#questions").innerHTML = `<div class="notice"><strong>Nothing to add.</strong> Your CV already covers what we need for this role, so there's nothing to ask. Press <em>Write my CV</em> whenever you're ready.</div>`;
+    return;
+  }
+  $("#questions").innerHTML =
+    `<p class="muted" style="margin:0 0 8px">All optional. Only fill in what isn't already on your CV — skip anything that's already covered.</p>` +
+    STATE.questions.map((q, i) => {
+      const tag = q.requirement ? "Gap" : (q.section || "Optional");
+      const id = q.id || "q" + i;
+      return `<div class="q" data-qid="${id}">
+        <div class="tag">${tag}</div>
+        <div class="qtext">${q.question}</div>
+        <textarea data-answer="${id}" placeholder="Optional — leave blank if it's already on your CV"></textarea>
+        <button class="btn ghost" style="font-size:13px;padding:8px 12px" data-rec="${id}">● Record answer</button>
+        <span class="muted" data-recs="${id}"></span>
+      </div>`;
+    }).join("");
   $$("[data-rec]").forEach((b) => (b.onclick = () => recordAnswer(b.dataset.rec)));
 }
 
 // ── STEP 2 ──
 $("#go2").onclick = async () => {
   const s = $("#s2"); s.textContent = "";
-  const prog = startProgress("prog2", 45, [
-    "Pulling out your achievements", "Writing in your own voice",
-    "Tailoring it to the role", "Checking every claim traces back to you",
-    "Final polish"
-  ]);
+  const prog = startProgress("prog2", 45, FUN_MESSAGES);
   try {
     const answers = STATE.questions.map((q) => {
       const id = q.id;
@@ -217,10 +232,7 @@ async function resolveMissing() {
   if (sr && !document.getElementById("progr")) {
     const d = document.createElement("div"); d.id = "progr"; sr.parentNode.appendChild(d);
   }
-  const prog = startProgress("progr", 30, [
-    "Taking your answers on board", "Rewriting the affected lines",
-    "Re-checking every claim"
-  ]);
+  const prog = startProgress("progr", 30, FUN_MESSAGES);
   try {
     const resolutions = [], acceptLeaveOut = [];
     (STATE.cv.missing || []).forEach((m, i) => {
@@ -235,10 +247,7 @@ async function resolveMissing() {
 }
 
 $("#regen").onclick = async () => {
-  const prog = startProgress("prog3", 45, [
-    "Starting your CV fresh", "Writing in your own voice",
-    "Tailoring it to the role", "Checking every claim traces back to you"
-  ]);
+  const prog = startProgress("prog3", 45, FUN_MESSAGES);
   try {
     const j = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers: STATE.answers }) });
     STATE.cv = j.cv; renderDraft(j); prog.done();

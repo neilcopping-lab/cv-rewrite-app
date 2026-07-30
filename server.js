@@ -65,6 +65,26 @@ function overGenCap(st) {
   return st.genCount > GEN_CAP;
 }
 
+// Build the CV (Word + PDF) and email them as attachments, so the person also
+// receives their CV by email. Fire-and-forget from the download route.
+async function emailCvFiles(userEmail, cv, design, photo) {
+  if (!email.hasKey()) return;
+  const nameSafe = (cv.header?.name || "cv").replace(/[^\w]+/g, "_");
+  const attachments = [];
+  try {
+    const docx = await buildDocx(cv, design, { ats: false, photo });
+    attachments.push({ filename: `${nameSafe}_${design.id}.docx`, content: docx.toString("base64") });
+    if (libreAvailable()) {
+      const pdf = await docxToPdf(docx);
+      attachments.push({ filename: `${nameSafe}_${design.id}.pdf`, content: pdf.toString("base64") });
+    }
+  } catch (_) { /* still send the note even if a file fails */ }
+  return email.sendConfirmation({
+    to: userEmail, name: cv.header?.name, role: cv.header?.targetRole,
+    designName: design.name, attachments
+  });
+}
+
 // The user's own confirmed links (LinkedIn, portfolio, website, GitHub) are
 // applied straight onto the CV header AFTER the honesty check, so they always
 // appear and are never mistaken for something the model invented.
@@ -389,9 +409,9 @@ app.get("/api/download", async (req, res) => {
       if (db.credits(userEmail) < 1) return res.status(402).json({ error: "no-credits" });
       if (!db.spendCredit(userEmail)) return res.status(402).json({ error: "no-credits" });
       st.paidVersion = st.cvVersion;
-      // Send confirmation + internal notice on the first paid download of this CV.
+      // On first paid download: email the CV (Word + PDF attached) + notify.
       const d0 = byId(req.query.design || st.designId || designs[0].id);
-      email.sendConfirmation({ to: userEmail, name: st.cv.header?.name, role: st.cv.header?.targetRole, designName: d0.name }).catch(() => {});
+      emailCvFiles(userEmail, st.cv, d0, st.photo).catch(() => {});
       email.sendInternalNotice({ email: userEmail, role: st.cv.header?.targetRole, designId: d0.id }).catch(() => {});
     }
 

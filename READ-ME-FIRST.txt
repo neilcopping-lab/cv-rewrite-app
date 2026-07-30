@@ -1,19 +1,21 @@
-CV REWRITE - FIX + FEATURES UPDATE
+CV REWRITE - PERSONALITY, SMARTER QUESTIONS + EMAIL-YOUR-CV UPDATE
 
-FIXES
-- "Leave them all out and continue" no longer gets stuck. It now clears the
-  flagged items WITHOUT re-running the AI and takes you straight to the design
-  step. (Previously it regenerated, which could surface new flags in a loop.)
-- Font sizes now match the main the-common-people.com site (16px body,
-  44px H1, 30px H2, 12px eyebrows, matching buttons).
+WHAT'S NEW
+1) Fun loading messages: while the AI works, 8 warm messages pop up in a random
+   order ("Pop the kettle on, this bit can take a minute or two." etc.).
+2) No more asking for things already on your CV: the question step now only asks
+   about genuine gaps. If your CV already covers everything, it says "Nothing to
+   add - press Write my CV" instead of inventing questions. All questions are
+   clearly optional.
+3) Your CV is now EMAILED to you: on your first download of a CV, the Word and
+   PDF are attached to your confirmation email (as well as downloading in the
+   browser). NOTE: emails only send if RESEND_API_KEY is set AND your sending
+   domain is verified in Resend - otherwise nothing can be emailed (including the
+   sign-in link).
 
-FEATURES (from this round)
-- New "Creative / Portfolio" design with a clickable links block (all users).
-- Clickable links on every design (human version); ATS keeps plain URLs.
-- Optional photo (human CV only, never on the ATS version).
-- Optional links (LinkedIn / portfolio / website / GitHub) on step 1.
-- Regeneration cap (REGEN_CAP, default 8) to protect your AI costs.
+Also includes the earlier fixes: the "leave them all out" stuck-button fix, the
+font sizes matched to the main site, and the Creative design / photo / links /
+regen-cap features.
 
 APPLY: replace lib, public, server.js, render.yaml, DEPLOY.md in your
 cv-rewrite-app folder (Replace) -> GitHub Desktop: Commit -> Push.
-(Accounts still need the Render disk + DB_PATH + Resend - see DEPLOY.md.)
