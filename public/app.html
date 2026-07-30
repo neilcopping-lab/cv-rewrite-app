@@ -44,6 +44,19 @@
     <input type="file" id="advertFile" accept=".pdf,.docx,.txt">
     <input type="url" id="advertUrl" placeholder="…or paste a link to the live listing" style="margin-top:8px">
     <textarea id="advertText" placeholder="…or paste the advert text here"></textarea>
+
+    <details style="margin-top:16px">
+      <summary style="cursor:pointer;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:13px;color:var(--gold);padding:6px 0">Add links and a photo (optional)</summary>
+      <label>Your links — shown as clickable links on your CV (great for the Creative design)</label>
+      <input type="url" id="linkLinkedin" placeholder="LinkedIn URL">
+      <input type="url" id="linkPortfolio" placeholder="Portfolio URL" style="margin-top:8px">
+      <input type="url" id="linkWebsite" placeholder="Website URL" style="margin-top:8px">
+      <input type="url" id="linkGithub" placeholder="GitHub URL" style="margin-top:8px">
+      <p class="muted" style="font-size:13px;margin:6px 0 0">Only add links you're happy to appear on your CV. We show them exactly as you type them.</p>
+      <label>Photo (optional) — appears on the designed CV, never on the ATS version</label>
+      <input type="file" id="photoFile" accept="image/*">
+    </details>
+
     <p style="margin-top:18px"><button class="btn accent" id="go1">Find the gaps →</button> <span id="s1" class="muted"></span></p>
   </div>
 

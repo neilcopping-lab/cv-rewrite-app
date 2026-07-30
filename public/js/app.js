@@ -57,6 +57,12 @@ async function api(url, opts) {
   if (!r.ok) throw new Error(j.error || ("Request failed: " + r.status));
   return j;
 }
+// Turn internal error codes into plain English.
+function mapErr(m) {
+  if (/rewrite-limit/.test(m)) return "You've used your free rewrites for this CV. Download it to keep it (uses one credit), or start a new one later.";
+  if (/no-credits/.test(m)) return "You're out of CV credits — choose a pack to download.";
+  return m;
+}
 
 // ── STEP 1 ──
 $("#go1").onclick = async () => {
@@ -72,13 +78,22 @@ $("#go1").onclick = async () => {
     if ($("#advertFile").files[0]) fd.append("advertFile", $("#advertFile").files[0]);
     if ($("#advertUrl").value.trim()) fd.append("advertUrl", $("#advertUrl").value.trim());
     if ($("#advertText").value.trim()) fd.append("advertText", $("#advertText").value.trim());
+    // Optional photo + links.
+    if ($("#photoFile") && $("#photoFile").files[0]) fd.append("photo", $("#photoFile").files[0]);
+    const links = {
+      linkedin: ($("#linkLinkedin") || {}).value?.trim() || "",
+      portfolio: ($("#linkPortfolio") || {}).value?.trim() || "",
+      website: ($("#linkWebsite") || {}).value?.trim() || "",
+      github: ($("#linkGithub") || {}).value?.trim() || ""
+    };
+    fd.append("links", JSON.stringify(links));
     const ex = await api("/api/extract", { method: "POST", body: fd });
     // Show the extracted text in the boxes so you can see it worked and edit it.
     if (ex.cvText) $("#cvText").value = ex.cvText;
     if (ex.advertText) $("#advertText").value = ex.advertText;
     const g = await api("/api/gaps", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
     renderGaps(g); prog.done(); showStep(2);
-  } catch (e) { prog.fail(e.message); }
+  } catch (e) { prog.fail(mapErr(e.message)); }
 };
 
 function renderGaps(g) {
@@ -122,7 +137,7 @@ $("#go2").onclick = async () => {
     STATE.answers = answers;
     const j = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers }) });
     STATE.cv = j.cv; renderDraft(j); prog.done(); showStep(3);
-  } catch (e) { prog.fail(e.message); }
+  } catch (e) { prog.fail(mapErr(e.message)); }
 };
 
 // Turn a flagged item into a clear, plain-English question.
@@ -202,7 +217,7 @@ async function resolveMissing() {
     });
     const j = await api("/api/resolve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resolutions, acceptLeaveOut }) });
     STATE.cv = j.cv; renderDraft(j); prog.done();
-  } catch (e) { prog.fail(e.message); }
+  } catch (e) { prog.fail(mapErr(e.message)); }
 }
 
 $("#regen").onclick = async () => {
@@ -213,7 +228,7 @@ $("#regen").onclick = async () => {
   try {
     const j = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers: STATE.answers }) });
     STATE.cv = j.cv; renderDraft(j); prog.done();
-  } catch (e) { prog.fail(e.message); }
+  } catch (e) { prog.fail(mapErr(e.message)); }
 };
 
 async function previewDraft() {

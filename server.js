@@ -57,6 +57,27 @@ app.use(express.static(path.join(__dirname, "public")));
 const S = (req) => (req.session.cv = req.session.cv || {});
 const currentEmail = (req) => req.session.userEmail || null;
 
+// Margin guard: cap how many AI rewrites one session can run for free, so a
+// user can't rack up the AI bill by hammering "Regenerate" without ever paying.
+const GEN_CAP = parseInt(process.env.REGEN_CAP || "8", 10);
+function overGenCap(st) {
+  st.genCount = (st.genCount || 0) + 1;
+  return st.genCount > GEN_CAP;
+}
+
+// The user's own confirmed links (LinkedIn, portfolio, website, GitHub) are
+// applied straight onto the CV header AFTER the honesty check, so they always
+// appear and are never mistaken for something the model invented.
+function applyUserLinks(cv, st) {
+  if (!cv || !cv.header || !st.links) return cv;
+  const L = st.links;
+  if (L.linkedin) cv.header.linkedin = L.linkedin;
+  if (L.portfolio) cv.header.portfolio = L.portfolio;
+  if (L.github) cv.header.github = L.github;
+  if (L.website) cv.header.website = L.website;
+  return cv;
+}
+
 // ─── Health ────────────────────────────────────────────────────────────────
 app.get("/health", (req, res) =>
   res.json({
@@ -109,10 +130,21 @@ app.post("/api/dev/grant", (req, res) => {
 // ─── Step 1 — inputs: extract CV + advert text ──────────────────────────────
 app.post(
   "/api/extract",
-  upload.fields([{ name: "cvFile" }, { name: "advertFile" }]),
+  upload.fields([{ name: "cvFile" }, { name: "advertFile" }, { name: "photo" }]),
   async (req, res) => {
     try {
       const st = S(req);
+      // Optional photo — kept in the session as bytes, shown only on the human
+      // version of the CV (never on the ATS version). Deleted from disk at once.
+      if (req.files?.photo?.[0]) {
+        const p = req.files.photo[0];
+        try {
+          st.photo = { data: fs.readFileSync(p.path).toString("base64"), type: (p.mimetype || "image/jpeg") };
+        } finally { try { fs.unlinkSync(p.path); } catch (_) {} }
+      }
+      if (req.body.removePhoto === "1") st.photo = null;
+      // Links the user confirms are live (LinkedIn, portfolio, website, GitHub).
+      if (req.body.links) { try { st.links = JSON.parse(req.body.links); } catch (_) {} }
       // CV
       if (req.files?.cvFile?.[0]) {
         const f = req.files.cvFile[0];
@@ -197,8 +229,10 @@ app.post("/api/generate", async (req, res) => {
   try {
     const st = S(req);
     if (!st.cvText || !st.advertText) return res.status(400).json({ error: "Add your CV and the advert first." });
+    if (overGenCap(st)) return res.status(429).json({ error: "rewrite-limit" });
     st.answers = req.body.answers || st.answers || [];
-    st.linksConfirmed = req.body.linksConfirmed || {};
+    st.linksConfirmed = req.body.linksConfirmed || req.body.links || st.linksConfirmed || {};
+    if (req.body.links) st.links = req.body.links;
 
     // Build source-of-truth BEFORE generating (Section 9).
     st.sot = await sourceOfTruth.build({ cvText: st.cvText, answers: st.answers });
@@ -212,6 +246,7 @@ app.post("/api/generate", async (req, res) => {
     // HARD GATE: fabrication checker as its own pass.
     const fab = await fabrication.check(cv, st.sot);
     cv = fab.cleanedCV;
+    applyUserLinks(cv, st); // the user's own links, added after the gate
 
     // Programmatic Section 8 checks + AI self-review (judgement).
     const prog = checks.run(cv);
@@ -247,6 +282,7 @@ app.post("/api/resolve", async (req, res) => {
   try {
     const st = S(req);
     if (!st.cv) return res.status(400).json({ error: "Generate a draft first." });
+    if (overGenCap(st)) return res.status(429).json({ error: "rewrite-limit" });
     // resolutions: [{ item, answer }] ; acceptLeaveOut: [item,...]
     const resolutions = req.body.resolutions || [];
     const acceptLeaveOut = new Set(req.body.acceptLeaveOut || []);
@@ -263,6 +299,7 @@ app.post("/api/resolve", async (req, res) => {
     });
     const fab = await fabrication.check(cv, st.sot);
     cv = fab.cleanedCV;
+    applyUserLinks(cv, st);
     // Drop any remaining missing the candidate explicitly accepted leaving out.
     cv.missing = (cv.missing || []).filter((m) => !acceptLeaveOut.has(m.item));
 
@@ -351,7 +388,7 @@ app.get("/api/download", async (req, res) => {
     const type = (req.query.type || "docx").toLowerCase();
     const design = byId(req.query.design || st.designId || designs[0].id);
     const ats = type === "ats-pdf" || type === "ats";
-    const buf = await buildDocx(st.cv, design, { ats });
+    const buf = await buildDocx(st.cv, design, { ats, photo: ats ? null : st.photo });
     const nameSafe = (st.cv.header?.name || "cv").replace(/[^\w]+/g, "_");
     const suffix = ats ? "ATS" : design.id;
 

@@ -36,6 +36,8 @@ services:
         sync: false
       - key: CV_PRICE_GBP
         value: "5.00"
+      - key: REGEN_CAP
+        value: "8"           # free AI rewrites per session before a credit is needed
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM

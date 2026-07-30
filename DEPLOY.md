@@ -70,6 +70,7 @@ keys marked *sync:false* as blanks — fill them in). Never commit real keys.
 | `STRIPE_PUBLISHABLE_KEY` | `pk_test_…` / `pk_live_…` |
 | `STRIPE_WEBHOOK_SECRET` | From step 5 |
 | `DB_PATH` | `/data/app.json` — where accounts + credit balances live (on the disk). The Blueprint sets this and the disk automatically. |
+| `REGEN_CAP` | Free AI rewrites per session before a credit is needed (default `8`). Lower it to tighten AI cost. |
 | `RESEND_API_KEY` | Your Resend key — **required** now, because sign-in links are emailed |
 | `RESEND_FROM` | `The Com'mon People <cv@the-common-people.com>` (verify the domain in Resend) |
 | `NOTIFY_EMAIL` | Where internal purchase notices go (e.g. your inbox) |
