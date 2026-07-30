@@ -1,47 +1,18 @@
-CV REWRITE - ACCOUNTS & CREDIT PACKS UPDATE
-============================================
+CV REWRITE - ACCOUNTS, CREDIT PACKS + NEW PRICING HOME PAGE
 
 WHAT'S NEW
-- Pricing is now PACKS: £5 = 4 CVs, £10 = 10 CVs.
-- People sign in with their EMAIL (a link is emailed to them - no passwords).
-- Their credit balance is saved to their account and does not expire.
-- Downloading a finished CV uses ONE credit. All formats of that same CV
-  (Word, PDF, ATS) share the one credit. Regenerating a new CV uses another.
-- Privacy Policy and Terms updated to describe the packs/credits.
+- Pricing PACKS: £5 = 4 CVs, £10 = 10 CVs (shown on the home page now).
+- Email sign-in (passwordless), credit balance saved to the account.
+- One credit per finished CV; all formats of that CV included.
 
-PART A - PUT THE NEW CODE IN (same as before)
-1. Unzip this folder.
-2. In your cv-rewrite-app folder, replace by dragging these in (choose Replace):
-      - the "lib" folder
-      - the "public" folder
-      - "server.js"
-      - "render.yaml"
-      - "DEPLOY.md"
-3. GitHub Desktop: Commit to main, Push origin. Wait for Render to go Live.
+APPLY (same as before):
+1. Replace in your cv-rewrite-app folder (drag in, Replace):
+   lib, public, server.js, render.yaml, DEPLOY.md
+2. GitHub Desktop: Commit to main, Push origin.
 
-PART B - TWO NEW THINGS IN RENDER (needed for accounts to work properly)
+THEN IN RENDER (needed for accounts):
+- Settings -> Disks -> Add Disk: name "data", mount "/data", 1 GB.
+- Environment -> add DB_PATH = /data/app.json
+- Make sure RESEND_API_KEY is set (sign-in links are emailed).
 
-1) ADD A DISK (so balances survive restarts):
-   Render -> your service -> Settings -> Disks -> Add Disk
-      Name: data
-      Mount Path: /data
-      Size: 1 GB
-   Save. (Render will restart the service.)
-
-2) ADD ONE ENVIRONMENT VARIABLE:
-   Render -> your service -> Environment -> Add:
-      Key:   DB_PATH
-      Value: /data/app.json
-   Save.
-
-3) MAKE SURE RESEND IS SET:
-   Sign-in links are emailed, so RESEND_API_KEY must be filled in
-   (Render -> Environment). Without it, people can't sign in.
-
-The Stripe webhook you already set up now grants the credits automatically.
-Nothing else to change in Stripe (still the checkout.session.completed event).
-
-TEST IT (test mode)
-- On the design step: enter your email, click the emailed link, come back.
-- Buy the £5 pack with test card 4242 4242 4242 4242.
-- Your balance should show 4. Download Word+PDF+ATS of one CV -> balance 3.
+Full test steps are in DEPLOY.md (section 6).
