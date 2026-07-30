@@ -8,9 +8,16 @@ services:
     plan: starter
     healthCheckPath: /health
     autoDeploy: true
+    # Persistent disk for the small accounts/credits database (SQLite-free JSON).
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DB_PATH
+        value: /data/app.json      # accounts + credit balances live here (on the disk)
       - key: SESSION_SECRET
         generateValue: true
       - key: PUBLIC_BASE_URL
@@ -28,7 +35,7 @@ services:
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: CV_PRICE_GBP
-        value: "12.50"
+        value: "5.00"
       - key: RESEND_API_KEY
         sync: false
       - key: RESEND_FROM

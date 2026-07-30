@@ -222,7 +222,7 @@ async function previewDraft() {
 }
 
 // ── STEP 3 -> 4 ──
-$("#go3").onclick = async () => { await loadDesigns(); showStep(4); };
+$("#go3").onclick = async () => { await loadDesigns(); await refreshAccount(); showStep(4); };
 
 async function loadDesigns() {
   if (!STATE.designs.length) { const j = await api("/api/designs"); STATE.designs = j.designs; }
@@ -245,42 +245,100 @@ async function livePreview() {
   catch (e) { $("#livePreview").innerHTML = '<p class="muted">' + e.message + "</p>"; }
 }
 
-// ── Payment + download ──
-$("#pay").onclick = async () => {
-  const s = $("#s4");
-  const agree = document.getElementById("agree");
-  if (agree && !agree.checked) {
-    busy(s, false, "⚠ Please tick the box to agree to the Terms and Privacy Policy before paying.");
-    return;
+// ── Accounts + credits ──
+async function refreshAccount() {
+  try { STATE.account = await api("/api/auth/me"); }
+  catch (e) { STATE.account = { signedIn: false, credits: 0 }; }
+  renderAccountBar();
+  renderStep4Payment();
+}
+function renderAccountBar() {
+  const a = STATE.account || { signedIn: false };
+  const st = $("#accountState"), act = $("#accountAction");
+  if (!st) return;
+  if (a.signedIn) {
+    st.innerHTML = `Signed in as <strong>${a.email}</strong> · <strong style="color:var(--gold)">${a.credits} CV credit${a.credits === 1 ? "" : "s"}</strong>`;
+    act.innerHTML = `<button class="btn ghost" id="signoutBtn" style="padding:8px 12px">Sign out</button>`;
+    const so = $("#signoutBtn"); if (so) so.onclick = async () => { await api("/api/auth/logout", { method: "POST" }); await refreshAccount(); };
+  } else {
+    st.innerHTML = "Not signed in. You'll sign in with your email when you're ready to buy credits and download.";
+    act.innerHTML = "";
   }
-  busy(s, true, "Opening secure checkout…");
+}
+function renderStep4Payment() {
+  const a = STATE.account || { signedIn: false, credits: 0 };
+  const signin = $("#signinBox"), buy = $("#buyBox"), dl = $("#downloads");
+  [signin, buy, dl].forEach((x) => x && x.classList.add("hidden"));
+  if (!a.signedIn) { signin && signin.classList.remove("hidden"); return; }
+  if ((a.credits || 0) > 0) {
+    dl && dl.classList.remove("hidden");
+    const b = $("#dlBalance"); if (b) b.textContent = `You have ${a.credits} CV${a.credits > 1 ? "s" : ""} left.`;
+  } else {
+    buy && buy.classList.remove("hidden");
+  }
+}
+
+// Sign-in: email a magic link.
+const signinBtn = $("#signinBtn");
+if (signinBtn) signinBtn.onclick = async () => {
+  const em = $("#signinEmail").value.trim(); const msg = $("#signinMsg");
+  if (!em) { busy(msg, false, "Enter your email."); return; }
+  busy(msg, true, "Sending your link…");
   try {
-    const j = await api("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ designId: STATE.designId, email: $("#email").value.trim() }) });
-    window.location.href = j.url;
-  } catch (e) {
-    // Dev mode with no Stripe key: allow direct unlock so the flow is testable.
-    if (/not configured/i.test(e.message)) { $("#downloads").classList.remove("hidden"); busy(s, false, "Payment not configured in this environment - downloads shown for testing."); }
-    else if (/flagged gaps|resolve/i.test(e.message)) {
-      busy(s, false, "⚠ There are still flagged items to sort. Taking you back to review them…");
-      setTimeout(() => showStep(3), 1200);
-    }
-    else busy(s, false, "⚠ " + e.message);
-  }
+    const j = await api("/api/auth/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: em }) });
+    if (j.sent) busy(msg, false, "Check your email for a sign-in link, then come back to this tab.");
+    else if (j.devLink) msg.innerHTML = `Email isn't set up, so here's your link: <a href="${j.devLink}" style="color:var(--teal);text-decoration:underline">click to sign in</a>.`;
+    else busy(msg, false, "Link sent.");
+  } catch (e) { busy(msg, false, "⚠ " + e.message); }
 };
 
-$$("[data-dl]").forEach((b) => (b.onclick = () => {
-  const type = b.dataset.dl;
-  window.location.href = `/api/download?type=${type}&design=${encodeURIComponent(STATE.designId)}`;
+// Buy a pack.
+$$("[data-pack]").forEach((b) => (b.onclick = async () => {
+  const s = $("#s4"); const agree = $("#agree");
+  if (agree && !agree.checked) { busy(s, false, "⚠ Please tick the box to agree before buying."); return; }
+  busy(s, true, "Opening secure checkout…");
+  try {
+    const j = await api("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ packId: b.dataset.pack }) });
+    window.location.href = j.url;
+  } catch (e) {
+    if (/sign in/i.test(e.message)) { STATE.account = { signedIn: false, credits: 0 }; renderStep4Payment(); busy(s, false, "Please sign in first (below)."); }
+    else if (/not configured/i.test(e.message)) busy(s, false, "Payments aren't switched on yet (no Stripe key set).");
+    else busy(s, false, "⚠ " + e.message);
+  }
 }));
 
-// Return from Stripe success
-(async function checkPaid() {
+// Download: costs 1 credit for a new finished CV; handle sign-in / no-credit.
+async function downloadFile(type) {
+  const s = $("#s4b"); busy(s, true, "Preparing your file…");
+  try {
+    const r = await fetch(`/api/download?type=${type}&design=${encodeURIComponent(STATE.designId)}`);
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      if (r.status === 401) { await refreshAccount(); busy(s, false, "Please sign in to download."); return; }
+      if (r.status === 402) { await refreshAccount(); busy(s, false, "You're out of CV credits — choose a pack below."); return; }
+      busy(s, false, "⚠ " + (j.error || ("Error " + r.status))); return;
+    }
+    const blob = await r.blob();
+    const cd = r.headers.get("Content-Disposition") || "";
+    const m = cd.match(/filename="([^"]+)"/);
+    const name = m ? m[1] : "cv." + (type === "docx" ? "docx" : "pdf");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    busy(s, false, "Downloaded.");
+    await refreshAccount();
+  } catch (e) { busy(s, false, "⚠ " + e.message); }
+}
+$$("[data-dl]").forEach((b) => (b.onclick = () => downloadFile(b.dataset.dl)));
+
+// On load: handle return from Stripe / sign-in, then load account state.
+(async function init() {
   const p = new URLSearchParams(location.search);
   if (p.get("paid") === "1") {
-    try { const j = await api("/api/confirm-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cs: p.get("cs") }) });
-      if (j.paid) { await loadDesigns(); showStep(4); $("#downloads").classList.remove("hidden"); }
-    } catch (e) {}
+    try { await api("/api/confirm-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cs: p.get("cs") }) }); } catch (e) {}
+    try { await loadDesigns(); showStep(4); } catch (e) {}
   }
+  await refreshAccount();
 })();
 
 // ── Voice recording ──

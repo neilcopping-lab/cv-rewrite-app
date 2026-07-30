@@ -21,17 +21,20 @@ const { docxToPdf, libreAvailable } = require("./lib/pdfExport");
 const htmlPreview = require("./lib/htmlPreview");
 const payment = require("./lib/payment");
 const email = require("./lib/email");
+const db = require("./lib/db");
+const auth = require("./lib/auth");
 
 const app = express();
 const upload = multer({ dest: path.join(__dirname, "tmp") });
 const BASE = process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
 
 // Stripe webhook needs the raw body — register BEFORE json parser.
-app.post("/webhook/stripe", express.raw({ type: "application/json" }), (req, res) => {
+app.post("/webhook/stripe", express.raw({ type: "application/json" }), async (req, res) => {
   try {
     const event = payment.verifyWebhook(req.body, req.headers["stripe-signature"]);
     if (event.type === "checkout.session.completed") {
-      // Payment confirmation is also re-checked at download time via isPaid.
+      // Grant the account its credits (idempotent).
+      await payment.grantForSession(event.data.object.id);
     }
     res.json({ received: true });
   } catch (e) {
@@ -52,6 +55,7 @@ app.use(
 app.use(express.static(path.join(__dirname, "public")));
 
 const S = (req) => (req.session.cv = req.session.cv || {});
+const currentEmail = (req) => req.session.userEmail || null;
 
 // ─── Health ────────────────────────────────────────────────────────────────
 app.get("/health", (req, res) =>
@@ -64,6 +68,43 @@ app.get("/health", (req, res) =>
     designs: designs.length
   })
 );
+
+// ─── Accounts (passwordless magic-link login) ───────────────────────────────
+app.post("/api/auth/request", async (req, res) => {
+  try {
+    const out = await auth.requestLink(req.body.email);
+    // In dev (no email provider) we return the link so it can be clicked.
+    res.json({ ok: true, sent: out.sent, devLink: out.link || null });
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.get("/auth", (req, res) => {
+  const emailAddr = auth.verify(req.query.token);
+  if (!emailAddr) return res.redirect("/app.html?signin=expired");
+  req.session.userEmail = emailAddr;
+  res.redirect("/app.html?signin=ok");
+});
+
+app.get("/api/auth/me", (req, res) => {
+  const e = currentEmail(req);
+  res.json({ signedIn: !!e, email: e, credits: e ? db.credits(e) : 0 });
+});
+
+app.post("/api/auth/logout", (req, res) => {
+  req.session.userEmail = null;
+  res.json({ ok: true });
+});
+
+// Local-only helper to grant credits for testing (never in production).
+app.post("/api/dev/grant", (req, res) => {
+  if (process.env.NODE_ENV === "production") return res.status(404).json({ error: "not found" });
+  const e = currentEmail(req);
+  if (!e) return res.status(401).json({ error: "sign in first" });
+  const n = parseInt(req.body.credits || "4", 10);
+  res.json({ ok: true, balance: db.addCredits(e, n) });
+});
 
 // ─── Step 1 — inputs: extract CV + advert text ──────────────────────────────
 app.post(
@@ -178,6 +219,9 @@ app.post("/api/generate", async (req, res) => {
 
     st.cv = cv;
     st.checkReport = { fabrication: fab, programmatic: prog, review };
+    // New finished CV: it hasn't had a credit spent on it yet.
+    st.cvVersion = (st.cvVersion || 0) + 1;
+    st.paidVersion = null;
 
     const blocked = !fab.pass || (cv.missing && cv.missing.length > 0);
     res.json({
@@ -226,6 +270,8 @@ app.post("/api/resolve", async (req, res) => {
     const review = await reviewer.selfReview(cv, { advertText: st.advertText });
     st.cv = cv;
     st.checkReport = { fabrication: fab, programmatic: prog, review };
+    st.cvVersion = (st.cvVersion || 0) + 1;
+    st.paidVersion = null;
 
     const blocked = cv.missing && cv.missing.length > 0;
     res.json({ ok: true, cv, missing: cv.missing, downloadBlocked: blocked, programmatic: prog, review });
@@ -245,57 +291,62 @@ app.post("/api/preview", (req, res) => {
   res.json({ ok: true, designId: st.designId, html: htmlPreview.preview(cv, st.designId) });
 });
 
-// Create Stripe checkout — gates the real deliverable.
+// Buy a credit pack (£5 = 4 CVs, £10 = 10 CVs). Must be signed in.
+app.get("/api/packs", (req, res) => res.json({ packs: payment.PACKS }));
+
 app.post("/api/checkout", async (req, res) => {
   try {
-    const st = S(req);
-    if (!st.cv) return res.status(400).json({ error: "Generate a CV first." });
-    if (st.cv.missing && st.cv.missing.length) return res.status(400).json({ error: "Resolve the flagged gaps before paying." });
-    st.designId = req.body.designId || st.designId || designs[0].id;
-    st.email = req.body.email || st.email;
+    const userEmail = currentEmail(req);
+    if (!userEmail) return res.status(401).json({ error: "Please sign in first." });
     if (!payment.hasKey()) return res.status(503).json({ error: "Payment not configured (STRIPE_SECRET_KEY missing)." });
+    if (!payment.pack(req.body.packId)) return res.status(400).json({ error: "Choose a pack." });
     const cs = await payment.createCheckoutSession({
-      sessionId: req.sessionID,
-      email: st.email,
+      packId: req.body.packId,
+      userEmail,
       successUrl: `${BASE}/app.html?paid=1&cs={CHECKOUT_SESSION_ID}`,
       cancelUrl: `${BASE}/app.html?canceled=1`
     });
-    st.checkoutSessionId = cs.id;
     res.json({ ok: true, url: cs.url });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// Confirm payment then unlock downloads for the session.
+// Confirm a checkout on return from Stripe and grant credits (idempotent).
 app.post("/api/confirm-payment", async (req, res) => {
   try {
-    const st = S(req);
-    const csId = req.body.cs || st.checkoutSessionId;
+    const csId = req.body.cs;
     if (!csId) return res.status(400).json({ error: "No checkout session." });
-    const paid = await payment.isPaid(csId);
-    st.paid = paid;
-    if (paid && !st.emailed) {
-      st.emailed = true;
-      const d = byId(st.designId);
-      email.sendConfirmation({ to: st.email, name: st.cv?.header?.name, role: st.cv?.header?.targetRole, designName: d.name }).catch(() => {});
-      email.sendInternalNotice({ email: st.email, role: st.cv?.header?.targetRole, designId: st.designId }).catch(() => {});
-    }
-    res.json({ ok: true, paid });
+    const r = await payment.grantForSession(csId);
+    const userEmail = currentEmail(req);
+    res.json({ ok: true, paid: r.paid, balance: userEmail ? db.credits(userEmail) : (r.balance || 0) });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// Download: gated by real payment. type = docx | pdf | ats-pdf
+// Download: costs 1 credit per finished CV. All formats of the SAME finished CV
+// are free (paidVersion matches cvVersion). Regenerating makes a new CV that
+// costs another credit. Must be signed in.
 app.get("/api/download", async (req, res) => {
   try {
     const st = S(req);
     if (!st.cv) return res.status(400).json({ error: "Nothing generated yet." });
     if (st.cv.missing && st.cv.missing.length) return res.status(403).json({ error: "Resolve flagged gaps first." });
-    // Bypass only in explicit dev mode with no Stripe key configured.
-    const devOpen = !payment.hasKey() && process.env.NODE_ENV !== "production";
-    if (!st.paid && !devOpen) return res.status(402).json({ error: "Payment required." });
+
+    const userEmail = currentEmail(req);
+    if (!userEmail) return res.status(401).json({ error: "Please sign in to download." });
+
+    const alreadyPaid = st.paidVersion && st.paidVersion === st.cvVersion;
+    if (!alreadyPaid) {
+      if (db.credits(userEmail) < 1) return res.status(402).json({ error: "no-credits" });
+      if (!db.spendCredit(userEmail)) return res.status(402).json({ error: "no-credits" });
+      st.paidVersion = st.cvVersion;
+      // Send confirmation + internal notice on the first paid download of this CV.
+      const d0 = byId(req.query.design || st.designId || designs[0].id);
+      email.sendConfirmation({ to: userEmail, name: st.cv.header?.name, role: st.cv.header?.targetRole, designName: d0.name }).catch(() => {});
+      email.sendInternalNotice({ email: userEmail, role: st.cv.header?.targetRole, designId: d0.id }).catch(() => {});
+    }
 
     const type = (req.query.type || "docx").toLowerCase();
     const design = byId(req.query.design || st.designId || designs[0].id);

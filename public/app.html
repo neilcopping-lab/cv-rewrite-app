@@ -18,7 +18,14 @@
 </nav></header>
 
 <main><section style="border:none"><div class="wrap">
-  <div class="eyebrow">CV Rewrite &middot; £5.00, one-off</div>
+  <div class="eyebrow">CV Rewrite &middot; £5 = 4 CVs &middot; £10 = 10 CVs</div>
+
+  <!-- Account bar -->
+  <div id="accountBar" class="notice" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+    <span id="accountState">Loading…</span>
+    <span id="accountAction"></span>
+  </div>
+
   <div class="steps">
     <div class="s active" data-step="1">1 &middot; Paste</div>
     <div class="s" data-step="2">2 &middot; The gaps</div>
@@ -68,26 +75,39 @@
     <h3 style="margin-top:26px">Preview</h3>
     <div class="previewbox" id="livePreview"></div>
 
-    <div class="notice" style="margin-top:22px">
-      <strong>£5.00, one-off.</strong> Stated up front, nothing auto-charged. You pay once, then download and re-download as much as you need this session.
-      <div style="margin-top:12px">
-        <label>Email for your confirmation (optional)</label>
-        <input type="email" id="email" placeholder="you@email.com" style="max-width:340px">
+    <!-- Buy credits (shown when signed in with 0 credits) -->
+    <div id="buyBox" class="notice hidden" style="margin-top:22px">
+      <strong>Choose a pack.</strong> One credit = one finished CV to download (all file formats of that CV included). Nothing recurring.
+      <div class="dlrow" style="margin-top:12px">
+        <button class="btn accent" data-pack="5">£5 — 4 CVs</button>
+        <button class="btn accent" data-pack="10">£10 — 10 CVs</button>
       </div>
+      <label style="display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-weight:400;font-size:14px;color:var(--cream)">
+        <input type="checkbox" id="agree" style="width:auto;margin-top:4px">
+        <span>I agree to the <a href="/terms.html" target="_blank" style="color:var(--teal);text-decoration:underline">Terms</a> and <a href="/privacy.html" target="_blank" style="color:var(--teal);text-decoration:underline">Privacy Policy</a>, and I consent to immediate delivery of my CV, waiving the 14-day right to cancel.</span>
+      </label>
+      <p style="margin-top:8px"><span id="s4" class="muted"></span></p>
     </div>
-    <label style="display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-weight:400;font-size:14px;color:var(--cream)">
-      <input type="checkbox" id="agree" style="width:auto;margin-top:4px">
-      <span>I have read and agree to the <a href="/terms.html" target="_blank" style="color:var(--teal);text-decoration:underline">Terms</a> and <a href="/privacy.html" target="_blank" style="color:var(--teal);text-decoration:underline">Privacy Policy</a>, and I understand my CV is generated immediately, so I consent to immediate delivery and waive the 14-day right to cancel.</span>
-    </label>
-    <p style="margin-top:16px"><button class="btn accent" id="pay">Pay £5.00 and unlock download</button> <span id="s4" class="muted"></span></p>
 
-    <div id="downloads" class="hidden">
-      <div class="notice" style="border-color:var(--gold)"><strong>Paid. Your downloads are unlocked.</strong></div>
+    <!-- Sign-in prompt (shown when not signed in) -->
+    <div id="signinBox" class="notice hidden" style="margin-top:22px">
+      <strong>Sign in to download.</strong> Your credits are saved to your account so you can come back any time.
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input type="email" id="signinEmail" placeholder="you@email.com" style="max-width:300px">
+        <button class="btn accent" id="signinBtn">Email me a sign-in link</button>
+      </div>
+      <p style="margin-top:8px"><span id="signinMsg" class="muted"></span></p>
+    </div>
+
+    <!-- Downloads (shown when signed in with credits) -->
+    <div id="downloads" class="hidden" style="margin-top:22px">
+      <div class="notice" style="border-color:var(--gold)"><strong id="dlBalance"></strong> Downloading a CV uses one credit. All formats of the same CV are free.</div>
       <div class="dlrow">
         <button class="btn" data-dl="docx">Download Word</button>
         <button class="btn" data-dl="pdf">Download PDF</button>
         <button class="btn ghost" data-dl="ats-pdf">ATS-safe PDF</button>
       </div>
+      <p style="margin-top:8px"><span id="s4b" class="muted"></span></p>
     </div>
   </div>
 </div></section></main>

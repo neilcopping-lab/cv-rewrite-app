@@ -13,7 +13,7 @@ Work top to bottom. Tick each box.
 - [ ] **GitHub** — to hold the repo Render deploys from.
 - [ ] **Render** — the host (render.com).
 - [ ] **Anthropic** — `ANTHROPIC_API_KEY` (the CV rewrite engine).
-- [ ] **Stripe** — the £12.50 payment (start in **test mode**).
+- [ ] **Stripe** — the £5.00 payment (start in **test mode**).
 - [ ] **Resend** — confirmation + internal emails.
 - [ ] **OpenAI** — optional, only for voice-answer transcription.
 - [ ] Access to **the-common-people.com DNS** to add the subdomain.
@@ -69,8 +69,8 @@ keys marked *sync:false* as blanks — fill them in). Never commit real keys.
 | `STRIPE_SECRET_KEY` | `sk_test_…` first, then `sk_live_…` |
 | `STRIPE_PUBLISHABLE_KEY` | `pk_test_…` / `pk_live_…` |
 | `STRIPE_WEBHOOK_SECRET` | From step 5 |
-| `CV_PRICE_GBP` | `12.50` |
-| `RESEND_API_KEY` | Your Resend key |
+| `DB_PATH` | `/data/app.json` — where accounts + credit balances live (on the disk). The Blueprint sets this and the disk automatically. |
+| `RESEND_API_KEY` | Your Resend key — **required** now, because sign-in links are emailed |
 | `RESEND_FROM` | `The Com'mon People <cv@the-common-people.com>` (verify the domain in Resend) |
 | `NOTIFY_EMAIL` | Where internal purchase notices go (e.g. your inbox) |
 | `OPENAI_API_KEY` | Optional — enables voice-answer transcription |
@@ -109,12 +109,23 @@ belt-and-braces confirmation, not the only check.
 
 - [ ] `/health` → `ok:true`, `libreoffice:true`, `anthropic:true`, `stripe:true`, `resend:true`.
 - [ ] Landing page renders with the brand (dark navy, gold, Anton/Oswald/Arvo, sticker logo).
-- [ ] Run the full flow: paste a CV + advert → questions → generate → resolve any flags → pick a design → preview.
-- [ ] Pay with a **Stripe test card** `4242 4242 4242 4242`, any future expiry/CVC.
-- [ ] After payment, download **Word**, **PDF**, and **ATS-safe PDF**. Open each.
-- [ ] Confirm you received the candidate email and the internal notification (Resend).
+- [ ] Run the full flow: paste a CV + advert → questions → generate → resolve/skip flags → pick a design.
+- [ ] **Sign in:** on the design step, enter your email, click the sign-in link in your inbox, come back — the top bar should show your email and "0 CV credits".
+- [ ] **Buy a pack** with the **Stripe test card** `4242 4242 4242 4242` (any future expiry/CVC). After returning, the bar should show your new credit balance (4 or 10).
+- [ ] **Download** Word, PDF and ATS-safe of the same CV → your balance drops by exactly **one** (all three formats share one credit).
+- [ ] **Regenerate**, then download → balance drops by another one.
+- [ ] When credits hit 0, downloading a new CV should prompt you to buy another pack.
+- [ ] Confirm you received the confirmation email and the internal notification (Resend).
 - [ ] Deliberately give a CV with no metric and confirm the fabrication gate blocks
-      download until the `[MISSING]` items are resolved.
+      download until the flagged items are resolved or left out.
+
+**Accounts + credits notes:**
+- Accounts are **passwordless** — people sign in with a link emailed to them, so
+  `RESEND_API_KEY` must be set for sign-in to work.
+- Balances are stored in a small JSON file on the Render **disk** (`/data`), so they
+  survive redeploys. Keep the service on a single instance (the default).
+- Credits are granted by the Stripe **webhook**; the app also re-checks on return
+  from Stripe, so a delayed webhook won't lose a purchase.
 
 When all green, switch Stripe to **live** keys and repeat the payment test with a
 real card (refund yourself).
