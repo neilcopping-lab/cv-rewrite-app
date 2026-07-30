@@ -217,7 +217,13 @@ async function livePreview() {
 
 // ── Payment + download ──
 $("#pay").onclick = async () => {
-  const s = $("#s4"); busy(s, true, "Opening secure checkout…");
+  const s = $("#s4");
+  const agree = document.getElementById("agree");
+  if (agree && !agree.checked) {
+    busy(s, false, "⚠ Please tick the box to agree to the Terms and Privacy Policy before paying.");
+    return;
+  }
+  busy(s, true, "Opening secure checkout…");
   try {
     const j = await api("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ designId: STATE.designId, email: $("#email").value.trim() }) });
     window.location.href = j.url;

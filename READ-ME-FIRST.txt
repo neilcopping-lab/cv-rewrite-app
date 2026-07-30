@@ -1,9 +1,12 @@
 CV REWRITE - UPDATE
 
-Fixes the "Empty model response" on the CV-writing step, and includes the
-progress countdown and all earlier fixes.
+This update:
+- Sets the price to £5.00 on the site.
+- Adds a Privacy Policy page and a Terms & Conditions page.
+- Adds a "tick to agree" box at checkout (required before paying).
+- Includes the earlier "Empty model response" fix and the progress countdown.
 
-To apply:
+TO APPLY:
 1. Unzip this folder.
 2. Open your "cv-rewrite-app" folder (the one you publish from GitHub Desktop).
 3. Drag these THREE items from here into your cv-rewrite-app folder, choosing
@@ -11,8 +14,12 @@ To apply:
       - the "lib" folder
       - the "public" folder
       - the file "server.js"
-4. GitHub Desktop: type a summary "Fix CV writing", Commit to main, Push origin.
-5. Wait for Render to say "Live", reload your site, try "Write my CV" again.
+4. GitHub Desktop: summary "Add policies + £5 price", Commit to main, Push origin.
+5. Wait for Render to say "Live".
 
-Note: the CV-writing step may take a little longer now (up to ~1 minute) because
-it gives the AI more room to work. The progress bar will keep you posted.
+ALSO DO THIS IN RENDER (so the actual charge becomes £5.00):
+- Render -> your service -> Environment -> set CV_PRICE_GBP to 5.00 -> Save.
+
+TWO SPOTS TO EDIT IN THE POLICIES (optional but recommended):
+- In public/privacy.html and public/terms.html, replace
+  "[add your contact address here]" with a postal contact address.
