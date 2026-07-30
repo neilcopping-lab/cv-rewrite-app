@@ -125,6 +125,22 @@ $("#go2").onclick = async () => {
   } catch (e) { prog.fail(e.message); }
 };
 
+// Turn a flagged item into a clear, plain-English question.
+function friendlyGap(m) {
+  if (m && m.question) return m.question;
+  const it = ((m && m.item) || "").trim();
+  const mm = it.match(/^(\w+):\s*(.+)$/);
+  if (mm) {
+    const kind = mm[1].toLowerCase(), val = mm[2];
+    if (kind === "number") return `We couldn't find the figure "${val}" in what you gave us. What's the real number, if any?`;
+    if (kind === "skill") return `We listed "${val}" as a skill but couldn't confirm it from your CV. Have you genuinely used it? If not, leave it out.`;
+    if (kind === "qualification") return `We listed the qualification "${val}" but couldn't confirm it. Do you actually hold it?`;
+    if (kind === "employer" || kind === "title" || kind === "date") return `We added "${val}", which isn't in your source. Is it correct?`;
+    return `We added "${val}" but couldn't trace it to your CV. Is it right? If not, leave it out.`;
+  }
+  return it || "A detail we couldn't confirm from your CV.";
+}
+
 function renderDraft(j) {
   const banner = $("#checkBanner");
   banner.style.borderColor = j.downloadBlocked ? "var(--accent)" : "var(--ink)";
@@ -132,16 +148,21 @@ function renderDraft(j) {
   // missing / fabrication flags to resolve
   const missing = j.missing || [];
   $("#missingBox").innerHTML = missing.length
-    ? `<div class="flag"><strong>You must sort these ${missing.length} before you can choose a design and pay.</strong><br>Answer each one, or tick "leave this out", then apply.</div>` +
-      missing.map((m, i) => `<div class="q" data-mi="${i}">
-        <div class="tag">Flagged</div><div class="qtext">${m.question || m.item}</div>
-        <textarea data-mresolve="${i}" placeholder="Answer, or leave blank to drop it"></textarea>
-        <label style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-weight:400;font-size:13px"><input type="checkbox" data-mdrop="${i}" style="width:auto"> I'm fine leaving this out</label>
-      </div>`).join("") +
-      `<p style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn accent" id="resolveBtn">Apply and re-check</button> <button class="btn ghost" id="leaveAllBtn">Leave them all out and continue →</button> <span id="sr" class="muted"></span></p>`
+    ? `<div class="flag"><strong>${missing.length} thing${missing.length > 1 ? "s" : ""} we couldn't confirm from your CV.</strong><br>
+        These are details the honesty check couldn't trace to what you gave us. You can leave them out and carry on, or open the list to add the real detail for any of them.</div>
+       <p><button class="btn accent" id="leaveAllBtn">Leave them all out and continue →</button> <span id="sr" class="muted"></span></p>
+       <details style="margin-top:6px">
+         <summary style="cursor:pointer;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:13px;color:var(--gold);padding:6px 0">Or review each one (${missing.length})</summary>
+         ${missing.map((m, i) => `<div class="q" data-mi="${i}">
+            <div class="qtext">${friendlyGap(m)}</div>
+            <textarea data-mresolve="${i}" placeholder="Add the real detail, or leave blank to drop it"></textarea>
+            <label style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-weight:400;font-size:13px"><input type="checkbox" data-mdrop="${i}" style="width:auto"> Leave this one out</label>
+          </div>`).join("")}
+         <p><button class="btn" id="resolveBtn">Apply my answers and re-check</button></p>
+       </details>`
     : "";
   if (missing.length) {
-    $("#resolveBtn").onclick = resolveMissing;
+    const rb = $("#resolveBtn"); if (rb) rb.onclick = resolveMissing;
     $("#leaveAllBtn").onclick = () => { $$("[data-mdrop]").forEach((c) => (c.checked = true)); resolveMissing(); };
   }
   // Block "Choose a design" until nothing is outstanding.

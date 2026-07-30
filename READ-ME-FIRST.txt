@@ -1,13 +1,12 @@
-CV REWRITE - UPDATE
+CV REWRITE - UPDATE (clearer flagged items)
 
-This update:
-- Fixes the flow so you can't reach the pay step with unresolved flagged items.
-  The "Choose a design" button is now disabled until you sort them, and there's
-  a one-click "Leave them all out and continue" button on the review step.
-- Includes the £5.00 price, the Privacy + Terms pages, the agree tick box, the
-  "Empty model response" fix and the progress countdown.
+This makes the "flagged gaps" step easy to get past:
+- A big "Leave them all out and continue" button is now the main action.
+- Each flagged item is explained in plain English ("We listed X as a skill but
+  couldn't confirm it - have you used it? If not, leave it out.").
+- You can't accidentally reach the pay step with items outstanding.
 
 TO APPLY: drag lib, public and server.js into your cv-rewrite-app folder
 (Replace), then GitHub Desktop: Commit to main, Push origin. Wait for Live.
 
-REMINDER: in Render -> Environment, set CV_PRICE_GBP to 5.00 so the charge is £5.
+(Reminder: set CV_PRICE_GBP to 5.00 in Render if you haven't.)
