@@ -1,18 +1,14 @@
-CV REWRITE - ACCOUNTS, CREDIT PACKS + NEW PRICING HOME PAGE
+CV REWRITE - ACCOUNTS, CREDIT PACKS, NEW PRICING + "HOW WE COMPARE" HOME PAGE
 
 WHAT'S NEW
-- Pricing PACKS: £5 = 4 CVs, £10 = 10 CVs (shown on the home page now).
+- Pricing PACKS: £5 = 4 CVs, £10 = 10 CVs (shown on the home page).
+- New "No Subscription. No Catch." comparison section on the home page.
 - Email sign-in (passwordless), credit balance saved to the account.
 - One credit per finished CV; all formats of that CV included.
 
-APPLY (same as before):
-1. Replace in your cv-rewrite-app folder (drag in, Replace):
-   lib, public, server.js, render.yaml, DEPLOY.md
-2. GitHub Desktop: Commit to main, Push origin.
+APPLY: replace lib, public, server.js, render.yaml, DEPLOY.md in your
+cv-rewrite-app folder (Replace), then GitHub Desktop: Commit -> Push.
 
-THEN IN RENDER (needed for accounts):
-- Settings -> Disks -> Add Disk: name "data", mount "/data", 1 GB.
-- Environment -> add DB_PATH = /data/app.json
-- Make sure RESEND_API_KEY is set (sign-in links are emailed).
-
-Full test steps are in DEPLOY.md (section 6).
+THEN IN RENDER (for accounts): add a Disk (name "data", mount "/data", 1GB),
+add env DB_PATH=/data/app.json, and make sure RESEND_API_KEY is set.
+Full steps + test in DEPLOY.md.
