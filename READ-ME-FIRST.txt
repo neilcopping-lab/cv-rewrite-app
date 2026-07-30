@@ -1,25 +1,13 @@
 CV REWRITE - UPDATE
 
 This update:
-- Sets the price to £5.00 on the site.
-- Adds a Privacy Policy page and a Terms & Conditions page.
-- Adds a "tick to agree" box at checkout (required before paying).
-- Includes the earlier "Empty model response" fix and the progress countdown.
+- Fixes the flow so you can't reach the pay step with unresolved flagged items.
+  The "Choose a design" button is now disabled until you sort them, and there's
+  a one-click "Leave them all out and continue" button on the review step.
+- Includes the £5.00 price, the Privacy + Terms pages, the agree tick box, the
+  "Empty model response" fix and the progress countdown.
 
-TO APPLY:
-1. Unzip this folder.
-2. Open your "cv-rewrite-app" folder (the one you publish from GitHub Desktop).
-3. Drag these THREE items from here into your cv-rewrite-app folder, choosing
-   "Replace" when asked:
-      - the "lib" folder
-      - the "public" folder
-      - the file "server.js"
-4. GitHub Desktop: summary "Add policies + £5 price", Commit to main, Push origin.
-5. Wait for Render to say "Live".
+TO APPLY: drag lib, public and server.js into your cv-rewrite-app folder
+(Replace), then GitHub Desktop: Commit to main, Push origin. Wait for Live.
 
-ALSO DO THIS IN RENDER (so the actual charge becomes £5.00):
-- Render -> your service -> Environment -> set CV_PRICE_GBP to 5.00 -> Save.
-
-TWO SPOTS TO EDIT IN THE POLICIES (optional but recommended):
-- In public/privacy.html and public/terms.html, replace
-  "[add your contact address here]" with a postal contact address.
+REMINDER: in Render -> Environment, set CV_PRICE_GBP to 5.00 so the charge is £5.

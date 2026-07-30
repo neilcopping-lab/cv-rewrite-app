@@ -132,15 +132,24 @@ function renderDraft(j) {
   // missing / fabrication flags to resolve
   const missing = j.missing || [];
   $("#missingBox").innerHTML = missing.length
-    ? `<div class="flag"><strong class="sans">Before you can download, sort these ${missing.length}:</strong></div>` +
+    ? `<div class="flag"><strong>You must sort these ${missing.length} before you can choose a design and pay.</strong><br>Answer each one, or tick "leave this out", then apply.</div>` +
       missing.map((m, i) => `<div class="q" data-mi="${i}">
         <div class="tag">Flagged</div><div class="qtext">${m.question || m.item}</div>
         <textarea data-mresolve="${i}" placeholder="Answer, or leave blank to drop it"></textarea>
-        <label class="sans" style="font-weight:400;font-size:13px"><input type="checkbox" data-mdrop="${i}"> I'm fine leaving this out</label>
+        <label style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-weight:400;font-size:13px"><input type="checkbox" data-mdrop="${i}" style="width:auto"> I'm fine leaving this out</label>
       </div>`).join("") +
-      `<p><button class="btn accent" id="resolveBtn">Apply and re-check</button> <span id="sr" class="sans muted"></span></p>`
+      `<p style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn accent" id="resolveBtn">Apply and re-check</button> <button class="btn ghost" id="leaveAllBtn">Leave them all out and continue →</button> <span id="sr" class="muted"></span></p>`
     : "";
-  if (missing.length) $("#resolveBtn").onclick = resolveMissing;
+  if (missing.length) {
+    $("#resolveBtn").onclick = resolveMissing;
+    $("#leaveAllBtn").onclick = () => { $$("[data-mdrop]").forEach((c) => (c.checked = true)); resolveMissing(); };
+  }
+  // Block "Choose a design" until nothing is outstanding.
+  const go3 = $("#go3");
+  if (go3) {
+    go3.disabled = missing.length > 0;
+    go3.title = missing.length ? "Sort the flagged items above first" : "";
+  }
   // review notes
   const rv = j.review || {};
   const notes = [];
@@ -230,6 +239,10 @@ $("#pay").onclick = async () => {
   } catch (e) {
     // Dev mode with no Stripe key: allow direct unlock so the flow is testable.
     if (/not configured/i.test(e.message)) { $("#downloads").classList.remove("hidden"); busy(s, false, "Payment not configured in this environment - downloads shown for testing."); }
+    else if (/flagged gaps|resolve/i.test(e.message)) {
+      busy(s, false, "⚠ There are still flagged items to sort. Taking you back to review them…");
+      setTimeout(() => showStep(3), 1200);
+    }
     else busy(s, false, "⚠ " + e.message);
   }
 };
