@@ -19,6 +19,7 @@ const { designs, byId } = require("./lib/designs");
 const { buildDocx } = require("./lib/docxExport");
 const { docxToPdf, libreAvailable } = require("./lib/pdfExport");
 const htmlPreview = require("./lib/htmlPreview");
+const { sanitizeForOutput, hasContent } = require("./lib/sanitize");
 const payment = require("./lib/payment");
 const email = require("./lib/email");
 const db = require("./lib/db");
@@ -415,7 +416,7 @@ app.post("/api/preview", (req, res) => {
   const cv = st.cv || req.body.cv;
   if (!cv) return res.status(400).json({ error: "No CV to preview yet." });
   st.designId = req.body.designId || st.designId || designs[0].id;
-  res.json({ ok: true, designId: st.designId, html: htmlPreview.preview(cv, st.designId) });
+  res.json({ ok: true, designId: st.designId, html: htmlPreview.preview(sanitizeForOutput(cv), st.designId) });
 });
 
 // Buy a credit pack (£5 = 4 CVs, £10 = 10 CVs). Must be signed in.
@@ -446,7 +447,8 @@ app.post("/api/confirm-payment", async (req, res) => {
     if (!csId) return res.status(400).json({ error: "No checkout session." });
     const r = await payment.grantForSession(csId);
     const userEmail = currentEmail(req);
-    res.json({ ok: true, paid: r.paid, balance: userEmail ? db.credits(userEmail) : (r.balance || 0) });
+    const st = S(req);
+    res.json({ ok: true, paid: r.paid, designId: st.designId || null, balance: userEmail ? db.credits(userEmail) : (r.balance || 0) });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -459,7 +461,11 @@ app.get("/api/download", async (req, res) => {
   try {
     const st = S(req);
     if (!st.cv) return res.status(400).json({ error: "Nothing generated yet." });
-    if (st.cv.missing && st.cv.missing.length) return res.status(403).json({ error: "Resolve flagged gaps first." });
+    // Clean any leftover "[MISSING]" placeholders and drop empty entries, so the
+    // file is a tidy CV with unanswered gaps simply left out (the fabricated
+    // content was already stripped during the honesty check).
+    const cleanCv = sanitizeForOutput(st.cv);
+    if (!hasContent(cleanCv)) return res.status(400).json({ error: "There isn't enough content to build a CV yet — please generate one first." });
 
     const userEmail = currentEmail(req);
     if (!userEmail) return res.status(401).json({ error: "Please sign in to download." });
@@ -471,15 +477,15 @@ app.get("/api/download", async (req, res) => {
       st.paidVersion = st.cvVersion;
       // On first paid download: email the CV (Word + PDF attached) + notify.
       const d0 = byId(req.query.design || st.designId || designs[0].id);
-      emailCvFiles(userEmail, st.cv, d0, st.photo).catch(() => {});
-      email.sendInternalNotice({ email: userEmail, role: st.cv.header?.targetRole, designId: d0.id }).catch(() => {});
+      emailCvFiles(userEmail, cleanCv, d0, st.photo).catch(() => {});
+      email.sendInternalNotice({ email: userEmail, role: cleanCv.header?.targetRole, designId: d0.id }).catch(() => {});
     }
 
     const type = (req.query.type || "docx").toLowerCase();
     const design = byId(req.query.design || st.designId || designs[0].id);
     const ats = type === "ats-pdf" || type === "ats";
-    const buf = await buildDocx(st.cv, design, { ats, photo: ats ? null : st.photo });
-    const nameSafe = (st.cv.header?.name || "cv").replace(/[^\w]+/g, "_");
+    const buf = await buildDocx(cleanCv, design, { ats, photo: ats ? null : st.photo });
+    const nameSafe = (cleanCv.header?.name || "cv").replace(/[^\w]+/g, "_");
     const suffix = ats ? "ATS" : design.id;
 
     if (type === "docx") {

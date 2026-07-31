@@ -398,7 +398,10 @@ $$("[data-dl]").forEach((b) => (b.onclick = () => downloadFile(b.dataset.dl)));
 (async function init() {
   const p = new URLSearchParams(location.search);
   if (p.get("paid") === "1") {
-    try { await api("/api/confirm-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cs: p.get("cs") }) }); } catch (e) {}
+    try {
+      const cp = await api("/api/confirm-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cs: p.get("cs") }) });
+      if (cp && cp.designId) STATE.designId = cp.designId; // restore the design chosen before paying
+    } catch (e) {}
     try { await loadDesigns(); showStep(4); } catch (e) {}
   }
   await refreshAccount();
