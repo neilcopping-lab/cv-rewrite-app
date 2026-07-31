@@ -72,6 +72,24 @@ async function api(url, opts) {
   if (!r.ok) throw new Error(j.error || ("Request failed: " + r.status));
   return j;
 }
+// Start a long job on the server and poll until it's finished. This is what
+// keeps long CV writes from timing out: each request here is tiny and quick.
+async function runJob(url, body) {
+  const start = await api(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  if (!start.jobId) return start; // server answered directly (older path)
+  const startedAt = Date.now();
+  while (true) {
+    await new Promise((r) => setTimeout(r, 2000));
+    const s = await api("/api/job/" + start.jobId);
+    if (s.status === "running") {
+      if (Date.now() - startedAt > 5 * 60 * 1000) throw new Error("This is taking longer than expected — please try again.");
+      continue;
+    }
+    if (s.status === "error") throw new Error(s.error || "Something went wrong while writing your CV.");
+    if (s.status === "unknown") throw new Error("We lost track of that request — please try again.");
+    return s; // done
+  }
+}
 // Turn internal error codes into plain English.
 function mapErr(m) {
   if (/rewrite-limit/.test(m)) return "You've used your free rewrites for this CV. Download it to keep it (uses one credit), or start a new one later.";
@@ -96,7 +114,8 @@ $("#go1").onclick = async () => {
       linkedin: ($("#linkLinkedin") || {}).value?.trim() || "",
       portfolio: ($("#linkPortfolio") || {}).value?.trim() || "",
       website: ($("#linkWebsite") || {}).value?.trim() || "",
-      github: ($("#linkGithub") || {}).value?.trim() || ""
+      github: ($("#linkGithub") || {}).value?.trim() || "",
+      youtube: ($("#linkYoutube") || {}).value?.trim() || ""
     };
     fd.append("links", JSON.stringify(links));
     const ex = await api("/api/extract", { method: "POST", body: fd });
@@ -150,7 +169,7 @@ $("#go2").onclick = async () => {
       return { id, question: q.question, answer: ta ? ta.value.trim() : "" };
     }).filter((a) => a.answer);
     STATE.answers = answers;
-    const j = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers }) });
+    const j = await runJob("/api/generate", { answers });
     STATE.cv = j.cv; renderDraft(j); prog.done(); showStep(3);
   } catch (e) { prog.fail(mapErr(e.message)); }
 };
@@ -241,7 +260,7 @@ async function resolveMissing() {
       if (ta && ta.value.trim()) resolutions.push({ item: m.item, answer: ta.value.trim() });
       if (drop && drop.checked) acceptLeaveOut.push(m.item);
     });
-    const j = await api("/api/resolve", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ resolutions, acceptLeaveOut }) });
+    const j = await runJob("/api/resolve", { resolutions, acceptLeaveOut });
     STATE.cv = j.cv; renderDraft(j); prog.done();
   } catch (e) { prog.fail(mapErr(e.message)); }
 }
@@ -249,7 +268,7 @@ async function resolveMissing() {
 $("#regen").onclick = async () => {
   const prog = startProgress("prog3", 45, FUN_MESSAGES);
   try {
-    const j = await api("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answers: STATE.answers }) });
+    const j = await runJob("/api/generate", { answers: STATE.answers });
     STATE.cv = j.cv; renderDraft(j); prog.done();
   } catch (e) { prog.fail(mapErr(e.message)); }
 };
