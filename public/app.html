@@ -26,6 +26,16 @@
     <span id="accountAction"></span>
   </div>
 
+  <!-- Optional sign-in at the start (returning customers). Hidden until the Sign in button is clicked. -->
+  <div id="topSigninBox" class="notice hidden" style="margin-top:10px">
+    <strong>Welcome back.</strong> Sign in to load your saved CV credits.
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
+      <input type="email" id="topSigninEmail" placeholder="you@email.com" style="max-width:280px">
+      <button class="btn accent" id="topSigninBtn" style="padding:10px 18px">Email me a sign-in link</button>
+    </div>
+    <p style="margin-top:8px"><span id="topSigninMsg" class="muted"></span></p>
+  </div>
+
   <div class="steps">
     <div class="s active" data-step="1">1 &middot; Paste</div>
     <div class="s" data-step="2">2 &middot; The gaps</div>
