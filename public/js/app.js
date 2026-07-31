@@ -294,13 +294,17 @@ function renderAccountBar() {
   const a = STATE.account || { signedIn: false };
   const st = $("#accountState"), act = $("#accountAction");
   if (!st) return;
+  const topBox = $("#topSigninBox");
   if (a.signedIn) {
     st.innerHTML = `Signed in as <strong>${a.email}</strong> · <strong style="color:var(--gold)">${a.credits} CV credit${a.credits === 1 ? "" : "s"}</strong>`;
     act.innerHTML = `<button class="btn ghost" id="signoutBtn" style="padding:8px 12px">Sign out</button>`;
     const so = $("#signoutBtn"); if (so) so.onclick = async () => { await api("/api/auth/logout", { method: "POST" }); await refreshAccount(); };
+    if (topBox) topBox.classList.add("hidden");
   } else {
-    st.innerHTML = "Not signed in. You'll sign in with your email when you're ready to buy credits and download.";
-    act.innerHTML = "";
+    st.innerHTML = "New here? Just start below — you can sign in when you're ready to download. Returning customer? Sign in to load your credits.";
+    act.innerHTML = `<button class="btn ghost" id="topSigninToggle" style="padding:8px 12px">Sign in</button>`;
+    const tt = $("#topSigninToggle");
+    if (tt) tt.onclick = () => { if (topBox) { topBox.classList.toggle("hidden"); const e = $("#topSigninEmail"); if (e && !topBox.classList.contains("hidden")) e.focus(); } };
   }
 }
 function renderStep4Payment() {
@@ -316,19 +320,21 @@ function renderStep4Payment() {
   }
 }
 
-// Sign-in: email a magic link.
-const signinBtn = $("#signinBtn");
-if (signinBtn) signinBtn.onclick = async () => {
-  const em = $("#signinEmail").value.trim(); const msg = $("#signinMsg");
-  if (!em) { busy(msg, false, "Enter your email."); return; }
+// Sign-in: email a magic link. Shared by the header box and the step-4 box.
+async function requestSignin(email, msg) {
+  if (!email) { busy(msg, false, "Enter your email."); return; }
   busy(msg, true, "Sending your link…");
   try {
-    const j = await api("/api/auth/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: em }) });
+    const j = await api("/api/auth/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
     if (j.sent) busy(msg, false, "Check your email for a sign-in link, then come back to this tab.");
     else if (j.devLink) msg.innerHTML = `Email isn't set up, so here's your link: <a href="${j.devLink}" style="color:var(--teal);text-decoration:underline">click to sign in</a>.`;
     else busy(msg, false, "Link sent.");
   } catch (e) { busy(msg, false, "⚠ " + e.message); }
-};
+}
+const signinBtn = $("#signinBtn");
+if (signinBtn) signinBtn.onclick = () => requestSignin($("#signinEmail").value.trim(), $("#signinMsg"));
+const topSigninBtn = $("#topSigninBtn");
+if (topSigninBtn) topSigninBtn.onclick = () => requestSignin($("#topSigninEmail").value.trim(), $("#topSigninMsg"));
 
 // Buy a pack.
 $$("[data-pack]").forEach((b) => (b.onclick = async () => {
