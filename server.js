@@ -65,6 +65,53 @@ function overGenCap(st) {
   return st.genCount > GEN_CAP;
 }
 
+// ─── Background jobs ────────────────────────────────────────────────────────
+// Writing a CV can take longer than a proxy will hold a single connection open
+// (hence the 524 timeouts). So the slow work runs as a background job: the
+// browser starts it, gets a jobId straight back, then polls /api/job/:id every
+// couple of seconds until it's done. No single request stays open long enough
+// to time out, however long the AI takes.
+const crypto = require("crypto");
+const jobs = new Map(); // jobId -> { status:'running'|'done'|'error', payload?, error?, ts }
+
+function pruneJobs() {
+  const cutoff = Date.now() - 15 * 60 * 1000; // 15 min
+  for (const [id, j] of jobs) if (j.ts < cutoff) jobs.delete(id);
+}
+
+// Start `worker` (an async fn that mutates st and returns the JSON payload).
+// The session is saved BEFORE the job is marked done, so any follow-up request
+// (preview, download) is guaranteed to see the finished CV.
+function startJob(req, worker) {
+  pruneJobs();
+  const id = crypto.randomBytes(12).toString("hex");
+  jobs.set(id, { status: "running", ts: Date.now() });
+  Promise.resolve()
+    .then(worker)
+    .then(
+      (payload) =>
+        new Promise((resolve) =>
+          req.session.save(() => {
+            jobs.set(id, { status: "done", payload, ts: Date.now() });
+            resolve();
+          })
+        )
+    )
+    .catch((e) => {
+      jobs.set(id, { status: "error", error: e.message || String(e), ts: Date.now() });
+    });
+  return id;
+}
+
+app.get("/api/job/:id", (req, res) => {
+  const j = jobs.get(req.params.id);
+  if (!j) return res.status(404).json({ status: "unknown" });
+  if (j.status === "running") return res.json({ status: "running" });
+  jobs.delete(req.params.id);
+  if (j.status === "error") return res.json({ status: "error", error: j.error });
+  return res.json({ status: "done", ...j.payload });
+});
+
 // Build the CV (Word + PDF) and email them as attachments, so the person also
 // receives their CV by email. Fire-and-forget from the download route.
 async function emailCvFiles(userEmail, cv, design, photo) {
@@ -95,6 +142,7 @@ function applyUserLinks(cv, st) {
   if (L.portfolio) cv.header.portfolio = L.portfolio;
   if (L.github) cv.header.github = L.github;
   if (L.website) cv.header.website = L.website;
+  if (L.youtube) cv.header.introVideo = L.youtube;
   return cv;
 }
 
@@ -245,93 +293,105 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
 });
 
 // ─── Step 3 — generate + fabrication gate ───────────────────────────────────
-app.post("/api/generate", async (req, res) => {
-  try {
-    const st = S(req);
-    if (!st.cvText || !st.advertText) return res.status(400).json({ error: "Add your CV and the advert first." });
-    if (overGenCap(st)) return res.status(429).json({ error: "rewrite-limit" });
-    st.answers = req.body.answers || st.answers || [];
-    st.linksConfirmed = req.body.linksConfirmed || req.body.links || st.linksConfirmed || {};
-    if (req.body.links) st.links = req.body.links;
+// The slow pipeline, run as a background job (see startJob).
+async function generateWork(st) {
+  // Build source-of-truth BEFORE generating (Section 9).
+  st.sot = await sourceOfTruth.build({ cvText: st.cvText, answers: st.answers });
 
-    // Build source-of-truth BEFORE generating (Section 9).
-    st.sot = await sourceOfTruth.build({ cvText: st.cvText, answers: st.answers });
+  // Generate the draft.
+  let cv = await cvGenerator.generate({
+    cvText: st.cvText, advertText: st.advertText, gaps: st.gaps,
+    answers: st.answers, linksConfirmed: st.linksConfirmed
+  });
 
-    // Generate the draft.
-    let cv = await cvGenerator.generate({
-      cvText: st.cvText, advertText: st.advertText, gaps: st.gaps,
-      answers: st.answers, linksConfirmed: st.linksConfirmed
-    });
+  // HARD GATE (fabrication) and the advisory self-review don't depend on each
+  // other, so run them together to save a whole round-trip. The gate stays on
+  // the strong model; the review runs on the faster model inside reviewer.js.
+  const [fab, review] = await Promise.all([
+    fabrication.check(cv, st.sot),
+    reviewer.selfReview(cv, { advertText: st.advertText })
+  ]);
+  cv = fab.cleanedCV;
+  applyUserLinks(cv, st); // the user's own links, added after the gate
 
-    // HARD GATE: fabrication checker as its own pass.
-    const fab = await fabrication.check(cv, st.sot);
-    cv = fab.cleanedCV;
-    applyUserLinks(cv, st); // the user's own links, added after the gate
+  // Programmatic Section 8 checks.
+  const prog = checks.run(cv);
 
-    // Programmatic Section 8 checks + AI self-review (judgement).
-    const prog = checks.run(cv);
-    const review = await reviewer.selfReview(cv, { advertText: st.advertText });
+  st.cv = cv;
+  st.checkReport = { fabrication: fab, programmatic: prog, review };
+  // New finished CV: it hasn't had a credit spent on it yet.
+  st.cvVersion = (st.cvVersion || 0) + 1;
+  st.paidVersion = null;
 
-    st.cv = cv;
-    st.checkReport = { fabrication: fab, programmatic: prog, review };
-    // New finished CV: it hasn't had a credit spent on it yet.
-    st.cvVersion = (st.cvVersion || 0) + 1;
-    st.paidVersion = null;
+  const blocked = !fab.pass || (cv.missing && cv.missing.length > 0);
+  return {
+    ok: true,
+    cv,
+    missing: cv.missing || [],
+    fabricationPass: fab.pass,
+    fabricationFlags: fab.flags,
+    programmatic: prog,
+    review,
+    downloadBlocked: blocked,
+    message: blocked
+      ? "We found gaps or claims we couldn't trace to what you told us. Answer these before downloading, or tell us to leave them out."
+      : "Clean. Pick a design and download."
+  };
+}
 
-    const blocked = !fab.pass || (cv.missing && cv.missing.length > 0);
-    res.json({
-      ok: true,
-      cv,
-      missing: cv.missing || [],
-      fabricationPass: fab.pass,
-      fabricationFlags: fab.flags,
-      programmatic: prog,
-      review,
-      downloadBlocked: blocked,
-      message: blocked
-        ? "We found gaps or claims we couldn't trace to what you told us. Answer these before downloading, or tell us to leave them out."
-        : "Clean. Pick a design and download."
-    });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
+app.post("/api/generate", (req, res) => {
+  const st = S(req);
+  if (!st.cvText || !st.advertText) return res.status(400).json({ error: "Add your CV and the advert first." });
+  if (overGenCap(st)) return res.status(429).json({ error: "rewrite-limit" });
+  st.answers = req.body.answers || st.answers || [];
+  st.linksConfirmed = req.body.linksConfirmed || req.body.links || st.linksConfirmed || {};
+  if (req.body.links) st.links = req.body.links;
+  const jobId = startJob(req, () => generateWork(st));
+  res.status(202).json({ jobId });
 });
 
 // Candidate resolves [MISSING]/flagged items (answer, or accept leaving out).
-app.post("/api/resolve", async (req, res) => {
+async function resolveWork(st, { resolutions, acceptLeaveOutArr }) {
+  const acceptLeaveOut = new Set(acceptLeaveOutArr || []);
+  // Fold answers back into the answer set and regenerate for a clean pass.
+  st.answers = (st.answers || []).concat(
+    resolutions.filter((r) => r.answer).map((r) => ({ question: r.item, answer: r.answer }))
+  );
+  st.sot = await sourceOfTruth.build({ cvText: st.cvText, answers: st.answers });
+
+  let cv = await cvGenerator.generate({
+    cvText: st.cvText, advertText: st.advertText, gaps: st.gaps,
+    answers: st.answers, linksConfirmed: st.linksConfirmed
+  });
+  const [fab, review] = await Promise.all([
+    fabrication.check(cv, st.sot),
+    reviewer.selfReview(cv, { advertText: st.advertText })
+  ]);
+  cv = fab.cleanedCV;
+  applyUserLinks(cv, st);
+  // Drop any remaining missing the candidate explicitly accepted leaving out.
+  cv.missing = (cv.missing || []).filter((m) => !acceptLeaveOut.has(m.item));
+
+  const prog = checks.run(cv);
+  st.cv = cv;
+  st.checkReport = { fabrication: fab, programmatic: prog, review };
+  st.cvVersion = (st.cvVersion || 0) + 1;
+  st.paidVersion = null;
+
+  const blocked = cv.missing && cv.missing.length > 0;
+  return { ok: true, cv, missing: cv.missing, downloadBlocked: blocked, programmatic: prog, review };
+}
+
+// Candidate resolves [MISSING]/flagged items (answer, or accept leaving out).
+app.post("/api/resolve", (req, res) => {
   try {
     const st = S(req);
     if (!st.cv) return res.status(400).json({ error: "Generate a draft first." });
     if (overGenCap(st)) return res.status(429).json({ error: "rewrite-limit" });
-    // resolutions: [{ item, answer }] ; acceptLeaveOut: [item,...]
     const resolutions = req.body.resolutions || [];
-    const acceptLeaveOut = new Set(req.body.acceptLeaveOut || []);
-
-    // Fold answers back into the answer set and regenerate for a clean pass.
-    st.answers = (st.answers || []).concat(
-      resolutions.filter((r) => r.answer).map((r) => ({ question: r.item, answer: r.answer }))
-    );
-    st.sot = await sourceOfTruth.build({ cvText: st.cvText, answers: st.answers });
-
-    let cv = await cvGenerator.generate({
-      cvText: st.cvText, advertText: st.advertText, gaps: st.gaps,
-      answers: st.answers, linksConfirmed: st.linksConfirmed
-    });
-    const fab = await fabrication.check(cv, st.sot);
-    cv = fab.cleanedCV;
-    applyUserLinks(cv, st);
-    // Drop any remaining missing the candidate explicitly accepted leaving out.
-    cv.missing = (cv.missing || []).filter((m) => !acceptLeaveOut.has(m.item));
-
-    const prog = checks.run(cv);
-    const review = await reviewer.selfReview(cv, { advertText: st.advertText });
-    st.cv = cv;
-    st.checkReport = { fabrication: fab, programmatic: prog, review };
-    st.cvVersion = (st.cvVersion || 0) + 1;
-    st.paidVersion = null;
-
-    const blocked = cv.missing && cv.missing.length > 0;
-    res.json({ ok: true, cv, missing: cv.missing, downloadBlocked: blocked, programmatic: prog, review });
+    const acceptLeaveOutArr = req.body.acceptLeaveOut || [];
+    const jobId = startJob(req, () => resolveWork(st, { resolutions, acceptLeaveOutArr }));
+    res.status(202).json({ jobId });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
