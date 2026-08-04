@@ -282,11 +282,46 @@ async function previewDraft() {
 $("#go3").onclick = async () => { await loadDesigns(); await refreshAccount(); showStep(4); };
 
 async function loadDesigns() {
-  if (!STATE.designs.length) { const j = await api("/api/designs"); STATE.designs = j.designs; }
+  if (!STATE.designs.length) {
+    const j = await api("/api/designs");
+    STATE.designs = j.designs || [];
+    STATE.designerTemplates = j.designerTemplates || [];
+  }
+  STATE.kind = STATE.kind || (isDesignerId(STATE.designId) ? "designer" : "word");
   STATE.designId = STATE.designId || STATE.designs[0].id;
-  $("#designGrid").innerHTML = STATE.designs.map((d) =>
+  wireTemplateToggle();
+  renderDesignGrid();
+}
+function isDesignerId(id) { return (STATE.designerTemplates || []).some((t) => t.id === id); }
+function currentList() { return STATE.kind === "designer" ? (STATE.designerTemplates || []) : STATE.designs; }
+function wireTemplateToggle() {
+  const w = $("#tplWord"), d = $("#tplDesigner");
+  if (w) w.onclick = () => switchKind("word");
+  if (d) d.onclick = () => switchKind("designer");
+  [["word", w], ["designer", d]].forEach(([k, b]) => {
+    if (!b) return; const on = STATE.kind === k;
+    b.style.background = on ? "var(--gold)" : ""; b.style.color = on ? "#161F29" : ""; b.style.borderColor = on ? "var(--gold)" : "";
+  });
+}
+function switchKind(kind) {
+  if (STATE.kind === kind) return;
+  STATE.kind = kind;
+  STATE.designId = (currentList()[0] || {}).id;
+  const wb = document.querySelector('[data-dl="docx"]');
+  if (wb) wb.style.display = kind === "designer" ? "none" : "";
+  const note = $("#tplNote");
+  if (note) note.textContent = kind === "designer"
+    ? "Designer templates look stunning and download as PDF (with an ATS-safe PDF too). Word isn't available for these."
+    : "Word/ATS templates download as editable Word, PDF and an ATS-safe version.";
+  wireTemplateToggle();
+  renderDesignGrid();
+}
+function renderDesignGrid() {
+  $("#designGrid").innerHTML = currentList().map((d) =>
     `<div class="design-card ${d.id === STATE.designId ? "sel" : ""}" data-d="${d.id}">
-      <img class="thumb" src="/img/thumbs/${d.id}.svg" alt="${d.name}" onerror="this.style.opacity=.3">
+      ${STATE.kind === "designer"
+        ? '<div class="thumb" style="display:flex;align-items:center;justify-content:center;background:#161F29;color:#E0B03C;font-family:var(--font-label);letter-spacing:1px;font-size:12px">PDF · DESIGNER</div>'
+        : `<img class="thumb" src="/img/thumbs/${d.id}.svg" alt="${d.name}" onerror="this.style.opacity=.3">`}
       <div class="meta"><h4>${d.name}</h4><p>${d.description}</p></div>
     </div>`).join("");
   $$("[data-d]").forEach((c) => (c.onclick = () => selectDesign(c.dataset.d)));
@@ -298,8 +333,14 @@ async function selectDesign(id) {
   livePreview();
 }
 async function livePreview() {
-  try { const j = await api("/api/preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ designId: STATE.designId }) }); $("#livePreview").innerHTML = j.html; }
-  catch (e) { $("#livePreview").innerHTML = '<p class="muted">' + e.message + "</p>"; }
+  try {
+    const j = await api("/api/preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ designId: STATE.designId }) });
+    const box = $("#livePreview");
+    if (j.designer) {
+      box.innerHTML = '<iframe title="CV preview" style="width:100%;height:1000px;border:1px solid #2a2a2a;border-radius:6px;background:#fff"></iframe>';
+      box.querySelector("iframe").srcdoc = j.html;
+    } else { box.innerHTML = j.html; }
+  } catch (e) { $("#livePreview").innerHTML = '<p class="muted">' + e.message + "</p>"; }
 }
 
 // ── Accounts + credits ──

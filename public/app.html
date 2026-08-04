@@ -94,7 +94,11 @@
   <!-- STEP 4 -->
   <div class="panel" id="p4">
     <h2>Choose a design</h2>
-    <p class="muted">Pick one, preview it, switch as often as you like. The download gives you Word and PDF, with an ATS-safe version on request.</p>
+    <div style="display:flex;gap:8px;margin:6px 0 4px;flex-wrap:wrap">
+      <button class="btn ghost" id="tplWord" style="padding:8px 14px">Word / ATS templates</button>
+      <button class="btn ghost" id="tplDesigner" style="padding:8px 14px">Designer templates (PDF)</button>
+    </div>
+    <p class="muted" id="tplNote" style="margin:4px 0 10px">Word/ATS templates download as editable Word, PDF and an ATS-safe version.</p>
     <div class="design-grid" id="designGrid"></div>
     <h3 style="margin-top:26px">Preview</h3>
     <div class="previewbox" id="livePreview"></div>
