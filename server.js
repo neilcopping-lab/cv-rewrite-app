@@ -19,7 +19,10 @@ const { designs, byId } = require("./lib/designs");
 const { buildDocx } = require("./lib/docxExport");
 const { docxToPdf, libreAvailable } = require("./lib/pdfExport");
 const htmlPreview = require("./lib/htmlPreview");
+const { DESIGNER_TEMPLATES, isDesigner, renderDesignerHtml } = require("./lib/htmlDesigner");
+const { renderPdf: renderHtmlPdf, available: weasyAvailable } = require("./lib/htmlToPdf");
 const { sanitizeForOutput, hasContent } = require("./lib/sanitize");
+const resolveDesign = (id) => DESIGNER_TEMPLATES.find((t) => t.id === id) || byId(id);
 const payment = require("./lib/payment");
 const email = require("./lib/email");
 const db = require("./lib/db");
@@ -120,11 +123,17 @@ async function emailCvFiles(userEmail, cv, design, photo) {
   const nameSafe = (cv.header?.name || "cv").replace(/[^\w]+/g, "_");
   const attachments = [];
   try {
-    const docx = await buildDocx(cv, design, { ats: false, photo });
-    attachments.push({ filename: `${nameSafe}_${design.id}.docx`, content: docx.toString("base64") });
-    if (libreAvailable()) {
-      const pdf = await docxToPdf(docx);
+    if (isDesigner(design.id)) {
+      // Designer templates are PDF-only.
+      const pdf = await renderHtmlPdf(renderDesignerHtml(cv, design.id));
       attachments.push({ filename: `${nameSafe}_${design.id}.pdf`, content: pdf.toString("base64") });
+    } else {
+      const docx = await buildDocx(cv, design, { ats: false, photo });
+      attachments.push({ filename: `${nameSafe}_${design.id}.docx`, content: docx.toString("base64") });
+      if (libreAvailable()) {
+        const pdf = await docxToPdf(docx);
+        attachments.push({ filename: `${nameSafe}_${design.id}.pdf`, content: pdf.toString("base64") });
+      }
     }
   } catch (_) { /* still send the note even if a file fails */ }
   return email.sendConfirmation({
@@ -155,7 +164,9 @@ app.get("/health", (req, res) =>
     stripe: payment.hasKey(),
     resend: email.hasKey(),
     libreoffice: libreAvailable(),
-    designs: designs.length
+    weasyprint: weasyAvailable(),
+    designs: designs.length,
+    designerTemplates: DESIGNER_TEMPLATES.length
   })
 );
 
@@ -409,14 +420,19 @@ app.post("/api/drop-flags", (req, res) => {
 });
 
 // ─── Step 4 — designs, preview, pay, download ───────────────────────────────
-app.get("/api/designs", (req, res) => res.json({ designs }));
+app.get("/api/designs", (req, res) => res.json({ designs, designerTemplates: DESIGNER_TEMPLATES }));
 
 app.post("/api/preview", (req, res) => {
   const st = S(req);
   const cv = st.cv || req.body.cv;
   if (!cv) return res.status(400).json({ error: "No CV to preview yet." });
   st.designId = req.body.designId || st.designId || designs[0].id;
-  res.json({ ok: true, designId: st.designId, html: htmlPreview.preview(sanitizeForOutput(cv), st.designId) });
+  const clean = sanitizeForOutput(cv);
+  if (isDesigner(st.designId)) {
+    // Full HTML document — the front-end shows it in an iframe.
+    return res.json({ ok: true, designId: st.designId, designer: true, html: renderDesignerHtml(clean, st.designId) });
+  }
+  res.json({ ok: true, designId: st.designId, html: htmlPreview.preview(clean, st.designId) });
 });
 
 // Buy a credit pack (£5 = 4 CVs, £10 = 10 CVs). Must be signed in.
@@ -476,16 +492,40 @@ app.get("/api/download", async (req, res) => {
       if (!db.spendCredit(userEmail)) return res.status(402).json({ error: "no-credits" });
       st.paidVersion = st.cvVersion;
       // On first paid download: email the CV (Word + PDF attached) + notify.
-      const d0 = byId(req.query.design || st.designId || designs[0].id);
+      const d0 = resolveDesign(req.query.design || st.designId || designs[0].id);
       emailCvFiles(userEmail, cleanCv, d0, st.photo).catch(() => {});
       email.sendInternalNotice({ email: userEmail, role: cleanCv.header?.targetRole, designId: d0.id }).catch(() => {});
     }
 
+    const reqId = req.query.design || st.designId || designs[0].id;
     const type = (req.query.type || "docx").toLowerCase();
-    const design = byId(req.query.design || st.designId || designs[0].id);
+    const nameSafe = (cleanCv.header?.name || "cv").replace(/[^\w]+/g, "_");
+
+    // ── Designer templates: PDF only (rendered by weasyprint). ──
+    if (isDesigner(reqId)) {
+      if (type === "docx") {
+        return res.status(400).json({ error: "Designer templates download as PDF. For an editable Word file, choose a Word/ATS template." });
+      }
+      if (type === "ats" || type === "ats-pdf") {
+        // ATS-safe fallback: a plain single-column render via the docx engine.
+        if (!libreAvailable()) return res.status(503).json({ error: "ATS PDF unavailable (LibreOffice not installed)." });
+        const atsBuf = await buildDocx(cleanCv, byId("modern-minimal"), { ats: true });
+        const atsPdf = await docxToPdf(atsBuf);
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader("Content-Disposition", `attachment; filename="${nameSafe}_ATS.pdf"`);
+        return res.send(atsPdf);
+      }
+      if (!weasyAvailable()) return res.status(503).json({ error: "The designer PDF renderer isn't available on the server yet." });
+      const dpdf = await renderHtmlPdf(renderDesignerHtml(cleanCv, reqId));
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${nameSafe}_${reqId}.pdf"`);
+      return res.send(dpdf);
+    }
+
+    // ── Word / ATS templates (docx engine). ──
+    const design = byId(reqId);
     const ats = type === "ats-pdf" || type === "ats";
     const buf = await buildDocx(cleanCv, design, { ats, photo: ats ? null : st.photo });
-    const nameSafe = (cleanCv.header?.name || "cv").replace(/[^\w]+/g, "_");
     const suffix = ats ? "ATS" : design.id;
 
     if (type === "docx") {
@@ -493,7 +533,6 @@ app.get("/api/download", async (req, res) => {
       res.setHeader("Content-Disposition", `attachment; filename="${nameSafe}_${suffix}.docx"`);
       return res.send(buf);
     }
-    // pdf or ats-pdf
     if (!libreAvailable()) return res.status(503).json({ error: "PDF conversion unavailable (LibreOffice not installed)." });
     const pdf = await docxToPdf(buf);
     res.setHeader("Content-Type", "application/pdf");
