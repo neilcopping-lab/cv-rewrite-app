@@ -97,7 +97,7 @@ label{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05e
 .design-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 .design-card{border:1px solid var(--line);background:var(--panel);cursor:pointer;overflow:hidden}
 .design-card.sel{outline:3px solid var(--gold);outline-offset:-1px}
-.design-card .thumb{height:150px;background:#fff;border-bottom:1px solid var(--line);display:block;width:100%}
+.design-card .thumb{height:250px;background:#fff;border-bottom:1px solid var(--line);display:block;width:100%;object-fit:cover;object-position:top center}
 .design-card .meta{padding:10px}
 .design-card .meta h4{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.04em;font-size:14px;margin:0 0 4px;color:var(--cream)}
 .design-card .meta p{font-size:12px;color:var(--cream-muted);margin:0}
