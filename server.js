@@ -176,11 +176,25 @@ app.get("/health", (req, res) =>
 app.post("/api/auth/request", async (req, res) => {
   try {
     const out = await auth.requestLink(req.body.email);
-    // In dev (no email provider) we return the link so it can be clicked.
-    res.json({ ok: true, sent: out.sent, devLink: out.link || null });
+    // Remember which email we're expecting a code from (so the user only types
+    // the 6 digits, and so a code can't be checked against the wrong address).
+    req.session.pendingEmail = String(req.body.email || "").trim().toLowerCase();
+    // In dev (no email provider) we return the link + code so it can be used.
+    res.json({ ok: true, sent: out.sent, devLink: out.link || null, devCode: out.code || null });
   } catch (e) {
     res.status(400).json({ error: e.message });
   }
+});
+
+// Verify a typed 6-digit code — signs the user in WITHOUT reloading the page,
+// so their finished CV stays exactly where it is. This is the primary flow.
+app.post("/api/auth/verify-code", (req, res) => {
+  const addr = (req.body.email || req.session.pendingEmail || "").trim().toLowerCase();
+  const emailAddr = auth.verifyCode(addr, req.body.code);
+  if (!emailAddr) return res.status(400).json({ ok: false, error: "That code isn't right or has expired. Check the email or send a new code." });
+  req.session.userEmail = emailAddr;
+  req.session.pendingEmail = null;
+  req.session.save(() => res.json({ ok: true, signedIn: true, email: emailAddr, credits: db.credits(emailAddr) }));
 });
 
 app.get("/auth", (req, res) => {
@@ -198,6 +212,26 @@ app.get("/api/state", (req, res) => {
   res.json({
     signedIn: !!e, email: e || null, credits: e ? db.credits(e) : 0,
     hasCv: !!st.cv, designId: st.designId || null, coverLetter: !!st.coverLetter
+  });
+});
+
+// Rebuild the step-3 "review" payload from the session, so the rewritten CV can
+// be re-displayed after a reload / sign-in even though the browser lost its
+// in-memory copy. Same shape the /api/generate result uses.
+app.get("/api/draft", (req, res) => {
+  const st = S(req);
+  if (!st.cv) return res.json({ ok: false, hasCv: false });
+  const cr = st.checkReport || {};
+  const fab = cr.fabrication || {};
+  const missing = st.cv.missing || [];
+  const blocked = fab.pass === false || missing.length > 0;
+  res.json({
+    ok: true, hasCv: true, cv: st.cv, missing,
+    programmatic: cr.programmatic || null, review: cr.review || {},
+    downloadBlocked: blocked,
+    message: blocked
+      ? "We found gaps or claims we couldn't trace to what you told us. Answer these before downloading, or tell us to leave them out."
+      : "Clean. Pick a design and download."
   });
 });
 

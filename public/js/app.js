@@ -16,6 +16,33 @@ function showStep(n) {
 }
 function busy(el, on, msg) { el.innerHTML = on ? `<span class="spinner"></span> ${msg || "Working…"}` : (msg || ""); }
 
+// Fetch the current rewritten CV from the server and paint step 3. Used on load
+// (after reload / sign-in) and before showing step 3, so it's never blank.
+async function ensureDraft() {
+  if (STATE.pendingDraft) { renderDraft(STATE.pendingDraft); return true; }
+  try {
+    const j = await api("/api/draft");
+    if (j && j.ok) { STATE.cv = j.cv; STATE.softDone = true; renderDraft(j); return true; }
+  } catch (_) {}
+  return false;
+}
+
+// Let the user click back to a step they've already completed. Going to step 3
+// re-paints the rewritten CV from the server if the browser dropped it.
+function bindStepTabs() {
+  $$(".steps .s").forEach((tab) => {
+    tab.style.cursor = "pointer";
+    tab.addEventListener("click", async () => {
+      const n = +tab.dataset.step;
+      if (!tab.classList.contains("done") && !tab.classList.contains("active")) return; // no skipping ahead
+      if (n === 3) { await ensureDraft(); }
+      showStep(n);
+    });
+  });
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bindStepTabs);
+else bindStepTabs();
+
 // A pool of warm, plain-spoken messages that pop up while the AI works. Shown
 // in a random order each time so it feels alive, not scripted.
 const FUN_MESSAGES = [
@@ -179,11 +206,13 @@ $("#go2").onclick = async () => {
   } catch (e) { prog.fail(mapErr(e.message)); }
 };
 
-// Reveal the rewritten CV (hides the soft-email gate) and render it.
-function revealDraft(j) {
+// Reveal the rewritten CV (hides the soft-email gate) and render it. If the
+// browser lost the draft (e.g. after a reload), pull it back from the server.
+async function revealDraft(j) {
   const g = $("#softEmailGate"); if (g) g.classList.add("hidden");
   const c = $("#draftContent"); if (c) c.classList.remove("hidden");
-  renderDraft(j);
+  if (j) renderDraft(j);
+  else if (!(await ensureDraft())) renderDraft({ message: "Your rewritten CV is ready.", missing: [], review: {} });
 }
 // Soft email step — capture the lead, then reveal.
 const softEmailBtn = $("#softEmailBtn");
@@ -220,6 +249,9 @@ function friendlyGap(m) {
 }
 
 function renderDraft(j) {
+  j = j || STATE.pendingDraft || {};        // never crash on a missing draft
+  STATE.pendingDraft = j;
+  const g = $("#softEmailGate"); if (g) g.classList.add("hidden");
   const c = $("#draftContent"); if (c) c.classList.remove("hidden");
   const banner = $("#checkBanner");
   banner.style.borderColor = j.downloadBlocked ? "var(--accent)" : "var(--ink)";
@@ -434,15 +466,50 @@ function renderStep4Payment() {
   }
 }
 
-// Sign-in: email a magic link. Shared by the header box and the step-4 box.
+// Sign-in: email a 6-digit code (primary) plus a backup link. The code is
+// typed into THIS page, so signing in never reloads and never loses your work.
 async function requestSignin(email, msg) {
   if (!email) { busy(msg, false, "Enter your email."); return; }
-  busy(msg, true, "Sending your link…");
+  busy(msg, true, "Sending your code…");
   try {
     const j = await api("/api/auth/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
-    if (j.sent) { busy(msg, false, "Check your email and click the link — this page updates automatically, so you won't lose anything."); pollForSignin(msg); }
-    else if (j.devLink) { msg.innerHTML = `Email isn't set up, so here's your link: <a href="${j.devLink}" target="_blank" style="color:var(--teal);text-decoration:underline">click to sign in</a>.`; pollForSignin(msg); }
-    else busy(msg, false, "Link sent.");
+    showCodeEntry(msg, email);
+    if (j.sent) busy(msg, false, "We've emailed you a 6-digit code — type it in below to sign in. You won't lose anything on this page.");
+    else if (j.devCode) busy(msg, false, `Email isn't set up. Your code is <strong>${j.devCode}</strong> — type it in below.`);
+    else busy(msg, false, "Code sent — type it in below.");
+    pollForSignin(msg); // backup: if they click the emailed link instead
+  } catch (e) { busy(msg, false, "⚠ " + e.message); }
+}
+
+// Reveal a code input directly under the sign-in message. Verifying the code
+// updates the account in place — no navigation, so the CV in progress stays.
+function showCodeEntry(msg, email) {
+  if (!msg) return;
+  let row = document.getElementById(msg.id + "-code");
+  if (!row) {
+    row = document.createElement("div");
+    row.id = msg.id + "-code";
+    row.style.cssText = "display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center";
+    row.innerHTML = `<input type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="6-digit code" style="flex:0 0 120px;letter-spacing:.25em;text-align:center;font-size:16px;padding:8px 10px;border:1px solid #cfc9bd;border-radius:8px"><button type="button" class="btn" style="padding:8px 16px">Sign in</button>`;
+    msg.parentNode.insertBefore(row, msg.nextSibling);
+    const input = row.querySelector("input"), btn = row.querySelector("button");
+    const go = () => verifyCode(email, input.value.trim(), msg, row);
+    btn.onclick = go;
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+  }
+  row.querySelector("input").focus();
+}
+
+async function verifyCode(email, code, msg, row) {
+  if (!/^\d{6}$/.test(code)) { busy(msg, false, "Enter the 6-digit code from your email."); return; }
+  busy(msg, true, "Signing you in…");
+  try {
+    const j = await api("/api/auth/verify-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, code }) });
+    if (_signinPoll) { clearInterval(_signinPoll); _signinPoll = null; }
+    STATE.account = { signedIn: true, email: j.email, credits: j.credits };
+    if (row) row.remove();
+    busy(msg, false, "Signed in — carry on right here, nothing was lost.");
+    renderAccountBar(); renderStep4Payment();
   } catch (e) { busy(msg, false, "⚠ " + e.message); }
 }
 // After a sign-in link is sent, watch for the click (in this or another tab)
@@ -573,6 +640,9 @@ async function downloadCover(type) {
     if (stt.hasCv) {
       STATE.hasCv = true; STATE.softDone = true;
       if (stt.designId && !STATE.designId) STATE.designId = stt.designId;
+      // Rebuild step 3 from the server so the rewritten CV is viewable again
+      // (the browser lost its in-memory copy on reload / sign-in).
+      await ensureDraft();
       jumpToDesign = true;
     }
   } catch (_) {}
