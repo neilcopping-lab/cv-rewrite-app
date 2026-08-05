@@ -440,10 +440,29 @@ async function requestSignin(email, msg) {
   busy(msg, true, "Sending your link…");
   try {
     const j = await api("/api/auth/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
-    if (j.sent) busy(msg, false, "Check your email for a sign-in link, then come back to this tab.");
-    else if (j.devLink) msg.innerHTML = `Email isn't set up, so here's your link: <a href="${j.devLink}" style="color:var(--teal);text-decoration:underline">click to sign in</a>.`;
+    if (j.sent) { busy(msg, false, "Check your email and click the link — this page updates automatically, so you won't lose anything."); pollForSignin(msg); }
+    else if (j.devLink) { msg.innerHTML = `Email isn't set up, so here's your link: <a href="${j.devLink}" target="_blank" style="color:var(--teal);text-decoration:underline">click to sign in</a>.`; pollForSignin(msg); }
     else busy(msg, false, "Link sent.");
   } catch (e) { busy(msg, false, "⚠ " + e.message); }
+}
+// After a sign-in link is sent, watch for the click (in this or another tab)
+// and update the account UI in place — no reload, so the CV in progress stays.
+let _signinPoll = null;
+function pollForSignin(msg) {
+  if (_signinPoll) clearInterval(_signinPoll);
+  let tries = 0;
+  _signinPoll = setInterval(async () => {
+    tries++;
+    try {
+      const me = await api("/api/auth/me");
+      if (me.signedIn) {
+        clearInterval(_signinPoll); _signinPoll = null;
+        STATE.account = me; renderAccountBar(); renderStep4Payment();
+        if (msg) busy(msg, false, "Signed in — carry on right here.");
+      }
+    } catch (_) {}
+    if (tries > 100) { clearInterval(_signinPoll); _signinPoll = null; }
+  }, 3000);
 }
 const signinBtn = $("#signinBtn");
 if (signinBtn) signinBtn.onclick = () => requestSignin($("#signinEmail").value.trim(), $("#signinMsg"));
@@ -536,14 +555,30 @@ async function downloadCover(type) {
 // On load: handle return from Stripe / sign-in, then load account state.
 (async function init() {
   const p = new URLSearchParams(location.search);
+  let jumpToDesign = false;
   if (p.get("paid") === "1") {
     try {
       const cp = await api("/api/confirm-payment", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cs: p.get("cs") }) });
       if (cp && cp.designId) STATE.designId = cp.designId; // restore the design chosen before paying
     } catch (e) {}
-    try { await loadDesigns(); showStep(4); } catch (e) {}
+    jumpToDesign = true;
   }
   await refreshAccount();
+
+  // Restore work after any reload — including the magic-link sign-in, which
+  // reloads the page. If the server session still holds a finished CV, take the
+  // user straight back to the design step with everything intact.
+  try {
+    const stt = await api("/api/state");
+    if (stt.hasCv) {
+      STATE.hasCv = true; STATE.softDone = true;
+      if (stt.designId && !STATE.designId) STATE.designId = stt.designId;
+      jumpToDesign = true;
+    }
+  } catch (_) {}
+
+  if (jumpToDesign) { try { await loadDesigns(); showStep(4); } catch (e) {} }
+  if (p.get("signin") === "ok") { const b = $("#s4b"); if (b) b.textContent = "You're signed in — pick a design or add a cover letter below."; }
 })();
 
 // ── Voice recording ──

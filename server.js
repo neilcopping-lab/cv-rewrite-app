@@ -190,6 +190,17 @@ app.get("/auth", (req, res) => {
   res.redirect("/app.html?signin=ok");
 });
 
+// Session snapshot — lets the front-end restore a user's finished CV after a
+// reload or a magic-link sign-in (which reloads the page), so nothing is lost.
+app.get("/api/state", (req, res) => {
+  const st = S(req);
+  const e = currentEmail(req);
+  res.json({
+    signedIn: !!e, email: e || null, credits: e ? db.credits(e) : 0,
+    hasCv: !!st.cv, designId: st.designId || null, coverLetter: !!st.coverLetter
+  });
+});
+
 app.get("/api/auth/me", (req, res) => {
   const e = currentEmail(req);
   res.json({ signedIn: !!e, email: e, credits: e ? db.credits(e) : 0 });
