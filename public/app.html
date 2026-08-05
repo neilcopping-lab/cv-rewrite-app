@@ -97,11 +97,25 @@
   <!-- STEP 3 -->
   <div class="panel" id="p3">
     <h2>Your rewritten CV</h2>
-    <div id="checkBanner" class="notice"></div>
-    <div id="missingBox"></div>
-    <div id="reviewBox"></div>
-    <div class="previewbox" id="draftPreview"></div>
-    <p style="margin-top:18px"><button class="btn accent" id="go3">Choose a design →</button> <button class="btn ghost" id="regen">Regenerate</button> <span id="s3" class="muted"></span></p>
+
+    <!-- Soft email step: shown once, just before revealing the CV -->
+    <div id="softEmailGate" class="notice hidden" style="margin-bottom:16px">
+      <strong>Your CV is ready.</strong> Pop your email in and we'll save your place and send you a link to download it whenever you're ready.
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <input type="email" id="softEmail" placeholder="you@email.com" style="max-width:300px">
+        <button class="btn accent" id="softEmailBtn">Show my CV →</button>
+      </div>
+      <p style="margin-top:8px"><a href="#" id="softSkip" class="muted" style="text-decoration:underline">No thanks, just show it</a> <span id="softMsg" class="muted" style="margin-left:10px"></span></p>
+    </div>
+
+    <div id="draftContent" class="hidden">
+      <div id="checkBanner" class="notice"></div>
+      <div id="missingBox"></div>
+      <div id="reviewBox"></div>
+      <div class="previewbox nocopy" id="draftPreview"></div>
+      <p class="muted" style="font-size:13px;margin:6px 0 0">This is a watermarked preview. Choose a design and download to get the clean, full CV.</p>
+      <p style="margin-top:18px"><button class="btn accent" id="go3">Choose a design →</button> <button class="btn ghost" id="regen">Regenerate</button> <span id="s3" class="muted"></span></p>
+    </div>
   </div>
 
   <!-- STEP 4 -->
@@ -121,7 +135,7 @@
         <button class="btn ghost" id="nextDesign" style="padding:6px 12px">Next ›</button>
       </div>
     </div>
-    <div class="previewbox" id="livePreview"></div>
+    <div class="previewbox nocopy" id="livePreview"></div>
 
     <!-- Buy credits (shown when signed in with 0 credits) -->
     <div id="buyBox" class="notice hidden" style="margin-top:22px">

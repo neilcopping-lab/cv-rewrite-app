@@ -173,9 +173,35 @@ $("#go2").onclick = async () => {
     }).filter((a) => a.answer);
     STATE.answers = answers;
     const j = await runJob("/api/generate", { answers });
-    STATE.cv = j.cv; renderDraft(j); prog.done(); showStep(3);
+    STATE.cv = j.cv; STATE.pendingDraft = j; prog.done(); showStep(3);
+    if (STATE.softDone) { revealDraft(j); }
+    else { $("#draftContent").classList.add("hidden"); $("#softEmailGate").classList.remove("hidden"); const sm = $("#softMsg"); if (sm) sm.textContent = ""; }
   } catch (e) { prog.fail(mapErr(e.message)); }
 };
+
+// Reveal the rewritten CV (hides the soft-email gate) and render it.
+function revealDraft(j) {
+  const g = $("#softEmailGate"); if (g) g.classList.add("hidden");
+  const c = $("#draftContent"); if (c) c.classList.remove("hidden");
+  renderDraft(j);
+}
+// Soft email step — capture the lead, then reveal.
+const softEmailBtn = $("#softEmailBtn");
+if (softEmailBtn) softEmailBtn.onclick = async () => {
+  const em = ($("#softEmail").value || "").trim(); const m = $("#softMsg");
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { busy(m, false, "Pop in a valid email, or tap skip."); return; }
+  busy(m, true, "One moment…");
+  try { await api("/api/soft-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: em }) }); STATE.softEmail = em; } catch (_) {}
+  STATE.softDone = true;
+  prefillSignin();
+  revealDraft(STATE.pendingDraft);
+};
+const softSkip = $("#softSkip");
+if (softSkip) softSkip.onclick = (e) => { e.preventDefault(); STATE.softDone = true; revealDraft(STATE.pendingDraft); };
+function prefillSignin() {
+  if (!STATE.softEmail) return;
+  ["#signinEmail", "#topSigninEmail"].forEach((sel) => { const el = $(sel); if (el && !el.value) el.value = STATE.softEmail; });
+}
 
 // Turn a flagged item into a clear, plain-English question.
 function friendlyGap(m) {
@@ -194,6 +220,7 @@ function friendlyGap(m) {
 }
 
 function renderDraft(j) {
+  const c = $("#draftContent"); if (c) c.classList.remove("hidden");
   const banner = $("#checkBanner");
   banner.style.borderColor = j.downloadBlocked ? "var(--accent)" : "var(--ink)";
   banner.innerHTML = `<span class="sans">${j.message || ""}</span>`;
@@ -296,6 +323,7 @@ async function loadDesigns() {
   const pv = $("#prevDesign"), nx = $("#nextDesign");
   if (pv) pv.onclick = () => stepDesign(-1);
   if (nx) nx.onclick = () => stepDesign(1);
+  if (typeof prefillSignin === "function") prefillSignin();
   renderDesignGrid();
 }
 function designIndex() { return currentList().findIndex((d) => d.id === STATE.designId); }
@@ -362,7 +390,9 @@ async function livePreview() {
     const box = $("#livePreview");
     if (j.designer) {
       box.innerHTML = '<iframe title="CV preview" style="width:100%;height:1000px;border:1px solid #2a2a2a;border-radius:6px;background:#fff"></iframe>';
-      box.querySelector("iframe").srcdoc = j.html;
+      // Inject a no-select rule so the preview text can't be copied out of the iframe.
+      const guarded = (j.html || "").replace("</head>", '<style>*{-webkit-user-select:none!important;user-select:none!important}</style></head>');
+      box.querySelector("iframe").srcdoc = guarded;
     } else { box.innerHTML = j.html; }
   } catch (e) { $("#livePreview").innerHTML = '<p class="muted">' + e.message + "</p>"; }
 }

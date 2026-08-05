@@ -615,6 +615,23 @@ app.get("/api/cover-letter/download", async (req, res) => {
   }
 });
 
+// ─── Soft email capture (before the CV is revealed) ─────────────────────────
+// Lead capture, not a hard gate: store the email on the session, send a
+// passwordless sign-in link so they can download when ready, and notify us.
+app.post("/api/soft-email", async (req, res) => {
+  try {
+    const st = S(req);
+    const em = (req.body.email || "").trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return res.status(400).json({ error: "Please enter a valid email." });
+    st.softEmail = em;
+    try { await auth.requestLink(em); } catch (_) {}   // emails a sign-in link for later download
+    try { email.sendInternalNotice({ email: em, role: st.cv?.header?.targetRole, designId: "lead-soft-email" }); } catch (_) {}
+    res.json({ ok: true, sent: email.hasKey() });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`CV Rewrite app on ${BASE} (port ${PORT})`));
 module.exports = app;
