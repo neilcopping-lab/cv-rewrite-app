@@ -9,7 +9,7 @@
 </head><body>
 
 <header class="site"><nav class="nav">
-  <a class="cp-logo" href="/" aria-label="The Com'mon People"><img src="/img/logo-official.png" alt="The Com'mon People"></a>
+  <a class="cp-logo" href="/" aria-label="The Com'mon People"><img src="/img/logo-horizontal.png" alt="The Com'mon People"></a>
   <div class="links">
     <a href="https://the-common-people.com/guide-cv.html">CV Guide</a>
     <a href="https://the-common-people.com/prep-report.html">Interview Prep Report</a>
@@ -113,7 +113,14 @@
     </div>
     <p class="muted" id="tplNote" style="margin:4px 0 10px">Word/ATS templates download as editable Word, PDF and an ATS-safe version.</p>
     <div class="design-grid" id="designGrid"></div>
-    <h3 style="margin-top:26px">Preview</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:26px;flex-wrap:wrap">
+      <h3 style="margin:0">Preview</h3>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn ghost" id="prevDesign" style="padding:6px 12px">‹ Previous</button>
+        <span id="designCaption" class="muted" style="min-width:150px;text-align:center;font-size:14px"></span>
+        <button class="btn ghost" id="nextDesign" style="padding:6px 12px">Next ›</button>
+      </div>
+    </div>
     <div class="previewbox" id="livePreview"></div>
 
     <!-- Buy credits (shown when signed in with 0 credits) -->
@@ -149,6 +156,19 @@
         <button class="btn ghost" data-dl="ats-pdf">ATS-safe PDF</button>
       </div>
       <p style="margin-top:8px"><span id="s4b" class="muted"></span></p>
+    </div>
+
+    <!-- Cover letter add-on (1 credit) -->
+    <div id="coverBox" style="margin-top:24px;border-top:1px solid var(--line);padding-top:18px">
+      <h3 style="margin:0 0 6px">Add a personalised cover letter</h3>
+      <p class="muted" style="margin:0 0 10px">Tailored to this job and written in your voice, from the same details as your CV. Uses 1 credit.</p>
+      <button class="btn accent" id="coverBtn">Write my cover letter (1 credit)</button>
+      <span id="coverMsg" class="muted" style="margin-left:8px"></span>
+      <div id="coverPreview" class="previewbox hidden" style="margin-top:14px"></div>
+      <div id="coverDownloads" class="dlrow hidden" style="margin-top:10px">
+        <button class="btn" data-cover="docx">Download Word</button>
+        <button class="btn" data-cover="pdf">Download PDF</button>
+      </div>
     </div>
   </div>
 </div></section></main>

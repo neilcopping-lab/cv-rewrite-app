@@ -22,6 +22,8 @@ const htmlPreview = require("./lib/htmlPreview");
 const { DESIGNER_TEMPLATES, isDesigner, renderDesignerHtml } = require("./lib/htmlDesigner");
 const { renderPdf: renderHtmlPdf, available: weasyAvailable } = require("./lib/htmlToPdf");
 const { sanitizeForOutput, hasContent } = require("./lib/sanitize");
+const coverLetter = require("./lib/coverLetter");
+const { buildCoverDocx } = require("./lib/coverLetterDoc");
 const resolveDesign = (id) => DESIGNER_TEMPLATES.find((t) => t.id === id) || byId(id);
 const payment = require("./lib/payment");
 const email = require("./lib/email");
@@ -542,6 +544,71 @@ app.get("/api/download", async (req, res) => {
     const pdf = await docxToPdf(buf);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${nameSafe}_${suffix}.pdf"`);
+    res.send(pdf);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── Cover letter (optional add-on, costs 1 credit) ─────────────────────────
+// Generates a personalised, honest cover letter from the finished CV + advert.
+// One credit per letter; re-downloading the same letter (Word/PDF) is free.
+app.post("/api/cover-letter", async (req, res) => {
+  try {
+    const st = S(req);
+    if (!st.cv) return res.status(400).json({ error: "Generate your CV first." });
+    const userEmail = currentEmail(req);
+    if (!userEmail) return res.status(401).json({ error: "Please sign in to add a cover letter." });
+
+    // Already written for this exact CV version? Return it free.
+    if (st.coverLetter && st.coverLetterVersion === st.cvVersion) {
+      return res.json({ ok: true, coverLetter: st.coverLetter, alreadyPaid: true, balance: db.credits(userEmail) });
+    }
+    // Otherwise it costs one credit.
+    if (db.credits(userEmail) < 1) return res.status(402).json({ error: "no-credits" });
+    if (!db.spendCredit(userEmail)) return res.status(402).json({ error: "no-credits" });
+
+    const cleanCv = sanitizeForOutput(st.cv);
+    const letter = await coverLetter.generate({
+      cv: cleanCv, advertText: st.advertText, writingStyle: st.writingStyle, styleSample: st.styleSample
+    });
+    st.coverLetter = letter;
+    st.coverLetterVersion = st.cvVersion;
+
+    // Email a copy on first creation (best-effort).
+    if (email.hasKey()) {
+      try {
+        const docx = await buildCoverDocx(letter, cleanCv);
+        const nameSafe = (cleanCv.header?.name || "cover").replace(/[^\w]+/g, "_");
+        const attachments = [{ filename: `${nameSafe}_CoverLetter.docx`, content: docx.toString("base64") }];
+        if (libreAvailable()) attachments.push({ filename: `${nameSafe}_CoverLetter.pdf`, content: (await docxToPdf(docx)).toString("base64") });
+        email.sendConfirmation({ to: userEmail, name: cleanCv.header?.name, role: cleanCv.header?.targetRole, designName: "Cover letter", attachments }).catch(() => {});
+      } catch (_) {}
+    }
+    res.json({ ok: true, coverLetter: letter, balance: db.credits(userEmail) });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get("/api/cover-letter/download", async (req, res) => {
+  try {
+    const st = S(req);
+    if (!st.coverLetter) return res.status(400).json({ error: "No cover letter yet — add one first." });
+    if (!currentEmail(req)) return res.status(401).json({ error: "Please sign in to download." });
+    const cleanCv = sanitizeForOutput(st.cv || {});
+    const buf = await buildCoverDocx(st.coverLetter, cleanCv);
+    const nameSafe = (cleanCv.header?.name || "cover").replace(/[^\w]+/g, "_");
+    const type = (req.query.type || "docx").toLowerCase();
+    if (type === "docx") {
+      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+      res.setHeader("Content-Disposition", `attachment; filename="${nameSafe}_CoverLetter.docx"`);
+      return res.send(buf);
+    }
+    if (!libreAvailable()) return res.status(503).json({ error: "PDF conversion unavailable (LibreOffice not installed)." });
+    const pdf = await docxToPdf(buf);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${nameSafe}_CoverLetter.pdf"`);
     res.send(pdf);
   } catch (e) {
     res.status(500).json({ error: e.message });

@@ -293,7 +293,27 @@ async function loadDesigns() {
   STATE.kind = STATE.kind || (isDesignerId(STATE.designId) ? "designer" : "word");
   STATE.designId = STATE.designId || STATE.designs[0].id;
   wireTemplateToggle();
+  const pv = $("#prevDesign"), nx = $("#nextDesign");
+  if (pv) pv.onclick = () => stepDesign(-1);
+  if (nx) nx.onclick = () => stepDesign(1);
   renderDesignGrid();
+}
+function designIndex() { return currentList().findIndex((d) => d.id === STATE.designId); }
+function updateDesignCaption() {
+  const list = currentList(), i = designIndex(), d = list[i] || {};
+  const cap = $("#designCaption");
+  if (cap) cap.textContent = list.length ? `${i + 1} of ${list.length} · ${d.name || ""}` : "";
+}
+function stepDesign(dir) {
+  const list = currentList(); if (!list.length) return;
+  let i = designIndex(); if (i < 0) i = 0;
+  i = (i + dir + list.length) % list.length;
+  STATE.designId = list[i].id;
+  $$(".design-card").forEach((c) => c.classList.toggle("sel", c.dataset.d === STATE.designId));
+  const sel = document.querySelector(".design-card.sel");
+  if (sel && sel.scrollIntoView) sel.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  updateDesignCaption();
+  livePreview();
 }
 function isDesignerId(id) { return (STATE.designerTemplates || []).some((t) => t.id === id); }
 function currentList() { return STATE.kind === "designer" ? (STATE.designerTemplates || []) : STATE.designs; }
@@ -322,15 +342,17 @@ function switchKind(kind) {
 function renderDesignGrid() {
   $("#designGrid").innerHTML = currentList().map((d) =>
     `<div class="design-card ${d.id === STATE.designId ? "sel" : ""}" data-d="${d.id}">
-      <img class="thumb" src="/img/thumbs/${d.id}.${STATE.kind === "designer" ? "png" : "svg"}" alt="${d.name}" onerror="this.style.opacity=.3">
-      ${STATE.kind === "designer" ? '<span class="pdf-badge">PDF</span>' : ""}
+      <img class="thumb" src="/img/thumbs/${d.id}.png" alt="${d.name}" onerror="this.style.opacity=.3">
+      <span class="pdf-badge">${STATE.kind === "designer" ? "PDF" : "WORD"}</span>
       <div class="meta"><h4>${d.name}</h4><p>${d.description}</p></div>
     </div>`).join("");
   $$("[data-d]").forEach((c) => (c.onclick = () => selectDesign(c.dataset.d)));
+  updateDesignCaption();
   livePreview();
 }
 async function selectDesign(id) {
   STATE.designId = id;
+  updateDesignCaption();
   $$(".design-card").forEach((c) => c.classList.toggle("sel", c.dataset.d === id));
   livePreview();
 }
@@ -436,6 +458,50 @@ async function downloadFile(type) {
   } catch (e) { busy(s, false, "⚠ " + e.message); }
 }
 $$("[data-dl]").forEach((b) => (b.onclick = () => downloadFile(b.dataset.dl)));
+
+// ── Cover letter add-on (1 credit) ──
+const coverBtn = $("#coverBtn");
+if (coverBtn) coverBtn.onclick = async () => {
+  const m = $("#coverMsg");
+  busy(m, true, "Writing your cover letter…");
+  try {
+    const j = await api("/api/cover-letter", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    renderCoverLetter(j.coverLetter);
+    busy(m, false, j.alreadyPaid ? "Here's your cover letter." : "Done — that used 1 credit.");
+    await refreshAccount();
+  } catch (e) {
+    if (/no-credits/.test(e.message)) { await refreshAccount(); busy(m, false, "You're out of credits — choose a pack above to add one."); }
+    else if (/sign in/i.test(e.message)) busy(m, false, "Please sign in first (above).");
+    else busy(m, false, "⚠ " + mapErr(e.message));
+  }
+};
+function escHtml(s) { return String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
+function renderCoverLetter(cl) {
+  if (!cl) return;
+  const lines = [cl.greeting, ...(cl.paragraphs || []), cl.signOff].map((p) => `<p style="margin:0 0 12px">${escHtml(p)}</p>`).join("");
+  const nameP = `<p style="margin:0"><strong>${escHtml(cl.name || "")}</strong></p>`;
+  const box = $("#coverPreview");
+  box.innerHTML = `<div style="font-family:Georgia,serif;color:#1A1A1A;background:#fff;padding:26px;line-height:1.6;border-radius:6px">${lines}${nameP}</div>`;
+  box.classList.remove("hidden");
+  $("#coverDownloads").classList.remove("hidden");
+}
+$$("[data-cover]").forEach((b) => (b.onclick = () => downloadCover(b.dataset.cover)));
+async function downloadCover(type) {
+  const m = $("#coverMsg");
+  busy(m, true, "Preparing…");
+  try {
+    const r = await fetch(`/api/cover-letter/download?type=${type}`);
+    if (!r.ok) { const j = await r.json().catch(() => ({})); busy(m, false, "⚠ " + (j.error || ("Error " + r.status))); return; }
+    const blob = await r.blob();
+    const cd = r.headers.get("Content-Disposition") || "";
+    const mm = cd.match(/filename="([^"]+)"/);
+    const name = mm ? mm[1] : ("CoverLetter." + (type === "docx" ? "docx" : "pdf"));
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    busy(m, false, "Downloaded.");
+  } catch (e) { busy(m, false, "⚠ " + e.message); }
+}
 
 // On load: handle return from Stripe / sign-in, then load account state.
 (async function init() {
