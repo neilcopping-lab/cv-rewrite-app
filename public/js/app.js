@@ -454,6 +454,7 @@ function renderAccountBar() {
   }
 }
 function renderStep4Payment() {
+  loadCoverQuestions();
   const a = STATE.account || { signedIn: false, credits: 0 };
   const signin = $("#signinBox"), buy = $("#buyBox"), dl = $("#downloads");
   [signin, buy, dl].forEach((x) => x && x.classList.add("hidden"));
@@ -576,14 +577,39 @@ async function downloadFile(type) {
 $$("[data-dl]").forEach((b) => (b.onclick = () => downloadFile(b.dataset.dl)));
 
 // ── Cover letter add-on (1 credit) ──
+// Load the optional questions once, so the letter is built from real answers.
+let _coverQsLoaded = false;
+async function loadCoverQuestions() {
+  const host = $("#coverQs");
+  if (!host || _coverQsLoaded) return;
+  try {
+    const j = await api("/api/cover-letter/questions");
+    STATE.coverQuestions = j.questions || [];
+    host.innerHTML = STATE.coverQuestions.map((q) => `
+      <div style="margin:0 0 10px">
+        <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px;text-transform:none;letter-spacing:normal">${escHtml(q.question)}</label>
+        <textarea data-cq="${escHtml(q.id)}" rows="2" placeholder="Optional — in your own words" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font-body);font-size:14px;resize:vertical"></textarea>
+      </div>`).join("");
+    _coverQsLoaded = true;
+  } catch (_) {}
+}
+function collectCoverAnswers() {
+  const byId = {}; (STATE.coverQuestions || []).forEach((q) => (byId[q.id] = q.question));
+  return $$("#coverQs [data-cq]").map((t) => ({ id: t.dataset.cq, question: byId[t.dataset.cq] || "", answer: t.value.trim() })).filter((a) => a.answer);
+}
+
 const coverBtn = $("#coverBtn");
 if (coverBtn) coverBtn.onclick = async () => {
   const m = $("#coverMsg");
-  busy(m, true, "Writing your cover letter…");
+  const answers = collectCoverAnswers();
+  const body = STATE.coverPaid ? { answers, regenerate: true } : { answers };
+  busy(m, true, STATE.coverPaid ? "Rewriting in your voice…" : "Writing your cover letter…");
   try {
-    const j = await api("/api/cover-letter", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+    const j = await api("/api/cover-letter", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     renderCoverLetter(j.coverLetter);
-    busy(m, false, j.alreadyPaid ? "Here's your cover letter." : "Done — that used 1 credit.");
+    STATE.coverPaid = true;
+    coverBtn.textContent = "Rewrite with my answers (free)";
+    busy(m, false, j.alreadyPaid && !answers.length ? "Here's your cover letter." : "Done. Not quite you? Tweak your answers and rewrite — free.");
     await refreshAccount();
   } catch (e) {
     if (/no-credits/.test(e.message)) { await refreshAccount(); busy(m, false, "You're out of credits — choose a pack above to add one."); }

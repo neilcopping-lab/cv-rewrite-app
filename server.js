@@ -29,6 +29,23 @@ const payment = require("./lib/payment");
 const email = require("./lib/email");
 const db = require("./lib/db");
 const auth = require("./lib/auth");
+const cliches = require("./lib/cliches");
+
+// Silently strip mechanical AI clichés from the CV's free-text fields, so the
+// finished CV never reads like a machine wrote it (belt-and-braces with the
+// prompt-level ban).
+function scrubCv(cv) {
+  if (!cv || typeof cv !== "object") return cv;
+  if (cv.personalStatement) cv.personalStatement = cliches.scrub(cv.personalStatement);
+  (cv.skills || []).forEach((s) => { if (s && s.proof) s.proof = cliches.scrub(s.proof); });
+  (cv.experience || []).forEach((r) => {
+    if (!r) return;
+    r.responsibilities = (r.responsibilities || []).map((b) => cliches.scrub(b));
+    r.achievements = (r.achievements || []).map((a) => cliches.scrub(a));
+  });
+  (cv.skillsMatch || []).forEach((m) => { if (m && m.proof) m.proof = cliches.scrub(m.proof); });
+  return cv;
+}
 
 const app = express();
 const upload = multer({ dest: path.join(__dirname, "tmp") });
@@ -377,6 +394,8 @@ async function generateWork(st) {
   cv = fab.cleanedCV;
   applyUserLinks(cv, st); // the user's own links, added after the gate
 
+  scrubCv(cv); // strip mechanical AI clichés before checks/preview
+
   // Programmatic Section 8 checks.
   const prog = checks.run(cv);
 
@@ -436,6 +455,7 @@ async function resolveWork(st, { resolutions, acceptLeaveOutArr }) {
   // Drop any remaining missing the candidate explicitly accepted leaving out.
   cv.missing = (cv.missing || []).filter((m) => !acceptLeaveOut.has(m.item));
 
+  scrubCv(cv); // strip mechanical AI clichés
   const prog = checks.run(cv);
   st.cv = cv;
   st.checkReport = { fabrication: fab, programmatic: prog, review };
@@ -598,6 +618,13 @@ app.get("/api/download", async (req, res) => {
 // ─── Cover letter (optional add-on, costs 1 credit) ─────────────────────────
 // Generates a personalised, honest cover letter from the finished CV + advert.
 // One credit per letter; re-downloading the same letter (Word/PDF) is free.
+// The (optional) questions we ask before writing the letter, tailored to the
+// advert so the letter is built from the candidate's real reasons.
+app.get("/api/cover-letter/questions", (req, res) => {
+  const st = S(req);
+  res.json({ questions: coverLetter.buildQuestions({ advertText: st.advertText, cv: st.cv }) });
+});
+
 app.post("/api/cover-letter", async (req, res) => {
   try {
     const st = S(req);
@@ -605,17 +632,25 @@ app.post("/api/cover-letter", async (req, res) => {
     const userEmail = currentEmail(req);
     if (!userEmail) return res.status(401).json({ error: "Please sign in to add a cover letter." });
 
-    // Already written for this exact CV version? Return it free.
-    if (st.coverLetter && st.coverLetterVersion === st.cvVersion) {
+    const answers = Array.isArray(req.body.answers) ? req.body.answers : (st.coverAnswers || []);
+    const alreadyPaid = st.coverLetter && st.coverLetterVersion === st.cvVersion;
+    const wantsRegen = req.body.regenerate === true || (Array.isArray(req.body.answers) && req.body.answers.length > 0);
+
+    // Already paid for this CV version: regenerating with new answers is free;
+    // otherwise just hand back the letter we already wrote.
+    if (alreadyPaid && !wantsRegen) {
       return res.json({ ok: true, coverLetter: st.coverLetter, alreadyPaid: true, balance: db.credits(userEmail) });
     }
-    // Otherwise it costs one credit.
-    if (db.credits(userEmail) < 1) return res.status(402).json({ error: "no-credits" });
-    if (!db.spendCredit(userEmail)) return res.status(402).json({ error: "no-credits" });
+    // First letter for this CV version costs one credit.
+    if (!alreadyPaid) {
+      if (db.credits(userEmail) < 1) return res.status(402).json({ error: "no-credits" });
+      if (!db.spendCredit(userEmail)) return res.status(402).json({ error: "no-credits" });
+    }
 
+    st.coverAnswers = answers;
     const cleanCv = sanitizeForOutput(st.cv);
     const letter = await coverLetter.generate({
-      cv: cleanCv, advertText: st.advertText, writingStyle: st.writingStyle, styleSample: st.styleSample
+      cv: cleanCv, advertText: st.advertText, writingStyle: st.writingStyle, styleSample: st.styleSample, answers
     });
     st.coverLetter = letter;
     st.coverLetterVersion = st.cvVersion;
