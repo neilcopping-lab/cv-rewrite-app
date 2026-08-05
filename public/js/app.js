@@ -118,6 +118,9 @@ $("#go1").onclick = async () => {
       youtube: ($("#linkYoutube") || {}).value?.trim() || ""
     };
     fd.append("links", JSON.stringify(links));
+    // Writing style + optional voice sample.
+    if ($("#writingStyle")) fd.append("writingStyle", $("#writingStyle").value);
+    if ($("#styleSample") && $("#styleSample").value.trim()) fd.append("styleSample", $("#styleSample").value.trim());
     const ex = await api("/api/extract", { method: "POST", body: fd });
     // Show the extracted text in the boxes so you can see it worked and edit it.
     if (ex.cvText) $("#cvText").value = ex.cvText;
@@ -319,9 +322,8 @@ function switchKind(kind) {
 function renderDesignGrid() {
   $("#designGrid").innerHTML = currentList().map((d) =>
     `<div class="design-card ${d.id === STATE.designId ? "sel" : ""}" data-d="${d.id}">
-      ${STATE.kind === "designer"
-        ? '<div class="thumb" style="display:flex;align-items:center;justify-content:center;background:#161F29;color:#E0B03C;font-family:var(--font-label);letter-spacing:1px;font-size:12px">PDF · DESIGNER</div>'
-        : `<img class="thumb" src="/img/thumbs/${d.id}.svg" alt="${d.name}" onerror="this.style.opacity=.3">`}
+      <img class="thumb" src="/img/thumbs/${d.id}.${STATE.kind === "designer" ? "png" : "svg"}" alt="${d.name}" onerror="this.style.opacity=.3">
+      ${STATE.kind === "designer" ? '<span class="pdf-badge">PDF</span>' : ""}
       <div class="meta"><h4>${d.name}</h4><p>${d.description}</p></div>
     </div>`).join("");
   $$("[data-d]").forEach((c) => (c.onclick = () => selectDesign(c.dataset.d)));

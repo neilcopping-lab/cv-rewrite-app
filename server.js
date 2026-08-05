@@ -225,6 +225,9 @@ app.post(
       if (req.body.removePhoto === "1") st.photo = null;
       // Links the user confirms are live (LinkedIn, portfolio, website, GitHub).
       if (req.body.links) { try { st.links = JSON.parse(req.body.links); } catch (_) {} }
+      // Optional writing style + a sample of the candidate's own writing to mirror.
+      if (req.body.writingStyle) st.writingStyle = req.body.writingStyle;
+      if (typeof req.body.styleSample === "string") st.styleSample = req.body.styleSample.slice(0, 4000);
       // CV
       if (req.files?.cvFile?.[0]) {
         const f = req.files.cvFile[0];
@@ -313,7 +316,8 @@ async function generateWork(st) {
   // Generate the draft.
   let cv = await cvGenerator.generate({
     cvText: st.cvText, advertText: st.advertText, gaps: st.gaps,
-    answers: st.answers, linksConfirmed: st.linksConfirmed
+    answers: st.answers, linksConfirmed: st.linksConfirmed,
+    writingStyle: st.writingStyle, styleSample: st.styleSample
   });
 
   // HARD GATE (fabrication) and the advisory self-review don't depend on each
@@ -373,7 +377,8 @@ async function resolveWork(st, { resolutions, acceptLeaveOutArr }) {
 
   let cv = await cvGenerator.generate({
     cvText: st.cvText, advertText: st.advertText, gaps: st.gaps,
-    answers: st.answers, linksConfirmed: st.linksConfirmed
+    answers: st.answers, linksConfirmed: st.linksConfirmed,
+    writingStyle: st.writingStyle, styleSample: st.styleSample
   });
   const [fab, review] = await Promise.all([
     fabrication.check(cv, st.sot),

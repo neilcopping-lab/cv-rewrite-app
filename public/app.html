@@ -1,7 +1,7 @@
 <!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Rewrite My CV - The Com'mon People</title>
-<link rel="icon" href="/img/favicon.svg">
+<link rel="icon" href="/img/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Arvo:wght@400;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -9,7 +9,7 @@
 </head><body>
 
 <header class="site"><nav class="nav">
-  <a class="cp-logo" href="/" aria-label="The Com'mon People"><span class="blk b1">The</span><span class="blk b2">Com'mon</span><span class="blk b3">People</span></a>
+  <a class="cp-logo" href="/" aria-label="The Com'mon People"><img src="/img/logo-official.png" alt="The Com'mon People"></a>
   <div class="links">
     <a href="https://the-common-people.com/guide-cv.html">CV Guide</a>
     <a href="https://the-common-people.com/prep-report.html">Interview Prep Report</a>
@@ -66,6 +66,19 @@
       <p class="muted" style="font-size:13px;margin:6px 0 0">Only add links you're happy to appear on your CV. We show them exactly as you type them.</p>
       <label>Photo (optional) — appears on the designed CV, never on the ATS version</label>
       <input type="file" id="photoFile" accept="image/*">
+    </details>
+
+    <label style="margin-top:16px">How should your CV be written?</label>
+    <select id="writingStyle" style="width:100%;max-width:420px;padding:11px 12px;background:var(--panel);color:var(--cream);border:1px solid var(--line);border-radius:6px;font-family:var(--font-body);font-size:15px">
+      <option value="professional">Professional &amp; polished — clear and recruiter-friendly</option>
+      <option value="warm">Warm &amp; personable — friendly and human</option>
+      <option value="concise">Concise &amp; punchy — short and high-impact</option>
+      <option value="senior">Confident &amp; senior — authoritative and strategic</option>
+    </select>
+    <details style="margin-top:12px">
+      <summary style="cursor:pointer;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:13px;color:var(--gold);padding:6px 0">Or match my own writing style (optional)</summary>
+      <p class="muted" style="font-size:13px;margin:6px 0">Paste a paragraph or two you've written yourself — a bio, a cover letter, anything — and we'll mirror your voice (your tone, not your content).</p>
+      <textarea id="styleSample" placeholder="Paste some of your own writing here…"></textarea>
     </details>
 
     <p style="margin-top:18px"><button class="btn accent" id="go1">Find the gaps →</button> <span id="s1" class="muted"></span></p>
