@@ -17,8 +17,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       fonts-liberation \
       fonts-dejavu-core \
       ca-certificates \
- && pip3 install --no-cache-dir --break-system-packages pypdf reportlab \
  && rm -rf /var/lib/apt/lists/*
+
+# Watermark deps for the preview PDF. Non-fatal: if the install fails for any
+# reason, the build still succeeds and the watermark simply no-ops (fails open),
+# so a dependency hiccup can never block a deploy.
+RUN pip3 install --no-cache-dir --break-system-packages pypdf reportlab \
+ || pip3 install --no-cache-dir pypdf reportlab \
+ || ( apt-get update && apt-get install -y --no-install-recommends python3-pypdf python3-reportlab ) \
+ || echo "watermark deps unavailable - preview watermark will no-op"
 
 WORKDIR /app
 COPY package*.json ./
