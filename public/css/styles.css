@@ -2,7 +2,7 @@
    dark navy canvas, cream text, gold accent, Anton / Oswald / Arvo. */
 :root{
   --navy:#161F29; --navy-deep:#0F151C; --panel:#2A333D;
-  --cream:#ECE6D8; --cream-muted:#A9A293; --muted:#7A7466; --line:#2E3945;
+  --cream:#ECE6D8; --cream-muted:#C3BBA8; --muted:#9A9280; --line:#2E3945;
   --gold:#E0B03C; --gold-deep:#C69A2E; --teal:#5AA9C2; --orange:#D2691E;
   --ink:#161F29;
   --font-display:'Anton',Impact,sans-serif;
@@ -94,6 +94,12 @@ label{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05e
 .q .qtext{font-family:var(--font-body);font-weight:700;font-size:15px;color:var(--cream)}
 .q .tag{font-family:var(--font-label);font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--gold)}
 .flag{background:#3a2417;border-left:4px solid var(--orange);padding:12px;margin:10px 0;font-size:15px}
+/* design category filter chips */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 14px}
+.chip{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:12px;font-weight:600;
+  background:transparent;color:var(--cream-muted);border:1px solid var(--line);padding:6px 13px;cursor:pointer;border-radius:999px;transition:all .15s}
+.chip:hover{color:var(--cream);border-color:var(--gold)}
+.chip.on{background:var(--gold);color:var(--ink);border-color:var(--gold)}
 .design-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
 .design-card{border:1px solid var(--line);background:var(--panel);cursor:pointer;overflow:hidden}
 .design-card.sel{outline:3px solid var(--gold);outline-offset:-1px}
@@ -112,6 +118,7 @@ label{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05e
 .progress .meta{display:flex;justify-content:space-between;align-items:center;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:12px;margin-top:8px}
 .progress .msg{color:var(--gold)}
 .progress .secs{color:var(--cream-muted)}
+.progress .eta{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:11px;color:var(--cream-muted);margin-top:6px}
 .notice{font-family:var(--font-body);font-size:15px;background:var(--panel);border:1px solid var(--line);padding:12px;margin:12px 0;color:var(--cream)}
 .notice strong{color:var(--gold)}
 .hidden{display:none}

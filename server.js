@@ -507,6 +507,41 @@ app.post("/api/preview", (req, res) => {
   res.json({ ok: true, designId: st.designId, html: htmlPreview.preview(clean, st.designId) });
 });
 
+// True-to-download preview: render the SELECTED design's real PDF (Word via
+// LibreOffice, designer via weasyprint) and stream it inline for an <iframe>,
+// so the preview looks exactly like the downloaded file. No credit is spent.
+// A small in-memory cache keyed by CV version + design keeps re-selecting fast.
+const _previewCache = new Map();
+function _pvGet(k) { return _previewCache.get(k); }
+function _pvSet(k, buf) { _previewCache.set(k, buf); if (_previewCache.size > 48) _previewCache.delete(_previewCache.keys().next().value); }
+app.get("/api/preview-pdf", async (req, res) => {
+  try {
+    const st = S(req);
+    if (!st.cv) return res.status(400).send("No CV to preview yet.");
+    const reqId = req.query.design || st.designId || designs[0].id;
+    const clean = sanitizeForOutput(st.cv);
+    const key = `${st.cvVersion || 0}:${reqId}`;
+    let buf = _pvGet(key);
+    if (!buf) {
+      if (isDesigner(reqId)) {
+        if (!weasyAvailable()) return res.status(503).send("Preview renderer unavailable.");
+        buf = await renderHtmlPdf(renderDesignerHtml(clean, reqId));
+      } else {
+        if (!libreAvailable()) return res.status(503).send("Preview renderer unavailable.");
+        const docx = await buildDocx(clean, byId(reqId), { ats: false, photo: st.photo });
+        buf = await docxToPdf(docx);
+      }
+      _pvSet(key, buf);
+    }
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline; filename=preview.pdf");
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.send(buf);
+  } catch (e) {
+    res.status(500).send("Preview error.");
+  }
+});
+
 // Buy a credit pack (£5 = 4 CVs, £10 = 10 CVs). Must be signed in.
 app.get("/api/packs", (req, res) => res.json({ packs: payment.PACKS }));
 

@@ -71,7 +71,8 @@ function startProgress(hostId, estimate, messages) {
   }
   host.innerHTML =
     '<div class="progress"><div class="bar"><i></i></div>' +
-    '<div class="meta"><span class="msg"></span><span class="secs">0s</span></div></div>';
+    '<div class="meta"><span class="msg"></span><span class="secs">0s</span></div>' +
+    '<div class="eta">Usually under 2 minutes — you can keep this tab open.</div></div>';
   const fill = host.querySelector(".bar > i");
   const secsEl = host.querySelector(".secs");
   const msgEl = host.querySelector(".msg");
@@ -251,6 +252,7 @@ function friendlyGap(m) {
 function renderDraft(j) {
   j = j || STATE.pendingDraft || {};        // never crash on a missing draft
   STATE.pendingDraft = j;
+  STATE.previewV = (STATE.previewV || 0) + 1; // new CV → refresh the PDF preview
   const g = $("#softEmailGate"); if (g) g.classList.add("hidden");
   const c = $("#draftContent"); if (c) c.classList.remove("hidden");
   const banner = $("#checkBanner");
@@ -335,9 +337,17 @@ $("#regen").onclick = async () => {
   } catch (e) { prog.fail(mapErr(e.message)); }
 };
 
-async function previewDraft() {
-  try { const j = await api("/api/preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ designId: STATE.designId || "modern-minimal" }) }); $("#draftPreview").innerHTML = j.html; }
-  catch (e) { $("#draftPreview").innerHTML = '<p class="muted">Preview needs a generated CV.</p>'; }
+// The preview now renders the SELECTED design's REAL PDF (same engine as the
+// download), so what you see is exactly what you get. A spinner shows until the
+// PDF loads; the ?v= busts the browser cache whenever a new CV is generated.
+function previewPdfHtml(id) {
+  const src = `/api/preview-pdf?design=${encodeURIComponent(id || "modern-minimal")}&v=${STATE.previewV || 0}#toolbar=0&navpanes=0&view=FitH`;
+  return `<div class="pvspin muted" style="padding:14px"><span class="spinner"></span> Rendering your exact CV…</div>` +
+    `<iframe title="CV preview" src="${src}" style="width:100%;height:900px;border:0;border-radius:6px;background:#fff" onload="var s=this.parentNode.querySelector('.pvspin'); if(s) s.remove();"></iframe>`;
+}
+function previewDraft() {
+  const box = $("#draftPreview");
+  if (box) box.innerHTML = previewPdfHtml(STATE.designId || "modern-minimal");
 }
 
 // ── STEP 3 -> 4 ──
@@ -393,20 +403,53 @@ function switchKind(kind) {
   const wb = document.querySelector('[data-dl="docx"]');
   if (wb) wb.style.display = kind === "designer" ? "none" : "";
   const note = $("#tplNote");
-  if (note) note.textContent = kind === "designer"
-    ? "Designer templates look stunning and download as PDF (with an ATS-safe PDF too). Word isn't available for these."
-    : "Word/ATS templates download as editable Word, PDF and an ATS-safe version.";
+  if (note) note.innerHTML = kind === "designer"
+    ? '<strong style="color:var(--cream)">Designer</strong> — premium, print-ready PDF (with an ATS-safe PDF too). Not editable, and Word isn\'t available for these.'
+    : '<strong style="color:var(--cream)">Word / ATS</strong> — fully editable, best for online application portals. Downloads as Word, PDF and an ATS-safe version.';
+  STATE.designFilter = "All";
   wireTemplateToggle();
   renderDesignGrid();
 }
+
+// Map each design's specific category to a broad filter group.
+const GROUP_MAP = {
+  Traditional: "Classic", "Ops / Hospitality": "Classic",
+  Minimal: "Simple", Plain: "Simple", "Early career": "Simple",
+  Structured: "Modern", Technical: "Modern",
+  Creative: "Creative", Statement: "Creative", Sales: "Creative",
+  Professional: "Executive", Senior: "Executive",
+  Academic: "Academic", Designer: "Designer"
+};
+const GROUP_ORDER = ["Simple", "Classic", "Modern", "Creative", "Executive", "Academic"];
+function groupOf(d) { return GROUP_MAP[d.category] || (d.kind === "designer" ? "Designer" : "Other"); }
+function renderDesignFilters() {
+  const host = $("#designFilters");
+  if (!host) return;
+  // Filters only help the larger Word tier; the 5 designer templates don't need them.
+  if (STATE.kind === "designer") { host.innerHTML = ""; return; }
+  const present = new Set(currentList().map(groupOf));
+  const groups = ["All", ...GROUP_ORDER.filter((g) => present.has(g))];
+  const active = STATE.designFilter || "All";
+  host.innerHTML = groups.map((g) =>
+    `<button type="button" class="chip ${g === active ? "on" : ""}" data-filter="${g}">${g}</button>`).join("");
+  host.querySelectorAll("[data-filter]").forEach((b) => (b.onclick = () => { STATE.designFilter = b.dataset.filter; renderDesignGrid(); }));
+}
 function renderDesignGrid() {
-  $("#designGrid").innerHTML = currentList().map((d) =>
+  renderDesignFilters();
+  const f = STATE.designFilter || "All";
+  const list = currentList().filter((d) => f === "All" || groupOf(d) === f);
+  $("#designGrid").innerHTML = list.map((d) =>
     `<div class="design-card ${d.id === STATE.designId ? "sel" : ""}" data-d="${d.id}">
       <img class="thumb" src="/img/thumbs/${d.id}.png" alt="${d.name}" onerror="this.style.opacity=.3">
       <span class="pdf-badge">${STATE.kind === "designer" ? "PDF" : "WORD"}</span>
       <div class="meta"><h4>${d.name}</h4><p>${d.description}</p></div>
     </div>`).join("");
   $$("[data-d]").forEach((c) => (c.onclick = () => selectDesign(c.dataset.d)));
+  // Keep a valid selection visible within the current filter.
+  if (list.length && !list.some((d) => d.id === STATE.designId)) {
+    STATE.designId = list[0].id;
+    $$(".design-card").forEach((c) => c.classList.toggle("sel", c.dataset.d === STATE.designId));
+  }
   updateDesignCaption();
   livePreview();
 }
@@ -416,17 +459,12 @@ async function selectDesign(id) {
   $$(".design-card").forEach((c) => c.classList.toggle("sel", c.dataset.d === id));
   livePreview();
 }
-async function livePreview() {
-  try {
-    const j = await api("/api/preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ designId: STATE.designId }) });
-    const box = $("#livePreview");
-    if (j.designer) {
-      box.innerHTML = '<iframe title="CV preview" style="width:100%;height:1000px;border:1px solid #2a2a2a;border-radius:6px;background:#fff"></iframe>';
-      // Inject a no-select rule so the preview text can't be copied out of the iframe.
-      const guarded = (j.html || "").replace("</head>", '<style>*{-webkit-user-select:none!important;user-select:none!important}</style></head>');
-      box.querySelector("iframe").srcdoc = guarded;
-    } else { box.innerHTML = j.html; }
-  } catch (e) { $("#livePreview").innerHTML = '<p class="muted">' + e.message + "</p>"; }
+function livePreview() {
+  // Tell the server which design is selected (keeps session designId in sync),
+  // then show the real rendered PDF — identical to the download.
+  api("/api/preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ designId: STATE.designId }) }).catch(() => {});
+  const box = $("#livePreview");
+  if (box) box.innerHTML = previewPdfHtml(STATE.designId);
 }
 
 // ── Accounts + credits ──
@@ -673,7 +711,22 @@ async function downloadCover(type) {
     }
   } catch (_) {}
 
-  if (jumpToDesign) { try { await loadDesigns(); showStep(4); } catch (e) {} }
+  if (jumpToDesign) {
+    try {
+      await loadDesigns(); showStep(4);
+      // Let a returning visitor know we kept their work (only on a plain reload,
+      // not straight after paying).
+      if (STATE.hasCv && p.get("paid") !== "1") {
+        const p4 = $("#p4");
+        if (p4 && !document.getElementById("resumeNote")) {
+          const n = document.createElement("div");
+          n.id = "resumeNote"; n.className = "notice"; n.style.cssText = "border-color:var(--teal);margin-bottom:14px";
+          n.innerHTML = '<strong style="color:var(--teal)">Welcome back.</strong> We kept your rewritten CV — pick up right here, choose a design and download.';
+          p4.insertBefore(n, p4.firstChild);
+        }
+      }
+    } catch (e) {}
+  }
   if (p.get("signin") === "ok") { const b = $("#s4b"); if (b) b.textContent = "You're signed in — pick a design or add a cover letter below."; }
 })();
 

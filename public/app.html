@@ -110,6 +110,7 @@
 
     <div id="draftContent" class="hidden">
       <div id="checkBanner" class="notice"></div>
+      <div class="notice" style="border-color:var(--teal)"><strong style="color:var(--teal)">✓ Honesty checked.</strong> Every figure, employer and claim below is traced back to what you told us — nothing invented, no inflated numbers. Written in plain English, with the usual AI clichés stripped out.</div>
       <div id="missingBox"></div>
       <div id="reviewBox"></div>
       <div class="previewbox nocopy" id="draftPreview"></div>
@@ -125,7 +126,8 @@
       <button class="btn ghost" id="tplWord" style="padding:8px 14px">Word / ATS templates</button>
       <button class="btn ghost" id="tplDesigner" style="padding:8px 14px">Designer templates (PDF)</button>
     </div>
-    <p class="muted" id="tplNote" style="margin:4px 0 10px">Word/ATS templates download as editable Word, PDF and an ATS-safe version.</p>
+    <p class="muted" id="tplNote" style="margin:4px 0 10px"><strong style="color:var(--cream)">Word / ATS</strong> — fully editable, best for online application portals. Downloads as Word, PDF and an ATS-safe version.</p>
+    <div class="filters" id="designFilters"></div>
     <div class="design-grid" id="designGrid"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:26px;flex-wrap:wrap">
       <h3 style="margin:0">Preview</h3>
@@ -153,10 +155,10 @@
 
     <!-- Sign-in prompt (shown when not signed in) -->
     <div id="signinBox" class="notice hidden" style="margin-top:22px">
-      <strong>Sign in to download.</strong> Your credits are saved to your account so you can come back any time.
+      <strong>Sign in to download.</strong> We'll email you a 6-digit code — type it in below and you'll stay right here, nothing lost. Your credits are saved to your account.
       <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <input type="email" id="signinEmail" placeholder="you@email.com" style="max-width:300px">
-        <button class="btn accent" id="signinBtn">Email me a sign-in link</button>
+        <button class="btn accent" id="signinBtn">Email me a sign-in code</button>
       </div>
       <p style="margin-top:8px"><span id="signinMsg" class="muted"></span></p>
     </div>
