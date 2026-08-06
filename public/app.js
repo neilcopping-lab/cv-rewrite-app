@@ -207,7 +207,7 @@ async function recordAnswer(id) {
       fd.append("audio", new Blob(chunks, { type: mime }), "answer." + ext);
       try { const j = await api("/api/transcribe", { method: "POST", body: fd });
         document.querySelector(`[data-answer="${id}"]`).value = j.text; label.textContent = "Transcribed."; }
-      catch (e) { label.textContent = "⚠ " + e.message + " — you can type your answer instead."; }
+      catch (e) { label.textContent = "⚠ " + e.message + " - you can type your answer instead."; }
     };
     rec.start(); label.textContent = "Recording… click again to stop.";
     const btn = document.querySelector(`[data-rec="${id}"]`);

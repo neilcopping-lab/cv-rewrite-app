@@ -72,7 +72,7 @@ function startProgress(hostId, estimate, messages) {
   host.innerHTML =
     '<div class="progress"><div class="bar"><i></i></div>' +
     '<div class="meta"><span class="msg"></span><span class="secs">0s</span></div>' +
-    '<div class="eta">Usually under 2 minutes — you can keep this tab open.</div></div>';
+    '<div class="eta">Usually under 2 minutes - you can keep this tab open.</div></div>';
   const fill = host.querySelector(".bar > i");
   const secsEl = host.querySelector(".secs");
   const msgEl = host.querySelector(".msg");
@@ -110,18 +110,18 @@ async function runJob(url, body) {
     await new Promise((r) => setTimeout(r, 2000));
     const s = await api("/api/job/" + start.jobId);
     if (s.status === "running") {
-      if (Date.now() - startedAt > 5 * 60 * 1000) throw new Error("This is taking longer than expected — please try again.");
+      if (Date.now() - startedAt > 5 * 60 * 1000) throw new Error("This is taking longer than expected - please try again.");
       continue;
     }
     if (s.status === "error") throw new Error(s.error || "Something went wrong while writing your CV.");
-    if (s.status === "unknown") throw new Error("We lost track of that request — please try again.");
+    if (s.status === "unknown") throw new Error("We lost track of that request - please try again.");
     return s; // done
   }
 }
 // Turn internal error codes into plain English.
 function mapErr(m) {
   if (/rewrite-limit/.test(m)) return "You've used your free rewrites for this CV. Download it to keep it (uses one credit), or start a new one later.";
-  if (/no-credits/.test(m)) return "You're out of CV credits — choose a pack to download.";
+  if (/no-credits/.test(m)) return "You're out of CV credits - choose a pack to download.";
   return m;
 }
 
@@ -169,19 +169,19 @@ function renderGaps(g) {
     : "";
   STATE.questions = [...(g.gapQuestions || []), ...(g.sectionQuestions || [])];
   if (!STATE.questions.length) {
-    // Nothing genuinely missing — don't invent questions.
+    // Nothing genuinely missing - don't invent questions.
     $("#questions").innerHTML = `<div class="notice"><strong>Nothing to add.</strong> Your CV already covers what we need for this role, so there's nothing to ask. Press <em>Write my CV</em> whenever you're ready.</div>`;
     return;
   }
   $("#questions").innerHTML =
-    `<p class="muted" style="margin:0 0 8px">All optional. Only fill in what isn't already on your CV — skip anything that's already covered.</p>` +
+    `<p class="muted" style="margin:0 0 8px">All optional. Only fill in what isn't already on your CV - skip anything that's already covered.</p>` +
     STATE.questions.map((q, i) => {
       const tag = q.requirement ? "Gap" : (q.section || "Optional");
       const id = q.id || "q" + i;
       return `<div class="q" data-qid="${id}">
         <div class="tag">${tag}</div>
         <div class="qtext">${q.question}</div>
-        <textarea data-answer="${id}" placeholder="Optional — leave blank if it's already on your CV"></textarea>
+        <textarea data-answer="${id}" placeholder="Optional - leave blank if it's already on your CV"></textarea>
         <button class="btn ghost" style="font-size:13px;padding:8px 12px" data-rec="${id}">● Record answer</button>
         <span class="muted" data-recs="${id}"></span>
       </div>`;
@@ -215,7 +215,7 @@ async function revealDraft(j) {
   if (j) renderDraft(j);
   else if (!(await ensureDraft())) renderDraft({ message: "Your rewritten CV is ready.", missing: [], review: {} });
 }
-// Soft email step — capture the lead, then reveal.
+// Soft email step - capture the lead, then reveal.
 const softEmailBtn = $("#softEmailBtn");
 if (softEmailBtn) softEmailBtn.onclick = async () => {
   const em = ($("#softEmail").value || "").trim(); const m = $("#softMsg");
@@ -404,8 +404,8 @@ function switchKind(kind) {
   if (wb) wb.style.display = kind === "designer" ? "none" : "";
   const note = $("#tplNote");
   if (note) note.innerHTML = kind === "designer"
-    ? '<strong style="color:var(--cream)">Designer</strong> — premium, print-ready PDF (with an ATS-safe PDF too). Not editable, and Word isn\'t available for these.'
-    : '<strong style="color:var(--cream)">Word / ATS</strong> — fully editable, best for online application portals. Downloads as Word, PDF and an ATS-safe version.';
+    ? '<strong style="color:var(--cream)">Designer</strong> - premium, print-ready PDF (with an ATS-safe PDF too). Not editable, and Word isn\'t available for these.'
+    : '<strong style="color:var(--cream)">Word / ATS</strong> - fully editable, best for online application portals. Downloads as Word, PDF and an ATS-safe version.';
   STATE.designFilter = "All";
   wireTemplateToggle();
   renderDesignGrid();
@@ -461,7 +461,7 @@ async function selectDesign(id) {
 }
 function livePreview() {
   // Tell the server which design is selected (keeps session designId in sync),
-  // then show the real rendered PDF — identical to the download.
+  // then show the real rendered PDF - identical to the download.
   api("/api/preview", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ designId: STATE.designId }) }).catch(() => {});
   const box = $("#livePreview");
   if (box) box.innerHTML = previewPdfHtml(STATE.designId);
@@ -485,7 +485,7 @@ function renderAccountBar() {
     const so = $("#signoutBtn"); if (so) so.onclick = async () => { await api("/api/auth/logout", { method: "POST" }); await refreshAccount(); };
     if (topBox) topBox.classList.add("hidden");
   } else {
-    st.innerHTML = "New here? Just start below — you can sign in when you're ready to download. Returning customer? Sign in to load your credits.";
+    st.innerHTML = "New here? Just start below - you can sign in when you're ready to download. Returning customer? Sign in to load your credits.";
     act.innerHTML = `<button class="btn ghost" id="topSigninToggle" style="padding:8px 12px">Sign in</button>`;
     const tt = $("#topSigninToggle");
     if (tt) tt.onclick = () => { if (topBox) { topBox.classList.toggle("hidden"); const e = $("#topSigninEmail"); if (e && !topBox.classList.contains("hidden")) e.focus(); } };
@@ -513,15 +513,15 @@ async function requestSignin(email, msg) {
   try {
     const j = await api("/api/auth/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
     showCodeEntry(msg, email);
-    if (j.sent) busy(msg, false, "We've emailed you a 6-digit code — type it in below to sign in. You won't lose anything on this page.");
-    else if (j.devCode) busy(msg, false, `Email isn't set up. Your code is <strong>${j.devCode}</strong> — type it in below.`);
-    else busy(msg, false, "Code sent — type it in below.");
+    if (j.sent) busy(msg, false, "We've emailed you a 6-digit code - type it in below to sign in. You won't lose anything on this page.");
+    else if (j.devCode) busy(msg, false, `Email isn't set up. Your code is <strong>${j.devCode}</strong> - type it in below.`);
+    else busy(msg, false, "Code sent - type it in below.");
     pollForSignin(msg); // backup: if they click the emailed link instead
   } catch (e) { busy(msg, false, "⚠ " + e.message); }
 }
 
 // Reveal a code input directly under the sign-in message. Verifying the code
-// updates the account in place — no navigation, so the CV in progress stays.
+// updates the account in place - no navigation, so the CV in progress stays.
 function showCodeEntry(msg, email) {
   if (!msg) return;
   let row = document.getElementById(msg.id + "-code");
@@ -547,12 +547,12 @@ async function verifyCode(email, code, msg, row) {
     if (_signinPoll) { clearInterval(_signinPoll); _signinPoll = null; }
     STATE.account = { signedIn: true, email: j.email, credits: j.credits };
     if (row) row.remove();
-    busy(msg, false, "Signed in — carry on right here, nothing was lost.");
+    busy(msg, false, "Signed in - carry on right here, nothing was lost.");
     renderAccountBar(); renderStep4Payment();
   } catch (e) { busy(msg, false, "⚠ " + e.message); }
 }
 // After a sign-in link is sent, watch for the click (in this or another tab)
-// and update the account UI in place — no reload, so the CV in progress stays.
+// and update the account UI in place - no reload, so the CV in progress stays.
 let _signinPoll = null;
 function pollForSignin(msg) {
   if (_signinPoll) clearInterval(_signinPoll);
@@ -564,7 +564,7 @@ function pollForSignin(msg) {
       if (me.signedIn) {
         clearInterval(_signinPoll); _signinPoll = null;
         STATE.account = me; renderAccountBar(); renderStep4Payment();
-        if (msg) busy(msg, false, "Signed in — carry on right here.");
+        if (msg) busy(msg, false, "Signed in - carry on right here.");
       }
     } catch (_) {}
     if (tries > 100) { clearInterval(_signinPoll); _signinPoll = null; }
@@ -598,7 +598,7 @@ async function downloadFile(type) {
     if (!r.ok) {
       const j = await r.json().catch(() => ({}));
       if (r.status === 401) { await refreshAccount(); busy(s, false, "Please sign in to download."); return; }
-      if (r.status === 402) { await refreshAccount(); busy(s, false, "You're out of CV credits — choose a pack below."); return; }
+      if (r.status === 402) { await refreshAccount(); busy(s, false, "You're out of CV credits - choose a pack below."); return; }
       busy(s, false, "⚠ " + (j.error || ("Error " + r.status))); return;
     }
     const blob = await r.blob();
@@ -640,7 +640,7 @@ function litStars(n) { $$("#fbStars span").forEach((s) => s.classList.toggle("li
     busy(msg, true, "Sending…");
     try {
       await api("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stars: _fbStars, comment: ($("#fbComment").value || "").trim(), context: "post-download" }) });
-      busy(msg, false, "Thank you — that really helps.");
+      busy(msg, false, "Thank you - that really helps.");
       setTimeout(close, 1100);
     } catch (e) { busy(msg, false, "⚠ " + e.message); }
   };
@@ -664,7 +664,7 @@ async function loadCoverQuestions() {
     host.innerHTML = STATE.coverQuestions.map((q) => `
       <div style="margin:0 0 10px">
         <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px;text-transform:none;letter-spacing:normal">${escHtml(q.question)}</label>
-        <textarea data-cq="${escHtml(q.id)}" rows="2" placeholder="Optional — in your own words" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font-body);font-size:14px;resize:vertical"></textarea>
+        <textarea data-cq="${escHtml(q.id)}" rows="2" placeholder="Optional - in your own words" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font-body);font-size:14px;resize:vertical"></textarea>
       </div>`).join("");
     _coverQsLoaded = true;
   } catch (_) {}
@@ -685,10 +685,10 @@ if (coverBtn) coverBtn.onclick = async () => {
     renderCoverLetter(j.coverLetter);
     STATE.coverPaid = true;
     coverBtn.textContent = "Rewrite with my answers (free)";
-    busy(m, false, j.alreadyPaid && !answers.length ? "Here's your cover letter." : "Done. Not quite you? Tweak your answers and rewrite — free.");
+    busy(m, false, j.alreadyPaid && !answers.length ? "Here's your cover letter." : "Done. Not quite you? Tweak your answers and rewrite - free.");
     await refreshAccount();
   } catch (e) {
-    if (/no-credits/.test(e.message)) { await refreshAccount(); busy(m, false, "You're out of credits — choose a pack above to add one."); }
+    if (/no-credits/.test(e.message)) { await refreshAccount(); busy(m, false, "You're out of credits - choose a pack above to add one."); }
     else if (/sign in/i.test(e.message)) busy(m, false, "Please sign in first (above).");
     else busy(m, false, "⚠ " + mapErr(e.message));
   }
@@ -734,7 +734,7 @@ async function downloadCover(type) {
   }
   await refreshAccount();
 
-  // Restore work after any reload — including the magic-link sign-in, which
+  // Restore work after any reload - including the magic-link sign-in, which
   // reloads the page. If the server session still holds a finished CV, take the
   // user straight back to the design step with everything intact.
   try {
@@ -759,13 +759,13 @@ async function downloadCover(type) {
         if (p4 && !document.getElementById("resumeNote")) {
           const n = document.createElement("div");
           n.id = "resumeNote"; n.className = "notice"; n.style.cssText = "border-color:var(--teal);margin-bottom:14px";
-          n.innerHTML = '<strong style="color:var(--teal)">Welcome back.</strong> We kept your rewritten CV — pick up right here, choose a design and download.';
+          n.innerHTML = '<strong style="color:var(--teal)">Welcome back.</strong> We kept your rewritten CV - pick up right here, choose a design and download.';
           p4.insertBefore(n, p4.firstChild);
         }
       }
     } catch (e) {}
   }
-  if (p.get("signin") === "ok") { const b = $("#s4b"); if (b) b.textContent = "You're signed in — pick a design or add a cover letter below."; }
+  if (p.get("signin") === "ok") { const b = $("#s4b"); if (b) b.textContent = "You're signed in - pick a design or add a cover letter below."; }
 })();
 
 // ── Voice recording ──
@@ -787,7 +787,7 @@ async function recordAnswer(id) {
       fd.append("audio", new Blob(chunks, { type: mime }), "answer." + ext);
       try { const j = await api("/api/transcribe", { method: "POST", body: fd });
         document.querySelector(`[data-answer="${id}"]`).value = j.text; label.textContent = "Transcribed."; }
-      catch (e) { label.textContent = "⚠ " + e.message + " — you can type your answer instead."; }
+      catch (e) { label.textContent = "⚠ " + e.message + " - you can type your answer instead."; }
     };
     rec.start(); label.textContent = "Recording… click again to stop.";
     const btn = document.querySelector(`[data-rec="${id}"]`);
