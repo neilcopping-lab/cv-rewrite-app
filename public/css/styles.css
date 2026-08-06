@@ -169,6 +169,7 @@ label{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05e
 
 /* feedback modal */
 .fbwrap{position:fixed;inset:0;background:rgba(15,21,28,.72);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.fbwrap.hidden{display:none}
 .fbcard{position:relative;background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--gold);max-width:440px;width:100%;padding:26px 24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
 .fbcard h3{font-family:var(--font-display);text-transform:uppercase;color:var(--cream);font-size:22px}
 .fbclose{position:absolute;top:8px;right:12px;background:none;border:none;color:var(--cream-muted);font-size:26px;line-height:1;cursor:pointer}
