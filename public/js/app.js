@@ -610,9 +610,47 @@ async function downloadFile(type) {
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     busy(s, false, "Downloaded.");
     await refreshAccount();
+    maybeAskFeedback();
   } catch (e) { busy(s, false, "⚠ " + e.message); }
 }
 $$("[data-dl]").forEach((b) => (b.onclick = () => downloadFile(b.dataset.dl)));
+
+// ── Feedback pop-up (stars + comment), shown once after a download ──
+let _fbStars = 0;
+function litStars(n) { $$("#fbStars span").forEach((s) => s.classList.toggle("lit", +s.dataset.star <= n)); }
+(function wireFeedback() {
+  const stars = $("#fbStars");
+  if (stars) {
+    stars.querySelectorAll("span").forEach((s) => {
+      const v = +s.dataset.star;
+      s.onmouseenter = () => litStars(v);
+      s.onclick = () => { _fbStars = v; litStars(v); };
+      s.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { _fbStars = v; litStars(v); } };
+    });
+    stars.onmouseleave = () => litStars(_fbStars);
+  }
+  const close = () => { const m = $("#feedbackModal"); if (m) m.classList.add("hidden"); };
+  const cl = $("#fbClose"), sk = $("#fbSkip");
+  if (cl) cl.onclick = close;
+  if (sk) sk.onclick = (e) => { e.preventDefault(); close(); };
+  const send = $("#fbSend");
+  if (send) send.onclick = async () => {
+    const msg = $("#fbMsg");
+    if (!_fbStars) { busy(msg, false, "Tap a star first."); return; }
+    busy(msg, true, "Sending…");
+    try {
+      await api("/api/feedback", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stars: _fbStars, comment: ($("#fbComment").value || "").trim(), context: "post-download" }) });
+      busy(msg, false, "Thank you — that really helps.");
+      setTimeout(close, 1100);
+    } catch (e) { busy(msg, false, "⚠ " + e.message); }
+  };
+})();
+function maybeAskFeedback() {
+  if (STATE.feedbackShown) return;
+  STATE.feedbackShown = true;
+  const m = $("#feedbackModal");
+  if (m) setTimeout(() => m.classList.remove("hidden"), 900); // let the download start first
+}
 
 // ── Cover letter add-on (1 credit) ──
 // Load the optional questions once, so the letter is built from real answers.

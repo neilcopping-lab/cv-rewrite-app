@@ -123,6 +123,16 @@ label{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05e
 .notice strong{color:var(--gold)}
 .hidden{display:none}
 
+/* feedback modal */
+.fbwrap{position:fixed;inset:0;background:rgba(15,21,28,.72);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+.fbcard{position:relative;background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--gold);max-width:440px;width:100%;padding:26px 24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.fbcard h3{font-family:var(--font-display);text-transform:uppercase;color:var(--cream);font-size:22px}
+.fbclose{position:absolute;top:8px;right:12px;background:none;border:none;color:var(--cream-muted);font-size:26px;line-height:1;cursor:pointer}
+.fbclose:hover{color:var(--cream)}
+.stars{display:flex;gap:6px;font-size:38px;line-height:1;cursor:pointer}
+.stars span{color:#3a4652;transition:color .1s;user-select:none}
+.stars span.lit{color:var(--gold)}
+
 /* designer PDF badge on design cards */
 .design-card{position:relative}
 .pdf-badge{position:absolute;top:6px;right:6px;background:var(--gold);color:#161F29;font-family:var(--font-label);font-size:10px;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px}

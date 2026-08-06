@@ -13,9 +13,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libreoffice-core-nogui \
       weasyprint \
       python3 \
+      python3-pip \
       fonts-liberation \
       fonts-dejavu-core \
       ca-certificates \
+ && pip3 install --no-cache-dir --break-system-packages pypdf reportlab \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

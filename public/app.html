@@ -194,5 +194,27 @@
   <p class="muted" style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-size:13px">© 2026 The Com'mon People. Built on mutual aid. Uploaded files are deleted as soon as text is extracted. <a href="/privacy.html" style="text-transform:none;letter-spacing:normal">Privacy</a> · <a href="/terms.html" style="text-transform:none;letter-spacing:normal">Terms</a></p>
 </div></footer>
 
+<!-- Feedback pop-up (shown once after a download) -->
+<div id="feedbackModal" class="fbwrap hidden">
+  <div class="fbcard">
+    <button class="fbclose" id="fbClose" aria-label="Close">×</button>
+    <h3 style="margin:0 0 6px">How did we do?</h3>
+    <p class="muted" style="margin:0 0 14px">Your CV is downloaded. A quick rating helps us make this better for the next person.</p>
+    <div class="stars" id="fbStars" role="radiogroup" aria-label="Star rating">
+      <span data-star="1" role="radio" tabindex="0">★</span>
+      <span data-star="2" role="radio" tabindex="0">★</span>
+      <span data-star="3" role="radio" tabindex="0">★</span>
+      <span data-star="4" role="radio" tabindex="0">★</span>
+      <span data-star="5" role="radio" tabindex="0">★</span>
+    </div>
+    <textarea id="fbComment" placeholder="Anything you'd change, or that worked well? (optional)" style="margin-top:12px;min-height:90px"></textarea>
+    <div style="display:flex;gap:12px;align-items:center;margin-top:12px">
+      <button class="btn accent" id="fbSend">Send feedback</button>
+      <a href="#" id="fbSkip" class="muted" style="text-decoration:underline">No thanks</a>
+      <span id="fbMsg" class="muted"></span>
+    </div>
+  </div>
+</div>
+
 <script src="/js/app.js"></script>
 </body></html>

@@ -30,6 +30,7 @@ const email = require("./lib/email");
 const db = require("./lib/db");
 const auth = require("./lib/auth");
 const cliches = require("./lib/cliches");
+const { watermark } = require("./lib/watermark");
 
 // Silently strip mechanical AI clichés from the CV's free-text fields, so the
 // finished CV never reads like a machine wrote it (belt-and-braces with the
@@ -255,6 +256,43 @@ app.get("/api/draft", (req, res) => {
 app.get("/api/auth/me", (req, res) => {
   const e = currentEmail(req);
   res.json({ signedIn: !!e, email: e, credits: e ? db.credits(e) : 0 });
+});
+
+// ─── Feedback (star rating + comment) ───────────────────────────────────────
+// Stored to the DB and emailed to the internal address. Viewable at
+// /admin/feedback?key=ADMIN_KEY (set ADMIN_KEY in the environment to enable).
+app.post("/api/feedback", (req, res) => {
+  const stars = parseInt(req.body.stars, 10);
+  if (!(stars >= 1 && stars <= 5)) return res.status(400).json({ error: "Please choose a star rating." });
+  const st = S(req);
+  const entry = db.addFeedback({
+    stars, comment: req.body.comment,
+    email: currentEmail(req) || st.softEmail || null,
+    role: st.cv?.header?.targetRole || null,
+    context: req.body.context || "post-download"
+  });
+  email.sendFeedbackNotice(entry).catch(() => {});
+  res.json({ ok: true });
+});
+
+app.get("/admin/feedback", (req, res) => {
+  const key = process.env.ADMIN_KEY;
+  if (!key) return res.status(503).send("Feedback admin is disabled. Set ADMIN_KEY in the environment to enable it.");
+  if (req.query.key !== key) return res.status(401).send("Not authorised. Add ?key=YOUR_ADMIN_KEY to the URL.");
+  const items = db.listFeedback();
+  const avg = items.length ? (items.reduce((a, b) => a + (b.stars || 0), 0) / items.length).toFixed(2) : "—";
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  const rows = items.map((f) =>
+    `<tr><td>${"★".repeat(f.stars)}${"☆".repeat(5 - f.stars)}</td><td>${esc(f.comment) || "<i>(no comment)</i>"}</td><td>${esc(f.email) || "anon"}</td><td>${esc(f.role) || ""}</td><td>${esc(f.at)}</td></tr>`
+  ).join("");
+  res.setHeader("Content-Type", "text/html");
+  res.send(`<!doctype html><meta charset="utf-8"><title>CV Rewrite feedback</title>
+    <style>body{font-family:system-ui,Arial,sans-serif;margin:30px;color:#1a1a1a}h1{margin:0 0 4px}
+    .sum{color:#555;margin-bottom:18px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px 10px;text-align:left;vertical-align:top;font-size:14px}
+    th{background:#f4f4f4}td:first-child{white-space:nowrap;color:#B8860B}</style>
+    <h1>CV Rewrite — feedback</h1>
+    <p class="sum">${items.length} responses · average ${avg} / 5</p>
+    <table><tr><th>Rating</th><th>Comment</th><th>From</th><th>Role</th><th>When</th></tr>${rows || '<tr><td colspan="5">No feedback yet.</td></tr>'}</table>`);
 });
 
 app.post("/api/auth/logout", (req, res) => {
@@ -531,11 +569,12 @@ app.get("/api/preview-pdf", async (req, res) => {
         const docx = await buildDocx(clean, byId(reqId), { ats: false, photo: st.photo });
         buf = await docxToPdf(docx);
       }
+      buf = await watermark(buf); // stamp "PREVIEW" so an un-paid preview is unusable
       _pvSet(key, buf);
     }
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline; filename=preview.pdf");
-    res.setHeader("Cache-Control", "private, max-age=300");
+    res.setHeader("Cache-Control", "private, no-store");
     res.send(buf);
   } catch (e) {
     res.status(500).send("Preview error.");
