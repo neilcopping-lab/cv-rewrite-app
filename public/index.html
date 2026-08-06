@@ -53,7 +53,7 @@
   var t=document.getElementById('vtrack'); if(!t) return;
   function card(d){return '<div class="vcard" style="background:'+d.bg+';color:'+d.fg+'">'+
     '<img src="/img/thumbs/'+d.id+'.png" alt="'+d.name+' CV design" loading="lazy">'+
-    '<div><span class="nm">'+d.name+'</span><span class="tag">'+d.tag+'</span></div></div>';}
+    '<span class="nm">'+d.name+'</span><span class="tag">'+d.tag+'</span></div>';}
   var html=items.map(card).join('');
   t.innerHTML=html+html; // duplicated for a seamless loop
 })();
@@ -178,7 +178,7 @@
   <div class="eyebrow">From the founder</div>
   <h2>Why I built this</h2>
   <div class="founder">
-    <img class="pic" src="/img/founder.jpg" alt="Neil Copping, founder of The Com'mon People">
+    <div class="roundel"><img class="pic" src="/img/founder.jpg" alt="Neil Copping, founder of The Com'mon People"></div>
     <div class="txt">
       <p class="lead" style="max-width:none">After nine years in recruitment, I found myself on the other side of the desk, job-hunting like everyone else.</p>
       <p>So I built myself two small tools. One to rewrite my CV for the exact role I was going for, digging out the real things I'd done that made me right for it. And one to get me ready for the interview. A week later, I'd landed the job.</p>

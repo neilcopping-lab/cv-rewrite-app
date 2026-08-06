@@ -69,17 +69,18 @@ section:nth-of-type(even){background:var(--navy-deep)}
 .faq h3{font-family:var(--font-label);text-transform:none;font-size:19px;font-weight:600;margin:1.2em 0 .2em;color:var(--cream)}
 .price-flag{display:inline-block;background:var(--gold);color:var(--ink);font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05em;font-weight:600;padding:5px 12px;font-size:15px}
 
-/* design vertical carousel (small, named cards on brand-colour backdrops) */
-.vcar{height:430px;max-width:380px;margin:22px auto 0;overflow:hidden;position:relative;
-  -webkit-mask-image:linear-gradient(to bottom,transparent,#000 11%,#000 89%,transparent);
-  mask-image:linear-gradient(to bottom,transparent,#000 11%,#000 89%,transparent)}
-.vtrack{display:flex;flex-direction:column;animation:vscroll 34s linear infinite;will-change:transform}
+/* design horizontal carousel (auto-scrolling, named cards on brand backdrops) */
+.vcar{overflow:hidden;position:relative;margin-top:22px;
+  -webkit-mask-image:linear-gradient(to right,transparent,#000 5%,#000 95%,transparent);
+  mask-image:linear-gradient(to right,transparent,#000 5%,#000 95%,transparent)}
+.vtrack{display:flex;flex-direction:row;width:max-content;animation:hscroll 45s linear infinite;will-change:transform}
 .vcar:hover .vtrack{animation-play-state:paused}
-@keyframes vscroll{from{transform:translateY(0)}to{transform:translateY(-50%)}}
-.vcard{display:flex;align-items:center;gap:15px;padding:12px 15px;border-radius:12px;margin-bottom:14px}
-.vcard img{width:92px;height:auto;border-radius:3px;box-shadow:0 5px 16px rgba(0,0,0,.4);background:#fff;flex:0 0 auto}
-.vcard .nm{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05em;font-weight:600;font-size:15px;line-height:1.15}
-.vcard .tag{display:block;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05em;font-size:11px;opacity:.85;margin-top:3px}
+@keyframes hscroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.vcard{flex:0 0 auto;width:158px;margin-right:16px;padding:12px;border-radius:12px;text-align:center}
+.vcard img{width:100%;height:auto;border-radius:3px;box-shadow:0 5px 16px rgba(0,0,0,.4);background:#fff;display:block}
+.vcard .nm{display:block;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05em;font-weight:600;font-size:13px;line-height:1.15;margin-top:10px}
+.vcard .tag{display:block;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05em;font-size:10px;opacity:.85;margin-top:3px}
+@media(prefers-reduced-motion:reduce){.vtrack{animation:none}.vcar{overflow-x:auto}}
 
 /* before / after CV images (small, clearly labelled) */
 .bagrid{display:grid;gap:26px;margin-top:22px}
@@ -89,13 +90,15 @@ section:nth-of-type(even){background:var(--navy-deep)}
 .bafig.before .lbl{color:var(--cream-muted)}
 .bafig.after .lbl{color:var(--gold)}
 .bafig .cap{font-size:13px;margin-top:8px}
-.bafig img{width:100%;max-width:290px;height:auto;display:block;margin:10px auto 0;background:#fff;border:1px solid var(--line);box-shadow:0 10px 28px rgba(0,0,0,.4)}
+.bafig img{width:100%;max-width:230px;height:auto;display:block;margin:10px auto 0;background:#fff;border:1px solid var(--line);box-shadow:0 10px 28px rgba(0,0,0,.4)}
 .bafig.after img{border:3px solid var(--gold)}
 
-/* founder block - circular photo left, words right */
-.founder{display:flex;gap:30px;align-items:center;margin-top:22px;flex-wrap:wrap}
-.founder .pic{width:190px;height:190px;border-radius:50%;object-fit:cover;object-position:50% 24%;
-  border:4px solid var(--gold);filter:grayscale(1) contrast(1.03);flex:0 0 auto}
+/* founder block - orange roundel photo on the left, words on the right */
+.founder{display:flex;gap:34px;align-items:center;margin-top:22px;flex-wrap:wrap}
+.founder .roundel{width:230px;height:230px;border-radius:50%;background:var(--orange);
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto;box-shadow:0 12px 32px rgba(0,0,0,.4)}
+.founder .roundel img{width:196px;height:196px;border-radius:50%;object-fit:cover;object-position:50% 40%;
+  border:3px solid var(--cream);filter:grayscale(1) contrast(1.03)}
 .founder .txt{flex:1;min-width:280px}
 .founder p{max-width:44em}
 .founder .sig{font-family:var(--font-display);text-transform:uppercase;color:var(--gold);font-size:18px;margin-top:12px}
