@@ -78,6 +78,57 @@ app.use(
 );
 app.use(express.static(path.join(__dirname, "public")));
 
+// ─── Newsletter signup ──────────────────────────────────────────────────────
+// The static site at the-common-people.com posts here to add a subscriber to
+// the Resend audience. Reuses RESEND_API_KEY (already set for purchase emails).
+const SUBSCRIBE_ORIGINS = new Set([
+  "https://the-common-people.com",
+  "https://www.the-common-people.com",
+]);
+function subscribeCors(req, res) {
+  const origin = req.headers.origin;
+  if (origin && SUBSCRIBE_ORIGINS.has(origin)) {
+    res.set("Access-Control-Allow-Origin", origin);
+    res.set("Vary", "Origin");
+    res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.set("Access-Control-Allow-Headers", "Content-Type");
+  }
+}
+app.options("/api/subscribe", (req, res) => {
+  subscribeCors(req, res);
+  res.sendStatus(204);
+});
+app.post("/api/subscribe", async (req, res) => {
+  subscribeCors(req, res);
+  const email = String((req.body && req.body.email) || "").trim().toLowerCase();
+  const honeypot = String((req.body && req.body.company) || "");
+  if (honeypot) return res.json({ message: "Thanks." }); // ignore bots
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return res.status(400).json({ error: "Please enter a valid email address." });
+  }
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: "Signup isn't configured yet. Please try again later." });
+  }
+  const audienceId = process.env.RESEND_AUDIENCE_ID || "c01541fc-f17e-4ef2-a3f1-f5d068f98df1";
+  try {
+    const r = await fetch(`https://api.resend.com/audiences/${audienceId}/contacts`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ email, unsubscribed: false }),
+    });
+    if (!r.ok) {
+      const t = (await r.text()).toLowerCase();
+      const alreadyExists = r.status === 409 || r.status === 422 || t.includes("already");
+      if (alreadyExists) return res.json({ message: "You're already on the list. Thanks." });
+      return res.status(502).json({ error: "Couldn't subscribe right now. Please try again." });
+    }
+  } catch (e) {
+    return res.status(502).json({ error: "Couldn't subscribe right now. Please try again." });
+  }
+  return res.json({ message: "You're on the list. Welcome aboard." });
+});
+
 const S = (req) => (req.session.cv = req.session.cv || {});
 const currentEmail = (req) => req.session.userEmail || null;
 
