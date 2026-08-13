@@ -1,0 +1,37 @@
+<!-- ============================================================
+     CV REWRITE PAGE — corrected top menu bar
+     Paste this in place of the current nav on cv.the-common-people.com.
+     NOTE: the CV app is on a different subdomain, so every link to the
+     main site MUST be an absolute URL (https://the-common-people.com/...),
+     not ./guides.html — relative links would 404 on the CV subdomain.
+     This mirrors the homepage menu exactly.
+     ============================================================ -->
+<div style="display:flex; align-items:center; justify-content:space-between; padding:28px 64px; border-bottom:3px solid #ece6d8;">
+  <a href="https://the-common-people.com/index.html" style="display:flex; gap:2px;">
+    <span style="background:#e0b03c; padding:6px 10px 8px; transform:rotate(-3deg); box-shadow:2px 2px 0 rgba(0,0,0,0.4);"><span class="plate-txt" style="font-family:'Anton',sans-serif; font-size:24px;">The</span></span>
+    <span style="background:#5aa9c2; padding:6px 10px 8px; transform:rotate(2deg); box-shadow:2px 2px 0 rgba(0,0,0,0.4);"><span class="plate-txt" style="font-family:'Anton',sans-serif; font-size:24px;">Com'mon</span></span>
+    <span style="background:#d2691e; padding:6px 10px 8px; transform:rotate(-2deg); box-shadow:2px 2px 0 rgba(0,0,0,0.4);"><span class="plate-txt" style="font-family:'Anton',sans-serif; font-size:24px;">People</span></span>
+  </a>
+  <div style="display:flex; gap:40px; font-family:'Oswald',sans-serif; font-size:15px; font-weight:500; letter-spacing:0.5px; text-transform:uppercase;">
+    <a href="https://the-common-people.com/guides.html" style="color:#ece6d8;">Guides</a>
+    <a href="https://the-common-people.com/dispatches.html" style="color:#ece6d8;">Dispatches</a>
+    <a href="https://the-common-people.com/loudspeaker.html" style="color:#ece6d8;">Loudspeaker</a>
+    <a href="https://the-common-people.com/about.html" style="color:#ece6d8;">About</a>
+    <a href="https://the-common-people.com/apprenticeships.html" style="color:#ece6d8;">Apprenticeships</a>
+    <a href="https://the-common-people.com/prep-report.html" style="color:#ece6d8;">Interview Prep Report</a>
+    <a href="https://cv.the-common-people.com" style="color:#ece6d8;">CV Rewrite</a>
+  </div>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <a href="https://the-common-people.com/prep-report.html#coaching" style="display:flex; align-items:center; gap:8px; color:#ece6d8; font-family:'Oswald',sans-serif; font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;"><img src="https://the-common-people.com/cv-rewrite-founder.jpg" alt="Neil Copping" style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:2px solid #e0b03c;">Book a Call with Neil</a>
+    <a href="https://the-common-people.com/resources.html" style="background:#e0b03c; color:#161f29; font-family:'Oswald',sans-serif; font-weight:600; font-size:14px; text-transform:uppercase; letter-spacing:1px; padding:12px 24px;">Explore Resources</a>
+  </div>
+</div>
+
+<!-- IMPORTANT: the CV app must also load the same fonts, or the menu will
+     render in the wrong typeface (that's the font mismatch you spotted).
+     Make sure this is in the <head> of the CV app: -->
+<!--
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Arvo:wght@400;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>.plate-txt{color:#111;font-weight:800;-webkit-text-stroke:2px #f4efe4;paint-order:stroke fill;}</style>
+-->
