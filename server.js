@@ -126,6 +126,24 @@ app.post("/api/subscribe", async (req, res) => {
   } catch (e) {
     return res.status(502).json({ error: "Couldn't subscribe right now. Please try again." });
   }
+  // Welcome email (best-effort: never fail the signup if this errors).
+  try {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: process.env.RESEND_FROM || "The Com'mon People <cv@the-common-people.com>",
+        to: email,
+        subject: "You're on the list. The Com'mon People",
+        text:
+          "Thanks for subscribing to the Loudspeaker.\n\n" +
+          "Once a month you'll get an editor's view from the recruitment frontline, plus a heads-up when new free guides and dispatches land. No spam, no selling your details, and you can unsubscribe any time from the link in every email.\n\n" +
+          "The Com'mon People\nFree, always.",
+      }),
+    });
+  } catch (e) {
+    // ignore welcome-email errors
+  }
   return res.json({ message: "You're on the list. Welcome aboard." });
 });
 
