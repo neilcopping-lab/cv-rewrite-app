@@ -194,3 +194,95 @@ label{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05e
   font-size:30px; letter-spacing:3px; text-transform:uppercase;
   color:rgba(120,120,120,.16); pointer-events:none; white-space:nowrap; overflow:hidden;
 }
+   2026 LIGHT RE-THEME — matches the redesigned site (cp2.css)
+   Appended override: light canvas, plate logo, orange pills.
+   ============================================================ */
+:root{
+  --paper:#FFFFFF; --tint:#EAF2F5; --line:#E3E7EA; --ink:#1C2733; --muted:#5E6B77;
+  --red:#C0392B;
+  --font-body:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif;
+  --radius:14px; --radius-lg:20px;
+}
+body{background:var(--paper);color:var(--ink)}
+a{color:inherit}
+h1,h2,h3{color:var(--ink);letter-spacing:.4px}
+.lead{color:var(--ink)} .muted,.tile p,.faq h3+*{color:var(--muted)}
+.eyebrow{color:var(--teal);letter-spacing:.16em;font-weight:700}
+
+/* plate logo */
+.cp-logo img{display:none}
+.cp-logo{gap:4px}
+.cp-logo .blk{color:#14110E;-webkit-text-stroke:2.6px #FBF7EC;paint-order:stroke fill;
+  border:2.5px solid #14110E;border-radius:7px;box-shadow:0 3px 0 rgba(20,17,14,.5);
+  padding:6px 10px 7px;font-size:20px;letter-spacing:1px}
+.cp-logo.sm .blk{font-size:15px;padding:4px 7px 5px;-webkit-text-stroke:2px #FBF7EC}
+
+/* buttons -> pills */
+.btn{border-radius:999px;background:var(--orange);color:#fff;border:2px solid var(--orange);
+  padding:15px 30px;letter-spacing:.02em;transition:transform .12s,box-shadow .12s}
+.btn:hover{background:var(--orange);border-color:var(--orange);transform:translateY(-2px);box-shadow:0 14px 26px -14px rgba(22,31,41,.6)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line);text-decoration:none;padding:15px 26px}
+.btn.ghost:hover{border-color:var(--orange);color:var(--orange);background:transparent}
+.btn.accent{background:var(--orange);color:#fff}
+
+/* nav */
+header.site{background:color-mix(in srgb,var(--paper) 90%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav .links a{color:var(--muted)}
+.nav .links a:hover,.nav .links a.active{color:var(--orange)}
+.cp-book{font-family:var(--font-label);font-weight:600;text-transform:uppercase;letter-spacing:.03em;font-size:13px;
+  background:var(--orange);color:#fff;border-radius:999px;padding:11px 20px;white-space:nowrap}
+.cp-book:hover{color:#fff;filter:brightness(1.05)}
+
+/* sections */
+section{border-bottom:1px solid var(--line)}
+section:nth-of-type(even){background:var(--tint)}
+.hero::after{background-image:radial-gradient(var(--orange) 1.6px,transparent 1.7px);opacity:.09}
+.hero .fine{color:var(--muted)}
+
+/* tiles / cards / lists */
+.tile{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 18px 44px -24px rgba(22,31,41,.4)}
+.tile .n,.tile h3{color:var(--ink)} .tile .n{color:var(--orange)} .tile .ic{color:var(--orange)}
+.whatlist p{border-bottom:1px solid var(--line)} .whatlist strong{color:var(--ink)}
+.faq h3{color:var(--ink)}
+.price-flag{background:var(--orange);color:#fff;border-radius:999px}
+
+/* before/after + founder */
+.bafig.before .lbl{color:var(--muted)} .bafig.after .lbl{color:var(--orange)}
+.bafig img{border:1px solid var(--line);box-shadow:0 12px 30px -14px rgba(22,31,41,.5)}
+.bafig.after img{border:3px solid var(--orange)}
+.founder .roundel{background:var(--orange)} .founder .roundel img{border-color:#fff}
+.founder .sig{color:var(--orange)}
+
+/* footer stays navy (matches site) */
+.footer{background:var(--navy);color:#CBD3DB}
+.footer a{color:#AAB4BE} .footer a:hover{color:#fff}
+.footer h4{color:var(--gold)}
+
+/* app flow */
+.steps .s{background:var(--paper);border:1px solid var(--line);color:var(--muted)}
+.steps .s.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+.steps .s.done{border-color:var(--orange);color:var(--orange)}
+textarea,input[type=text],input[type=email],input[type=url]{background:var(--paper);color:var(--ink);border:1.5px solid var(--line);border-radius:10px}
+textarea:focus,input:focus{outline:3px solid var(--orange);border-color:var(--orange)}
+input[type=file]{color:var(--muted)}
+label{color:var(--ink)}
+.q{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius)}
+.q .qtext{color:var(--ink)} .q .tag{color:var(--orange)}
+.flag{background:#FBEDE4;border-left:4px solid var(--orange);color:var(--ink)}
+.chip{color:var(--muted);border:1px solid var(--line)} .chip:hover{color:var(--ink);border-color:var(--orange)}
+.chip.on{background:var(--orange);color:#fff;border-color:var(--orange)}
+.design-grid .design-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius)}
+.design-card.sel{outline:3px solid var(--orange)}
+.design-card .thumb{border-bottom:1px solid var(--line)}
+.design-card .meta h4{color:var(--ink)} .design-card .meta p{color:var(--muted)}
+.pdf-badge{background:var(--orange);color:#fff}
+.previewbox{background:var(--tint);border:1px solid var(--line);border-radius:var(--radius)}
+.progress .bar{background:var(--tint);border:1px solid var(--line)} .progress .bar>i{background:var(--orange)}
+.progress .msg{color:var(--orange)} .progress .secs,.progress .eta{color:var(--muted)}
+.notice{background:var(--tint);border:1px solid var(--line);color:var(--ink);border-radius:var(--radius)}
+.notice strong{color:var(--orange)}
+
+/* feedback modal */
+.fbcard{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--orange)}
+.fbcard h3{color:var(--ink)} .fbclose{color:var(--muted)} .fbclose:hover{color:var(--ink)}
+.stars span{color:#D4DBE0} .stars span.lit{color:var(--gold)}
