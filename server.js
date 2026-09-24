@@ -52,7 +52,7 @@ const app = express();
 const upload = multer({ dest: path.join(__dirname, "tmp") });
 const BASE = process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
 
-// Stripe webhook needs the raw body — register BEFORE json parser.
+// Stripe webhook needs the raw body, register BEFORE json parser.
 app.post("/webhook/stripe", express.raw({ type: "application/json" }), async (req, res) => {
   try {
     const event = payment.verifyWebhook(req.body, req.headers["stripe-signature"]);
@@ -276,7 +276,7 @@ app.post("/api/auth/request", async (req, res) => {
   }
 });
 
-// Verify a typed 6-digit code — signs the user in WITHOUT reloading the page,
+// Verify a typed 6-digit code, signs the user in WITHOUT reloading the page,
 // so their finished CV stays exactly where it is. This is the primary flow.
 app.post("/api/auth/verify-code", (req, res) => {
   const addr = (req.body.email || req.session.pendingEmail || "").trim().toLowerCase();
@@ -294,7 +294,7 @@ app.get("/auth", (req, res) => {
   res.redirect("/app.html?signin=ok");
 });
 
-// Session snapshot — lets the front-end restore a user's finished CV after a
+// Session snapshot, lets the front-end restore a user's finished CV after a
 // reload or a magic-link sign-in (which reloads the page), so nothing is lost.
 app.get("/api/state", (req, res) => {
   const st = S(req);
@@ -352,7 +352,7 @@ app.get("/admin/feedback", (req, res) => {
   if (!key) return res.status(503).send("Feedback admin is disabled. Set ADMIN_KEY in the environment to enable it.");
   if (req.query.key !== key) return res.status(401).send("Not authorised. Add ?key=YOUR_ADMIN_KEY to the URL.");
   const items = db.listFeedback();
-  const avg = items.length ? (items.reduce((a, b) => a + (b.stars || 0), 0) / items.length).toFixed(2) : "—";
+  const avg = items.length ? (items.reduce((a, b) => a + (b.stars || 0), 0) / items.length).toFixed(2) : ", ";
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
   const rows = items.map((f) =>
     `<tr><td>${"★".repeat(f.stars)}${"☆".repeat(5 - f.stars)}</td><td>${esc(f.comment) || "<i>(no comment)</i>"}</td><td>${esc(f.email) || "anon"}</td><td>${esc(f.role) || ""}</td><td>${esc(f.at)}</td></tr>`
@@ -362,7 +362,7 @@ app.get("/admin/feedback", (req, res) => {
     <style>body{font-family:system-ui,Arial,sans-serif;margin:30px;color:#1a1a1a}h1{margin:0 0 4px}
     .sum{color:#555;margin-bottom:18px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px 10px;text-align:left;vertical-align:top;font-size:14px}
     th{background:#f4f4f4}td:first-child{white-space:nowrap;color:#B8860B}</style>
-    <h1>CV Rewrite — feedback</h1>
+    <h1>CV Rewrite, feedback</h1>
     <p class="sum">${items.length} responses · average ${avg} / 5</p>
     <table><tr><th>Rating</th><th>Comment</th><th>From</th><th>Role</th><th>When</th></tr>${rows || '<tr><td colspan="5">No feedback yet.</td></tr>'}</table>`);
 });
@@ -381,14 +381,14 @@ app.post("/api/dev/grant", (req, res) => {
   res.json({ ok: true, balance: db.addCredits(e, n) });
 });
 
-// ─── Step 1 — inputs: extract CV + advert text ──────────────────────────────
+// ─── Step 1, inputs: extract CV + advert text ──────────────────────────────
 app.post(
   "/api/extract",
   upload.fields([{ name: "cvFile" }, { name: "advertFile" }, { name: "photo" }]),
   async (req, res) => {
     try {
       const st = S(req);
-      // Optional photo — kept in the session as bytes, shown only on the human
+      // Optional photo, kept in the session as bytes, shown only on the human
       // version of the CV (never on the ATS version). Deleted from disk at once.
       if (req.files?.photo?.[0]) {
         const p = req.files.photo[0];
@@ -410,7 +410,7 @@ app.post(
         st.cvText = req.body.cvText.trim();
       }
       // Advert: file, URL, or pasted text. A failed URL should not blow up the
-      // whole request — tell the user to paste the text instead.
+      // whole request, tell the user to paste the text instead.
       let advertUrlFailed = false;
       if (req.files?.advertFile?.[0]) {
         const f = req.files.advertFile[0];
@@ -451,7 +451,7 @@ app.post(
   }
 );
 
-// ─── Step 2 — the skills-gap engine (two passes) ────────────────────────────
+// ─── Step 2, the skills-gap engine (two passes) ────────────────────────────
 app.post("/api/gaps", async (req, res) => {
   try {
     const st = S(req);
@@ -481,7 +481,7 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
   }
 });
 
-// ─── Step 3 — generate + fabrication gate ───────────────────────────────────
+// ─── Step 3, generate + fabrication gate ───────────────────────────────────
 // The slow pipeline, run as a background job (see startJob).
 async function generateWork(st) {
   // Build source-of-truth BEFORE generating (Section 9).
@@ -591,7 +591,7 @@ app.post("/api/resolve", (req, res) => {
   }
 });
 
-// "Leave them all out" — drop the outstanding flags WITHOUT re-running the AI
+// "Leave them all out", drop the outstanding flags WITHOUT re-running the AI
 // (the fabricated content was already stripped; this just clears the questions),
 // so the user can proceed straight to choosing a design. No cost, no new flags.
 app.post("/api/drop-flags", (req, res) => {
@@ -601,7 +601,7 @@ app.post("/api/drop-flags", (req, res) => {
   res.json({ ok: true, cv: st.cv, downloadBlocked: false });
 });
 
-// ─── Step 4 — designs, preview, pay, download ───────────────────────────────
+// ─── Step 4, designs, preview, pay, download ───────────────────────────────
 app.get("/api/designs", (req, res) => res.json({ designs, designerTemplates: DESIGNER_TEMPLATES }));
 
 app.post("/api/preview", (req, res) => {
@@ -611,7 +611,7 @@ app.post("/api/preview", (req, res) => {
   st.designId = req.body.designId || st.designId || designs[0].id;
   const clean = sanitizeForOutput(cv);
   if (isDesigner(st.designId)) {
-    // Full HTML document — the front-end shows it in an iframe.
+    // Full HTML document, the front-end shows it in an iframe.
     return res.json({ ok: true, designId: st.designId, designer: true, html: renderDesignerHtml(clean, st.designId) });
   }
   res.json({ ok: true, designId: st.designId, html: htmlPreview.preview(clean, st.designId) });
@@ -699,7 +699,7 @@ app.get("/api/download", async (req, res) => {
     // file is a tidy CV with unanswered gaps simply left out (the fabricated
     // content was already stripped during the honesty check).
     const cleanCv = sanitizeForOutput(st.cv);
-    if (!hasContent(cleanCv)) return res.status(400).json({ error: "There isn't enough content to build a CV yet — please generate one first." });
+    if (!hasContent(cleanCv)) return res.status(400).json({ error: "There isn't enough content to build a CV yet. Please generate one first." });
 
     const userEmail = currentEmail(req);
     if (!userEmail) return res.status(401).json({ error: "Please sign in to download." });
@@ -822,7 +822,7 @@ app.post("/api/cover-letter", async (req, res) => {
 app.get("/api/cover-letter/download", async (req, res) => {
   try {
     const st = S(req);
-    if (!st.coverLetter) return res.status(400).json({ error: "No cover letter yet — add one first." });
+    if (!st.coverLetter) return res.status(400).json({ error: "No cover letter yet, add one first." });
     if (!currentEmail(req)) return res.status(401).json({ error: "Please sign in to download." });
     const cleanCv = sanitizeForOutput(st.cv || {});
     const buf = await buildCoverDocx(st.coverLetter, cleanCv);
