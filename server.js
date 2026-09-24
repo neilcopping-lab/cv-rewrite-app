@@ -153,6 +153,9 @@ const currentEmail = (req) => req.session.userEmail || null;
 // Margin guard: cap how many AI rewrites one session can run for free, so a
 // user can't rack up the AI bill by hammering "Regenerate" without ever paying.
 const GEN_CAP = parseInt(process.env.REGEN_CAP || "8", 10);
+// FREE MODE (Sept 2026): CV Rewrite is free, always. Downloads and cover letters
+// no longer spend credits. Set FREE_MODE=off in Render to switch payments back on.
+const FREE_MODE = process.env.FREE_MODE !== "off";
 function overGenCap(st) {
   st.genCount = (st.genCount || 0) + 1;
   return st.genCount > GEN_CAP;
@@ -281,7 +284,7 @@ app.post("/api/auth/verify-code", (req, res) => {
   if (!emailAddr) return res.status(400).json({ ok: false, error: "That code isn't right or has expired. Check the email or send a new code." });
   req.session.userEmail = emailAddr;
   req.session.pendingEmail = null;
-  req.session.save(() => res.json({ ok: true, signedIn: true, email: emailAddr, credits: db.credits(emailAddr) }));
+  req.session.save(() => res.json({ ok: true, signedIn: true, email: emailAddr, credits: db.credits(emailAddr), free: FREE_MODE }));
 });
 
 app.get("/auth", (req, res) => {
@@ -297,7 +300,7 @@ app.get("/api/state", (req, res) => {
   const st = S(req);
   const e = currentEmail(req);
   res.json({
-    signedIn: !!e, email: e || null, credits: e ? db.credits(e) : 0,
+    signedIn: !!e, email: e || null, credits: e ? db.credits(e) : 0, free: FREE_MODE,
     hasCv: !!st.cv, designId: st.designId || null, coverLetter: !!st.coverLetter
   });
 });
@@ -324,7 +327,7 @@ app.get("/api/draft", (req, res) => {
 
 app.get("/api/auth/me", (req, res) => {
   const e = currentEmail(req);
-  res.json({ signedIn: !!e, email: e, credits: e ? db.credits(e) : 0 });
+  res.json({ signedIn: !!e, email: e, credits: e ? db.credits(e) : 0, free: FREE_MODE });
 });
 
 // ─── Feedback (star rating + comment) ───────────────────────────────────────
@@ -703,8 +706,10 @@ app.get("/api/download", async (req, res) => {
 
     const alreadyPaid = st.paidVersion && st.paidVersion === st.cvVersion;
     if (!alreadyPaid) {
-      if (db.credits(userEmail) < 1) return res.status(402).json({ error: "no-credits" });
-      if (!db.spendCredit(userEmail)) return res.status(402).json({ error: "no-credits" });
+      if (!FREE_MODE) {
+        if (db.credits(userEmail) < 1) return res.status(402).json({ error: "no-credits" });
+        if (!db.spendCredit(userEmail)) return res.status(402).json({ error: "no-credits" });
+      }
       st.paidVersion = st.cvVersion;
       // On first paid download: email the CV (Word + PDF attached) + notify.
       const d0 = resolveDesign(req.query.design || st.designId || designs[0].id);
@@ -785,7 +790,7 @@ app.post("/api/cover-letter", async (req, res) => {
       return res.json({ ok: true, coverLetter: st.coverLetter, alreadyPaid: true, balance: db.credits(userEmail) });
     }
     // First letter for this CV version costs one credit.
-    if (!alreadyPaid) {
+    if (!alreadyPaid && !FREE_MODE) {
       if (db.credits(userEmail) < 1) return res.status(402).json({ error: "no-credits" });
       if (!db.spendCredit(userEmail)) return res.status(402).json({ error: "no-credits" });
     }

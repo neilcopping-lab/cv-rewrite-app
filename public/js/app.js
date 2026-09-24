@@ -120,7 +120,7 @@ async function runJob(url, body) {
 }
 // Turn internal error codes into plain English.
 function mapErr(m) {
-  if (/rewrite-limit/.test(m)) return "You've used your free rewrites for this CV. Download it to keep it (uses one credit), or start a new one later.";
+  if (/rewrite-limit/.test(m)) return "You've reached the rewrite limit for this CV. Download it to keep it, or start a new one later.";
   if (/no-credits/.test(m)) return "You're out of CV credits - choose a pack to download.";
   return m;
 }
@@ -480,12 +480,12 @@ function renderAccountBar() {
   if (!st) return;
   const topBox = $("#topSigninBox");
   if (a.signedIn) {
-    st.innerHTML = `Signed in as <strong>${a.email}</strong> · <strong style="color:var(--gold)">${a.credits} CV credit${a.credits === 1 ? "" : "s"}</strong>`;
+    st.innerHTML = a.free ? `Signed in as <strong>${a.email}</strong> · <strong style="color:var(--gold)">Free, always</strong>` : `Signed in as <strong>${a.email}</strong> · <strong style="color:var(--gold)">${a.credits} CV credit${a.credits === 1 ? "" : "s"}</strong>`;
     act.innerHTML = `<button class="btn ghost" id="signoutBtn" style="padding:8px 12px">Sign out</button>`;
     const so = $("#signoutBtn"); if (so) so.onclick = async () => { await api("/api/auth/logout", { method: "POST" }); await refreshAccount(); };
     if (topBox) topBox.classList.add("hidden");
   } else {
-    st.innerHTML = "New here? Just start below - you can sign in when you're ready to download. Returning customer? Sign in to load your credits.";
+    st.innerHTML = "New here? Just start below - it's free, and you can sign in with your email when you're ready to download.";
     act.innerHTML = `<button class="btn ghost" id="topSigninToggle" style="padding:8px 12px">Sign in</button>`;
     const tt = $("#topSigninToggle");
     if (tt) tt.onclick = () => { if (topBox) { topBox.classList.toggle("hidden"); const e = $("#topSigninEmail"); if (e && !topBox.classList.contains("hidden")) e.focus(); } };
@@ -497,7 +497,10 @@ function renderStep4Payment() {
   const signin = $("#signinBox"), buy = $("#buyBox"), dl = $("#downloads");
   [signin, buy, dl].forEach((x) => x && x.classList.add("hidden"));
   if (!a.signedIn) { signin && signin.classList.remove("hidden"); return; }
-  if ((a.credits || 0) > 0) {
+  if (a.free) {
+    dl && dl.classList.remove("hidden");
+    const b = $("#dlBalance"); if (b) b.textContent = "Free, always.";
+  } else if ((a.credits || 0) > 0) {
     dl && dl.classList.remove("hidden");
     const b = $("#dlBalance"); if (b) b.textContent = `You have ${a.credits} CV${a.credits > 1 ? "s" : ""} left.`;
   } else {
@@ -545,7 +548,7 @@ async function verifyCode(email, code, msg, row) {
   try {
     const j = await api("/api/auth/verify-code", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, code }) });
     if (_signinPoll) { clearInterval(_signinPoll); _signinPoll = null; }
-    STATE.account = { signedIn: true, email: j.email, credits: j.credits };
+    STATE.account = { signedIn: true, email: j.email, credits: j.credits, free: j.free };
     if (row) row.remove();
     busy(msg, false, "Signed in - carry on right here, nothing was lost.");
     renderAccountBar(); renderStep4Payment();
