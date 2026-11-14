@@ -605,7 +605,7 @@ if (topSigninBtn) topSigninBtn.onclick = () => requestSignin($("#topSigninEmail"
 // Buy a pack.
 $$("[data-pack]").forEach((b) => (b.onclick = async () => {
   const s = $("#s4"); const agree = $("#agree");
-  if (agree && !agree.checked) { busy(s, false, "⚠ Please tick the box to agree before buying."); return; }
+  if (agree && !agree.checked) { busy(s, false, "⚠ Please tick the box to agree to the terms first."); return; }
   busy(s, true, "Opening secure checkout…");
   try {
     const j = await api("/api/checkout", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ packId: b.dataset.pack }) });
