@@ -114,15 +114,36 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 @media(max-width:560px){.mr-head{flex-direction:column}.mr-row{flex-direction:column;gap:4px}.mr-pill{width:auto}}
 .legal .date{color:#5B5F66!important}.legal a{color:#B44E00!important}.cp-book{padding:7px 16px!important;line-height:1.2!important;font-weight:700!important;text-decoration:none!important}
 </style>
+<style id="cp-stack-nav">
+/* Logo on its own row, menu running beneath it. Same links and titles as the-common-people.com homepage. */
+.nav{display:grid!important;grid-template-columns:minmax(0,1fr);row-gap:14px;justify-content:stretch!important;position:relative}
+.nav .cq-brand{justify-self:start}
+.nav .links{display:flex!important;align-items:center;gap:8px 16px!important;flex-wrap:nowrap;font-size:13.5px!important;letter-spacing:.04em!important}
+.nav .links a{white-space:nowrap}
+.nav .links a.cp-book{margin-left:auto;letter-spacing:.02em;color:#17191C!important}
+@media (max-width:1100px){.nav .links{flex-wrap:wrap}}
+@media (max-width:760px){
+  .nav .links{flex-wrap:nowrap!important;overflow-x:auto;gap:18px!important;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .nav .links::-webkit-scrollbar{display:none}
+  .nav .links a.cp-book{position:absolute;top:18px;right:20px;margin:0;font-size:12px!important;padding:7px 12px!important}
+}
+@media (max-width:480px){.nav .cq-brand .cq-feat{display:none}}
+</style>
 </head><body>
 
 <header class="site"><nav class="nav">
   <a class="cq-brand" href="/" aria-label="Comquat CV Rewrite, from The Com'mon People"><img src="/img/comquat-logo.svg" alt="Comquat" width="150" height="34"><span class="cq-feat cv">CV Rewrite</span></a>
   <div class="links">
-    <a href="/">CV Rewrite</a>
-    <a href="/terms.html">Terms</a>
-    <a href="/privacy.html" class="active">Privacy</a>
-  <a class="cp-book" href="https://cal.com/the-common-people.com/interviewcoaching" target="_blank" rel="noopener">Book coaching</a></div>
+    <a href="https://the-common-people.com/guides.html">Guides</a>
+    <a href="https://the-common-people.com/dispatches.html">Dispatches</a>
+    <a href="https://the-common-people.com/loudspeaker.html">Loudspeaker</a>
+    <a href="https://the-common-people.com/apprenticeships.html">Apprenticeships</a>
+    <a href="https://the-common-people.com/commons-family.html">The Commons</a>
+    <a href="https://the-common-people.com/about.html">About</a>
+    <a href="https://the-common-people.com/prep-report.html">Prep Report</a>
+    <a class="active" href="/" aria-current="page">CV Rewrite</a>
+    <a class="cp-book" href="https://cal.com/the-common-people.com/interviewcoaching" target="_blank" rel="noopener">Book a coaching call</a>
+  </div>
 </nav></header>
 
 <main><div class="legal">
