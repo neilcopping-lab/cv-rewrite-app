@@ -93,6 +93,11 @@ textarea:focus,input:focus,select:focus{outline:3px solid #FF8A1F;outline-offset
 .progress .bar>i{background:#FF8A1F!important}.progress .msg{color:#B44E00!important}
 select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 .pdf-badge{background:#FF8A1F!important;color:#17191C!important}
+.cq-hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:44px;align-items:center}
+.cq-hero-img{display:block;width:100%;height:auto;border-radius:20px;box-shadow:0 22px 50px -26px rgba(23,25,28,.45)}
+.hero h1{font-size:clamp(36px,5vw,58px)!important;line-height:1.05}
+@media(max-width:900px){.cq-hero-grid{grid-template-columns:1fr;gap:28px}}
+.hero::after{display:none}
 .cq-foot{display:inline-block;background:#FFF3E2;border-radius:999px;padding:9px 18px 7px}.cq-foot img{display:block;height:26px;width:auto}
 /* skills match report */
 .mr{border:1px solid #E9DCC8;border-radius:16px;background:#fff;padding:18px 20px;margin:14px 0}
@@ -121,19 +126,23 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
     <a href="https://the-common-people.com/loudspeaker.html">Loudspeaker</a>
     <a href="https://the-common-people.com/about.html">About</a>
     <a href="https://the-common-people.com/apprenticeships.html">Apprenticeships</a>
+    <a href="https://the-common-people.com/prep-report.html">Interview Prep</a>
     <a class="active" href="/">CV Rewrite</a>
     <a class="cp-book" href="https://cal.com/the-common-people.com/interviewcoaching" target="_blank" rel="noopener">Book coaching</a>
   </div>
 </nav></header>
 
 <main>
-<section class="hero"><div class="wrap">
+<section class="hero"><div class="wrap cq-hero-grid">
+<div>
   <div class="eyebrow">CV Rewrite</div>
   <h1>A CV that fits the job. Not a template with your name in it.</h1>
   <p class="lead">Paste your current CV and the job advert. Answer a few short questions where we spot the gaps. Get back a CV rewritten to align with this specific role, in a design you choose. Downloads as Word and PDF.</p>
   <p style="margin:20px 0"><span class="price-flag">Free, always</span> &nbsp;<span class="muted" style="font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:14px">No card. No subscription. No catch.</span></p>
   <p><a class="btn accent" href="/app.html">Rewrite my CV</a> <a class="btn ghost" href="https://the-common-people.com/guide-cv.html">Read the free CV guide →</a></p>
   <p class="fine">About 10 minutes to fill in. Your rewritten CV is usually ready in under 2 minutes.</p>
+</div>
+  <img class="cq-hero-img" src="/img/comquat-cv-rewrite-hero.jpg" alt="Comquat CV Rewrite: a printed CV, a pen and kumquats on orange. A CV that fits the job." width="1600" height="900">
 </div></section>
 
 <section><div class="wrap">
