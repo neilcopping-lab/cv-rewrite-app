@@ -1,4 +1,4 @@
-// ─── The Com'mon People · CV Rewrite App · server ───────────────────────────
+// ─── Comquat CV Rewrite (from The Com'mon People) · server ───────────────────────────
 require("dotenv").config();
 const path = require("path");
 const fs = require("fs");
@@ -27,6 +27,7 @@ const { buildCoverDocx } = require("./lib/coverLetterDoc");
 const resolveDesign = (id) => DESIGNER_TEMPLATES.find((t) => t.id === id) || byId(id);
 const payment = require("./lib/payment");
 const email = require("./lib/email");
+const matchReport = require("./lib/matchReport");
 const db = require("./lib/db");
 const auth = require("./lib/auth");
 const cliches = require("./lib/cliches");
@@ -318,6 +319,7 @@ app.get("/api/draft", (req, res) => {
   res.json({
     ok: true, hasCv: true, cv: st.cv, missing,
     programmatic: cr.programmatic || null, review: cr.review || {},
+    matchReport: st.matchReport || matchReport.build(st.cv, st.gaps),
     downloadBlocked: blocked,
     message: blocked
       ? "We found gaps or claims we couldn't trace to what you told us. Answer these before downloading, or tell us to leave them out."
@@ -493,6 +495,8 @@ async function generateWork(st) {
     answers: st.answers, linksConfirmed: st.linksConfirmed,
     writingStyle: st.writingStyle, styleSample: st.styleSample
   });
+  // Private skills match report, built before the honesty gate reshapes the CV.
+  st.matchReport = matchReport.build(cv, st.gaps);
 
   // HARD GATE (fabrication) and the advisory self-review don't depend on each
   // other, so run them together to save a whole round-trip. The gate stays on
@@ -523,6 +527,7 @@ async function generateWork(st) {
     fabricationPass: fab.pass,
     fabricationFlags: fab.flags,
     programmatic: prog,
+    matchReport: st.matchReport,
     review,
     downloadBlocked: blocked,
     message: blocked
@@ -556,6 +561,7 @@ async function resolveWork(st, { resolutions, acceptLeaveOutArr }) {
     answers: st.answers, linksConfirmed: st.linksConfirmed,
     writingStyle: st.writingStyle, styleSample: st.styleSample
   });
+  st.matchReport = matchReport.build(cv, st.gaps);
   const [fab, review] = await Promise.all([
     fabrication.check(cv, st.sot),
     reviewer.selfReview(cv, { advertText: st.advertText })
@@ -573,7 +579,7 @@ async function resolveWork(st, { resolutions, acceptLeaveOutArr }) {
   st.paidVersion = null;
 
   const blocked = cv.missing && cv.missing.length > 0;
-  return { ok: true, cv, missing: cv.missing, downloadBlocked: blocked, programmatic: prog, review };
+  return { ok: true, cv, missing: cv.missing, downloadBlocked: blocked, programmatic: prog, review, matchReport: st.matchReport };
 }
 
 // Candidate resolves [MISSING]/flagged items (answer, or accept leaving out).

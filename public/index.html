@@ -7,7 +7,7 @@
 <meta property="og:image" content="https://cv.the-common-people.com/img/comquat-cv-rewrite-hero.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&family=Anton&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/styles.css">
 <style>.plate-txt{color:#111;font-weight:800;-webkit-text-stroke:2px #f4efe4;paint-order:stroke fill;}.cp-topnav a{text-decoration:none;}</style>
 <style id="cp-2026-theme">
@@ -48,6 +48,68 @@ label,label span,label strong,.notice,.notice strong,.muted strong{color:#1C2733
 select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E7EA!important;border-radius:8px!important}
 </style>
 <style id="comquat-brand">.cq-brand{display:inline-flex;align-items:center;gap:12px;text-decoration:none!important;line-height:1}.cq-brand img{height:34px;width:auto;display:block}.cq-brand .cq-feat{font-family:'DM Sans','Hanken Grotesk',system-ui,sans-serif;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:6px 12px;border-radius:999px;white-space:nowrap}.cq-brand .cq-feat.cv{background:#17191C;color:#FFF3E2}.cq-brand .cq-feat.ip{background:#1F6B45;color:#FFF3E2}.cq-by{display:block;font-size:11px;color:#5B5F66;margin-top:4px;letter-spacing:.02em}</style>
+<style id="comquat-theme">
+/* Comquat CV Rewrite theme (Nov 2026). Kumquat orange is the CV Rewrite colour.
+   Tokens from the Comquat Brand design system: kumquat #FF8A1F, kumquat-deep #E2650B,
+   kumquat-text #B44E00, leaf #1F6B45, ink #17191C, peel #FFF3E2, pith #E9DCC8, muted #5B5F66.
+   Ink text on kumquat (7.5:1). Orange text on white uses kumquat-text (5.3:1). */
+:root{--font-display:'Bricolage Grotesque','DM Sans',system-ui,sans-serif;--font-label:'DM Sans',system-ui,sans-serif;--font-body:'DM Sans',system-ui,sans-serif;
+  --gold:#B44E00;--gold-deep:#E2650B;--teal:#1F6B45;--orange:#FF8A1F;--accent:#FF8A1F;--ink:#17191C;--line:#E9DCC8;--muted:#5B5F66;--tint:#FFF3E2;--cream:#17191C}
+body{color:#17191C!important;font-family:'DM Sans',system-ui,sans-serif!important}
+a{color:#B44E00}
+header.site{border-bottom:1px solid #E9DCC8!important}
+.nav .links a{color:#5B5F66!important;font-family:'DM Sans',system-ui,sans-serif}
+.nav .links a:hover,.nav .links a.active{color:#B44E00!important}
+section{border-bottom:1px solid #E9DCC8!important}
+section:nth-of-type(even){background:#FFF3E2!important}
+h1,h2,h3{font-family:'Bricolage Grotesque','DM Sans',system-ui,sans-serif!important;font-weight:800!important;text-transform:none!important;letter-spacing:-.015em!important;color:#17191C!important}
+h1{line-height:1.02}
+.faq h3{font-family:'DM Sans',system-ui,sans-serif!important;font-weight:700!important;letter-spacing:0!important}
+.lead,.founder p,.whatlist strong,.faq h3{color:#17191C!important}
+.muted,.tile p,.bafig .cap,.design-card .meta p{color:#5B5F66!important}
+.eyebrow{color:#B44E00!important;font-family:'DM Sans',system-ui,sans-serif;font-weight:700}
+.btn,.btn.accent{background:#FF8A1F!important;color:#17191C!important;border-color:#FF8A1F!important;font-family:'DM Sans',system-ui,sans-serif!important;font-weight:700!important;text-transform:none!important;letter-spacing:0!important}
+.btn:hover{background:#E2650B!important;border-color:#E2650B!important}
+.btn.ghost{background:transparent!important;color:#17191C!important;border:2px solid #E9DCC8!important}
+.btn.ghost:hover{border-color:#FF8A1F!important}
+.price-flag,.cp-book{background:#FF8A1F!important;color:#17191C!important}
+.tile,.q,.notice,.design-card,.previewbox,.fbcard{border:1px solid #E9DCC8!important;color:#17191C!important}
+.tile h3{color:#17191C!important}.tile .n,.tile .ic,.q .tag{color:#B44E00!important}
+.tile .n{font-family:'Bricolage Grotesque','DM Sans',sans-serif!important;font-weight:800}
+.q .qtext,label,.design-card .meta h4{color:#17191C!important}
+.steps .s{border:1px solid #E9DCC8!important;color:#5B5F66!important}
+.steps .s.active{background:#FF8A1F!important;color:#17191C!important;border-color:#FF8A1F!important}
+.steps .s.done{border-color:#FF8A1F!important;color:#B44E00!important}
+textarea,input[type=text],input[type=email],input[type=url]{color:#17191C!important;border:1.5px solid #E9DCC8!important}
+textarea:focus,input:focus,select:focus{outline:3px solid #FF8A1F;outline-offset:1px;border-color:#FF8A1F!important}
+.chip{color:#5B5F66!important;border:1px solid #E9DCC8!important}.chip.on{background:#FF8A1F!important;color:#17191C!important;border-color:#FF8A1F!important}
+.flag{background:#FFF3E2!important;color:#17191C!important;border-left:4px solid #FF8A1F!important}
+.bafig.before .lbl{color:#5B5F66!important}.bafig.after .lbl{color:#B44E00!important}
+.bafig .lbl,.founder .sig{font-family:'Bricolage Grotesque','DM Sans',sans-serif!important;font-weight:800;text-transform:none!important}
+.founder .sig{color:#B44E00!important}.founder .roundel{background:#FF8A1F!important}
+.footer{background:#17191C!important;color:#E9DCC8!important}.footer h4{color:#FF8A1F!important;font-family:'DM Sans',system-ui,sans-serif}.footer a{color:#E9DCC8!important;font-family:'DM Sans',system-ui,sans-serif}
+.footer .muted{color:#BDB4A6!important}
+.progress .bar>i{background:#FF8A1F!important}.progress .msg{color:#B44E00!important}
+select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
+.pdf-badge{background:#FF8A1F!important;color:#17191C!important}
+.cq-foot{display:inline-block;background:#FFF3E2;border-radius:999px;padding:9px 18px 7px}.cq-foot img{display:block;height:26px;width:auto}
+/* skills match report */
+.mr{border:1px solid #E9DCC8;border-radius:16px;background:#fff;padding:18px 20px;margin:14px 0}
+.mr-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.mr-kicker{font-family:'Bricolage Grotesque','DM Sans',sans-serif;font-weight:800;font-size:22px;color:#17191C;line-height:1.1}
+.mr-sum{font-size:15px;color:#17191C;margin-top:6px}
+.mr-score{flex:none;text-align:center;background:#FF8A1F;color:#17191C;border-radius:999px;padding:10px 16px;line-height:1}
+.mr-score b{display:block;font-family:'Bricolage Grotesque','DM Sans',sans-serif;font-weight:800;font-size:26px}.mr-score span{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.mr-bar{height:10px;background:#FFF3E2;border-radius:999px;overflow:hidden;margin:14px 0 8px}.mr-bar i{display:block;height:100%;background:#FF8A1F;border-radius:999px}
+.mr-private{font-size:13px;color:#5B5F66;margin:0 0 6px}
+.mr details summary{cursor:pointer;font-weight:700;color:#B44E00;padding:6px 0}
+.mr-row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #F1E6D6}
+.mr-pill{flex:none;width:112px;text-align:center;font-size:12px;font-weight:700;border-radius:999px;padding:4px 8px;margin-top:1px}
+.mr-pill.strong{background:#1F6B45;color:#FFF3E2}.mr-pill.partial{background:#FFE2C2;color:#7A3500}.mr-pill.gap{background:#F1ECE4;color:#4A4D52;border:1px dashed #A9A398}
+.mr-ev{font-size:14px;color:#5B5F66;margin-top:2px}
+.mr-note{font-size:14px;color:#17191C;background:#FFF3E2;border-radius:10px;padding:10px 12px;margin:10px 0 0}
+@media(max-width:560px){.mr-head{flex-direction:column}.mr-row{flex-direction:column;gap:4px}.mr-pill{width:auto}}
+</style>
 </head><body>
 
 <header class="site"><nav class="nav">
@@ -66,10 +128,10 @@ select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E
 <main>
 <section class="hero"><div class="wrap">
   <div class="eyebrow">CV Rewrite</div>
-  <h1>A CV That Fits The Job. Not A Template With Your Name In It.</h1>
+  <h1>A CV that fits the job. Not a template with your name in it.</h1>
   <p class="lead">Paste your current CV and the job advert. Answer a few short questions where we spot the gaps. Get back a CV rewritten to align with this specific role, in a design you choose. Downloads as Word and PDF.</p>
   <p style="margin:20px 0"><span class="price-flag">Free, always</span> &nbsp;<span class="muted" style="font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:14px">No card. No subscription. No catch.</span></p>
-  <p><a class="btn accent" href="/app.html">Rewrite My CV</a> <a class="btn ghost" href="https://the-common-people.com/guide-cv.html">Read the free CV guide →</a></p>
+  <p><a class="btn accent" href="/app.html">Rewrite my CV</a> <a class="btn ghost" href="https://the-common-people.com/guide-cv.html">Read the free CV guide →</a></p>
   <p class="fine">About 10 minutes to fill in. Your rewritten CV is usually ready in under 2 minutes.</p>
 </div></section>
 
@@ -103,7 +165,7 @@ select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E
 </script>
 
 <section><div class="wrap">
-  <h2>What You Actually Get</h2>
+  <h2>What you actually get</h2>
   <p class="lead">Every CV is built fresh from your CV and the actual advert, not a generic layout everyone gets. Written in your own words where it matters, tailored to one role, checked for honesty before it reaches you.</p>
   <div class="whatlist cols" style="margin-top:20px">
     <p><strong>A tailored rewrite.</strong> Your CV re-aligned to this specific advert, mirroring its language where you genuinely have the experience.</p>
@@ -118,7 +180,7 @@ select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E
 </div></section>
 
 <section><div class="wrap">
-  <h2>Before &amp; After</h2>
+  <h2>Before &amp; after</h2>
   <p class="lead">Same person, two CVs. One is the generic, buzzword-stuffed version everyone ends up with. The other is rewritten to the advert from real facts, honesty-checked and properly designed. That is the difference.</p>
   <div class="bagrid">
     <figure class="bafig before">
@@ -136,7 +198,7 @@ select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E
 </div></section>
 
 <section><div class="wrap">
-  <h2>How It Works</h2>
+  <h2>How it works</h2>
   <div class="cols grid4" style="margin-top:22px">
     <div class="tile"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg><div class="n">1</div><h3>Paste your CV and the advert</h3><p>Upload a file or paste the text, either works. The advert can be a link too.</p></div>
     <div class="tile"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><div class="n">2</div><h3>Answer a few questions</h3><p>We read both documents, spot where your CV is thin against the role, and only ask what's needed. Type it, or just talk and we'll transcribe it.</p></div>
@@ -146,22 +208,22 @@ select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E
 </div></section>
 
 <section><div class="wrap">
-  <h2>Free. Every CV, Every Time.</h2>
+  <h2>Free. Every CV, every time.</h2>
   <p class="lead">CV Rewrite used to cost a few pounds. Now it costs nothing, for everyone, every time. Tailor your CV to one job or to twenty. Sign in with your email so your work is there when you come back.</p>
   <div class="cols grid2" style="margin-top:24px">
     <div class="tile"><div class="n">£0</div><h3>Every CV</h3><p>Rewrite for as many roles as you're going for. No packs, no credits, no card details.</p></div>
     <div class="tile"><div class="n">21</div><h3>Designs</h3><p>Every design and every format included: Word, PDF and the ATS-safe version.</p></div>
   </div>
-  <p class="muted" style="margin-top:18px;font-size:15px">Why free? Because a good CV shouldn't depend on what's in your bank account. Same as every guide, dispatch and Loudspeaker on The Com'mon People.</p>
-  <p style="margin-top:14px"><a class="btn accent" href="/app.html">Rewrite My CV</a></p>
+  <p class="muted" style="margin-top:18px;font-size:15px">Why free? Because a good CV shouldn't depend on what's in your bank account. Comquat comes from The Com'mon People, and like every guide, dispatch and Loudspeaker there, it's free.</p>
+  <p style="margin-top:14px"><a class="btn accent" href="/app.html">Rewrite my CV</a></p>
 </div></section>
 
 <section><div class="wrap">
-  <h2>No Subscription. No Catch.</h2>
+  <h2>No subscription. No catch.</h2>
   <p class="lead">Most CV builders lock you into a monthly subscription, often after a cheap trial that quietly renews. We don't. Ours is free. That's it.</p>
   <div class="cols grid2" style="margin-top:24px">
     <div class="tile" style="border:2px solid var(--gold)">
-      <h3 style="color:var(--gold)">The Com'mon People</h3>
+      <h3 style="color:var(--gold)">Comquat</h3>
       <ul style="margin:8px 0 0 1.1em;font-size:15px;line-height:1.6;color:var(--cream)">
         <li>Free, every CV, every time</li>
         <li>No subscription. Nothing auto-renews, ever</li>
@@ -184,7 +246,7 @@ select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E
     </div>
   </div>
   <p class="muted" style="margin-top:16px;font-size:14px">The "typical" figures are the common range across popular résumé subscription tools in 2026. Other tools' prices change; ours is zero.</p>
-  <p style="margin-top:14px"><a class="btn accent" href="/app.html">Rewrite My CV</a></p>
+  <p style="margin-top:14px"><a class="btn accent" href="/app.html">Rewrite my CV</a></p>
 </div></section>
 
 <section><div class="wrap faq">
@@ -194,7 +256,7 @@ select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E
   <h3>Will it make things up to sound impressive?</h3>
   <p>No, and we built a hard check specifically to stop that. Every number, employer, title, qualification and skill in the finished CV has to trace back to something you actually provided. Anything that doesn't gets stripped out and shown to you as a question to answer, not quietly left in.</p>
   <h3>Is my data safe?</h3>
-  <p>Uploaded files are deleted from our server as soon as the text has been pulled out. Same policy as the Interview Prep Report.</p>
+  <p>Uploaded files are deleted from our server as soon as the text has been pulled out. Same policy as Comquat Interview Prep.</p>
   <h3>What's the ATS version?</h3>
   <p>Online application portals parse your CV with software before a human sees it. The ATS version strips your chosen design down to a single column with standard headings, no tables, no icons and no header or footer, so it parses cleanly. You get it from the same design you picked.</p>
   <h3>Is it really free?</h3>
@@ -204,11 +266,11 @@ select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E
   <h3>What if something's not right after I've downloaded?</h3>
   <p>You can tweak the Word file yourself, it's yours. If the service genuinely failed to give you a usable CV, get in touch and we'll put it right.</p>
   <h3>Why give it away?</h3>
-  <p>Because The Com'mon People is built on mutual aid. Every guide, dispatch and Loudspeaker email is free, always, and now the tools that do the work for you are too.</p>
+  <p>Because Comquat comes from The Com'mon People, which is built on mutual aid. Every guide, dispatch and Loudspeaker email is free, always, and now the tools that do the work for you are too.</p>
 </div></section>
 
 <section><div class="wrap">
-  <h2>Why People Use It</h2>
+  <h2>Why people use it</h2>
   <div class="cols grid3" style="margin-top:22px">
     <div class="tile"><div class="n">✓</div><h3>Honest by design</h3><p>A hard fabrication check means nothing gets invented or inflated. Every claim traces back to something you told us.</p></div>
     <div class="tile"><div class="n">✓</div><h3>Sounds like a person</h3><p>The usual AI tells - "I was drawn to", "proven track record", "passionate about" - are banned. Plain English, in your voice.</p></div>
@@ -221,27 +283,27 @@ select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E
   <div class="eyebrow">From the founder</div>
   <h2>Why I built this</h2>
   <div class="founder">
-    <div class="roundel"><img class="pic" src="/img/founder.jpg" alt="Neil Copping, founder of The Com'mon People"></div>
+    <div class="roundel"><img class="pic" src="/img/founder.jpg" alt="Neil Copping, founder of Comquat and The Com'mon People"></div>
     <div class="txt">
       <p class="lead" style="max-width:none">After nine years in recruitment, I found myself on the other side of the desk, job-hunting like everyone else.</p>
       <p>So I built myself two small tools. One to rewrite my CV for the exact role I was going for, digging out the real things I'd done that made me right for it. And one to get me ready for the interview. A week later, I'd landed the job.</p>
-      <p>Turns out it isn't complicated. It just helps to have a hand. So we've put it on The Com'mon People, free for anyone who needs it.</p>
+      <p>Turns out it isn't complicated. It just helps to have a hand. So we turned those two tools into Comquat, free for anyone who needs it.</p>
       <div class="sig">Same tools. Your turn. · Neil</div>
     </div>
   </div>
 </div></section>
 
 <section><div class="wrap">
-  <h2>Ready When You Are</h2>
+  <h2>Ready when you are</h2>
   <p class="lead">Paste your CV and the advert. We'll do the rest.</p>
-  <p style="margin-top:18px"><a class="btn accent" href="/app.html">Rewrite My CV</a></p>
+  <p style="margin-top:18px"><a class="btn accent" href="/app.html">Rewrite my CV</a></p>
 </div></section>
 </main>
 
 <footer class="footer" style="padding:44px 0"><div class="wrap">
   <div class="footcols">
-    <div><a class="cp-logo sm" href="/" aria-label="The Com'mon People"><span class="blk b1">The</span><span class="blk b2">Com&#39;mon</span><span class="blk b3">People</span></a>
-      <p class="muted" style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-size:14px;max-width:22em;margin-top:14px">A free resource centre for marketing, HR, finance, events and operations people. Built on mutual aid.</p></div>
+    <div><a class="cq-foot" href="/" aria-label="Comquat CV Rewrite"><img src="/img/comquat-logo.svg" alt="Comquat" width="150" height="34"></a>
+      <p class="muted" style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-size:14px;max-width:22em;margin-top:14px">Comquat is the free CV Rewrite and Interview Prep app from The Com'mon People, the free resource centre for both sides of recruitment. Built on mutual aid.</p></div>
     <div class="col"><h4>Guides</h4>
       <a href="https://the-common-people.com/guide-cv.html">The CV that gets read</a>
       <a href="https://the-common-people.com/guide-video-intro.html">The intro video</a>
@@ -258,6 +320,6 @@ select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E
       <a href="/privacy.html">Privacy Policy</a>
       <a href="/terms.html">Terms &amp; Conditions</a></div>
   </div>
-  <p class="muted" style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-size:13px;margin-top:28px">© 2026 The Com'mon People. Built on mutual aid. Free, always (this one bit excepted).</p>
+  <p class="muted" style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-size:13px;margin-top:28px">© 2026 Comquat, from The Com'mon People. Built on mutual aid. Free, always.</p>
 </div></footer>
 </body></html>

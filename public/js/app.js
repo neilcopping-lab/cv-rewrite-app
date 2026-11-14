@@ -274,6 +274,7 @@ function renderDraft(j) {
          <p><button class="btn" id="resolveBtn">Apply my answers and re-check</button></p>
        </details>`
     : "";
+  renderMatchReport(j.matchReport);
   if (missing.length) {
     const rb = $("#resolveBtn"); if (rb) rb.onclick = resolveMissing;
     const la = $("#leaveAllBtn"); if (la) la.onclick = leaveAllAndContinue;
@@ -293,6 +294,29 @@ function renderDraft(j) {
   prog.filter((p) => p.severity !== "info").forEach((p) => notes.push(p.detail));
   $("#reviewBox").innerHTML = notes.length ? `<div class="notice sans"><strong>Automated checks:</strong><br>${notes.map((n) => "• " + n).join("<br>")}</div>` : `<div class="notice sans">Automated checks passed: UK spelling, no banned punctuation, standard headings, every figure traced to your source.</div>`;
   previewDraft();
+}
+
+// Skills match report: how the rewritten CV lines up with the job advert,
+// requirement by requirement. Private to the candidate, never added to the CV.
+function renderMatchReport(m) {
+  const box = $("#matchBox"); if (!box) return;
+  if (!m || !m.total) { box.innerHTML = ""; return; }
+  const label = { strong: "Strong match", partial: "Partial match", gap: "Gap" };
+  const rows = m.rows.map((r) => `<div class="mr-row">
+      <span class="mr-pill ${r.status}">${label[r.status]}</span>
+      <div><strong>${escHtml(r.requirement)}</strong>${r.evidence ? `<div class="mr-ev">${escHtml(r.evidence)}</div>` : ""}</div>
+    </div>`).join("");
+  const gapNote = m.gap
+    ? `<p class="mr-note">Gaps aren't a reason not to apply. They're what to prepare for: be ready to say how you'd close each one, or what you've done that comes close.</p>`
+    : "";
+  box.innerHTML = `<div class="mr">
+    <div class="mr-head"><div><div class="mr-kicker">Your skills match report</div>
+      <div class="mr-sum">${m.total} requirements from the job advert: <strong>${m.strong}</strong> strong, <strong>${m.partial}</strong> partial, <strong>${m.gap}</strong> ${m.gap === 1 ? "gap" : "gaps"}.</div></div>
+      <div class="mr-score"><b>${m.percent}%</b><span>match</span></div></div>
+    <div class="mr-bar" aria-hidden="true"><i style="width:${m.percent}%"></i></div>
+    <p class="mr-private">${m.basis === "gaps" ? "Based on your original CV against the advert. " : ""}This is just for you. It isn't added to the CV you send.</p>
+    <details${m.total <= 8 ? " open" : ""}><summary>See every requirement</summary>${rows}${gapNote}</details>
+  </div>`;
 }
 
 // Drop all flagged items without re-running the AI, then go straight to design.

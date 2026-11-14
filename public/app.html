@@ -6,7 +6,7 @@
 <meta property="og:image" content="https://cv.the-common-people.com/img/comquat-cv-rewrite-hero.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&family=Anton&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/styles.css">
 <style id="cp-2026-theme">
 :root{--paper:#fff;--tint:#EAF2F5;--ink:#1C2733;--line:#E3E7EA;--muted:#5E6B77}
@@ -46,13 +46,75 @@ label,label span,label strong,.notice,.notice strong,.muted strong{color:#1C2733
 select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E7EA!important;border-radius:8px!important}
 </style>
 <style id="comquat-brand">.cq-brand{display:inline-flex;align-items:center;gap:12px;text-decoration:none!important;line-height:1}.cq-brand img{height:34px;width:auto;display:block}.cq-brand .cq-feat{font-family:'DM Sans','Hanken Grotesk',system-ui,sans-serif;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:6px 12px;border-radius:999px;white-space:nowrap}.cq-brand .cq-feat.cv{background:#17191C;color:#FFF3E2}.cq-brand .cq-feat.ip{background:#1F6B45;color:#FFF3E2}.cq-by{display:block;font-size:11px;color:#5B5F66;margin-top:4px;letter-spacing:.02em}</style>
+<style id="comquat-theme">
+/* Comquat CV Rewrite theme (Nov 2026). Kumquat orange is the CV Rewrite colour.
+   Tokens from the Comquat Brand design system: kumquat #FF8A1F, kumquat-deep #E2650B,
+   kumquat-text #B44E00, leaf #1F6B45, ink #17191C, peel #FFF3E2, pith #E9DCC8, muted #5B5F66.
+   Ink text on kumquat (7.5:1). Orange text on white uses kumquat-text (5.3:1). */
+:root{--font-display:'Bricolage Grotesque','DM Sans',system-ui,sans-serif;--font-label:'DM Sans',system-ui,sans-serif;--font-body:'DM Sans',system-ui,sans-serif;
+  --gold:#B44E00;--gold-deep:#E2650B;--teal:#1F6B45;--orange:#FF8A1F;--accent:#FF8A1F;--ink:#17191C;--line:#E9DCC8;--muted:#5B5F66;--tint:#FFF3E2;--cream:#17191C}
+body{color:#17191C!important;font-family:'DM Sans',system-ui,sans-serif!important}
+a{color:#B44E00}
+header.site{border-bottom:1px solid #E9DCC8!important}
+.nav .links a{color:#5B5F66!important;font-family:'DM Sans',system-ui,sans-serif}
+.nav .links a:hover,.nav .links a.active{color:#B44E00!important}
+section{border-bottom:1px solid #E9DCC8!important}
+section:nth-of-type(even){background:#FFF3E2!important}
+h1,h2,h3{font-family:'Bricolage Grotesque','DM Sans',system-ui,sans-serif!important;font-weight:800!important;text-transform:none!important;letter-spacing:-.015em!important;color:#17191C!important}
+h1{line-height:1.02}
+.faq h3{font-family:'DM Sans',system-ui,sans-serif!important;font-weight:700!important;letter-spacing:0!important}
+.lead,.founder p,.whatlist strong,.faq h3{color:#17191C!important}
+.muted,.tile p,.bafig .cap,.design-card .meta p{color:#5B5F66!important}
+.eyebrow{color:#B44E00!important;font-family:'DM Sans',system-ui,sans-serif;font-weight:700}
+.btn,.btn.accent{background:#FF8A1F!important;color:#17191C!important;border-color:#FF8A1F!important;font-family:'DM Sans',system-ui,sans-serif!important;font-weight:700!important;text-transform:none!important;letter-spacing:0!important}
+.btn:hover{background:#E2650B!important;border-color:#E2650B!important}
+.btn.ghost{background:transparent!important;color:#17191C!important;border:2px solid #E9DCC8!important}
+.btn.ghost:hover{border-color:#FF8A1F!important}
+.price-flag,.cp-book{background:#FF8A1F!important;color:#17191C!important}
+.tile,.q,.notice,.design-card,.previewbox,.fbcard{border:1px solid #E9DCC8!important;color:#17191C!important}
+.tile h3{color:#17191C!important}.tile .n,.tile .ic,.q .tag{color:#B44E00!important}
+.tile .n{font-family:'Bricolage Grotesque','DM Sans',sans-serif!important;font-weight:800}
+.q .qtext,label,.design-card .meta h4{color:#17191C!important}
+.steps .s{border:1px solid #E9DCC8!important;color:#5B5F66!important}
+.steps .s.active{background:#FF8A1F!important;color:#17191C!important;border-color:#FF8A1F!important}
+.steps .s.done{border-color:#FF8A1F!important;color:#B44E00!important}
+textarea,input[type=text],input[type=email],input[type=url]{color:#17191C!important;border:1.5px solid #E9DCC8!important}
+textarea:focus,input:focus,select:focus{outline:3px solid #FF8A1F;outline-offset:1px;border-color:#FF8A1F!important}
+.chip{color:#5B5F66!important;border:1px solid #E9DCC8!important}.chip.on{background:#FF8A1F!important;color:#17191C!important;border-color:#FF8A1F!important}
+.flag{background:#FFF3E2!important;color:#17191C!important;border-left:4px solid #FF8A1F!important}
+.bafig.before .lbl{color:#5B5F66!important}.bafig.after .lbl{color:#B44E00!important}
+.bafig .lbl,.founder .sig{font-family:'Bricolage Grotesque','DM Sans',sans-serif!important;font-weight:800;text-transform:none!important}
+.founder .sig{color:#B44E00!important}.founder .roundel{background:#FF8A1F!important}
+.footer{background:#17191C!important;color:#E9DCC8!important}.footer h4{color:#FF8A1F!important;font-family:'DM Sans',system-ui,sans-serif}.footer a{color:#E9DCC8!important;font-family:'DM Sans',system-ui,sans-serif}
+.footer .muted{color:#BDB4A6!important}
+.progress .bar>i{background:#FF8A1F!important}.progress .msg{color:#B44E00!important}
+select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
+.pdf-badge{background:#FF8A1F!important;color:#17191C!important}
+.cq-foot{display:inline-block;background:#FFF3E2;border-radius:999px;padding:9px 18px 7px}.cq-foot img{display:block;height:26px;width:auto}
+/* skills match report */
+.mr{border:1px solid #E9DCC8;border-radius:16px;background:#fff;padding:18px 20px;margin:14px 0}
+.mr-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.mr-kicker{font-family:'Bricolage Grotesque','DM Sans',sans-serif;font-weight:800;font-size:22px;color:#17191C;line-height:1.1}
+.mr-sum{font-size:15px;color:#17191C;margin-top:6px}
+.mr-score{flex:none;text-align:center;background:#FF8A1F;color:#17191C;border-radius:999px;padding:10px 16px;line-height:1}
+.mr-score b{display:block;font-family:'Bricolage Grotesque','DM Sans',sans-serif;font-weight:800;font-size:26px}.mr-score span{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.mr-bar{height:10px;background:#FFF3E2;border-radius:999px;overflow:hidden;margin:14px 0 8px}.mr-bar i{display:block;height:100%;background:#FF8A1F;border-radius:999px}
+.mr-private{font-size:13px;color:#5B5F66;margin:0 0 6px}
+.mr details summary{cursor:pointer;font-weight:700;color:#B44E00;padding:6px 0}
+.mr-row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #F1E6D6}
+.mr-pill{flex:none;width:112px;text-align:center;font-size:12px;font-weight:700;border-radius:999px;padding:4px 8px;margin-top:1px}
+.mr-pill.strong{background:#1F6B45;color:#FFF3E2}.mr-pill.partial{background:#FFE2C2;color:#7A3500}.mr-pill.gap{background:#F1ECE4;color:#4A4D52;border:1px dashed #A9A398}
+.mr-ev{font-size:14px;color:#5B5F66;margin-top:2px}
+.mr-note{font-size:14px;color:#17191C;background:#FFF3E2;border-radius:10px;padding:10px 12px;margin:10px 0 0}
+@media(max-width:560px){.mr-head{flex-direction:column}.mr-row{flex-direction:column;gap:4px}.mr-pill{width:auto}}
+</style>
 </head><body>
 
 <header class="site"><nav class="nav">
   <a class="cq-brand" href="/" aria-label="Comquat CV Rewrite, from The Com'mon People"><img src="/img/comquat-logo.svg" alt="Comquat" width="150" height="34"><span class="cq-feat cv">CV Rewrite</span></a>
   <div class="links">
     <a href="https://the-common-people.com/guide-cv.html">CV Guide</a>
-    <a href="https://the-common-people.com/prep-report.html">Interview Prep Report</a>
+    <a href="https://the-common-people.com/prep-report.html">Interview Prep</a>
     <a class="active" href="/">CV Rewrite</a>
   <a class="cp-book" href="https://cal.com/the-common-people.com/interviewcoaching" target="_blank" rel="noopener">Book coaching</a></div>
 </nav></header>
@@ -153,6 +215,7 @@ select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E
       <div class="notice" style="border-color:var(--teal)"><strong style="color:var(--teal)">✓ Honesty checked.</strong> Every figure, employer and claim below is traced back to what you told us - nothing invented, no inflated numbers. Written in plain English, with the usual AI clichés stripped out.</div>
       <div id="missingBox"></div>
       <div id="reviewBox"></div>
+      <div id="matchBox"></div>
       <div class="previewbox nocopy" id="draftPreview"></div>
       <p class="muted" style="font-size:13px;margin:6px 0 0">This is a watermarked preview. Choose a design and download to get the clean, full CV.</p>
       <p style="margin-top:18px"><button class="btn accent" id="go3">Choose a design →</button> <button class="btn ghost" id="regen">Regenerate</button> <span id="s3" class="muted"></span></p>
@@ -231,7 +294,7 @@ select{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E
 </div></section></main>
 
 <footer class="footer" style="padding:30px 0"><div class="wrap">
-  <p class="muted" style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-size:13px">© 2026 The Com'mon People. Built on mutual aid. Uploaded files are deleted as soon as text is extracted. <a href="/privacy.html" style="text-transform:none;letter-spacing:normal">Privacy</a> · <a href="/terms.html" style="text-transform:none;letter-spacing:normal">Terms</a></p>
+  <p class="muted" style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-size:13px">© 2026 Comquat, from The Com'mon People. Built on mutual aid. Uploaded files are deleted as soon as text is extracted. <a href="/privacy.html" style="text-transform:none;letter-spacing:normal">Privacy</a> · <a href="/terms.html" style="text-transform:none;letter-spacing:normal">Terms</a></p>
 </div></footer>
 
 <!-- Feedback pop-up (shown once after a download) -->
