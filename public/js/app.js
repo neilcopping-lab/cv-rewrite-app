@@ -492,6 +492,12 @@ function livePreview() {
 }
 
 // ── Accounts + credits ──
+// With Comquat accounts on, signing in happens on the account pages. Your work
+// in progress is held on our server, so it's all still here when you come back.
+function goToAccount(mode) {
+  const back = "/app.html?signin=ok";
+  location.assign("/account/?" + (mode === "signup" ? "mode=signup&" : "") + "next=" + encodeURIComponent(back));
+}
 async function refreshAccount() {
   try { STATE.account = await api("/api/auth/me"); }
   catch (e) { STATE.account = { signedIn: false, credits: 0 }; }
@@ -505,14 +511,15 @@ function renderAccountBar() {
   const topBox = $("#topSigninBox");
   if (a.signedIn) {
     st.innerHTML = a.free ? `Signed in as <strong>${a.email}</strong> · <strong style="color:var(--gold)">Free, always</strong>` : `Signed in as <strong>${a.email}</strong> · <strong style="color:var(--gold)">${a.credits} CV credit${a.credits === 1 ? "" : "s"}</strong>`;
-    act.innerHTML = `<button class="btn ghost" id="signoutBtn" style="padding:8px 12px">Sign out</button>`;
+    act.innerHTML = (a.accountsOn ? `<a class="btn ghost" href="/account/me.html" style="padding:8px 12px;margin-right:6px">My account</a>` : "") + `<button class="btn ghost" id="signoutBtn" style="padding:8px 12px">Sign out</button>`;
     const so = $("#signoutBtn"); if (so) so.onclick = async () => { await api("/api/auth/logout", { method: "POST" }); await refreshAccount(); };
     if (topBox) topBox.classList.add("hidden");
   } else {
     st.innerHTML = "New here? Just start below - it's free, and you can sign in with your email when you're ready to download.";
     act.innerHTML = `<button class="btn ghost" id="topSigninToggle" style="padding:8px 12px">Sign in</button>`;
     const tt = $("#topSigninToggle");
-    if (tt) tt.onclick = () => { if (topBox) { topBox.classList.toggle("hidden"); const e = $("#topSigninEmail"); if (e && !topBox.classList.contains("hidden")) e.focus(); } };
+    if (tt && a.accountsOn) { st.innerHTML = "New here? Just start below, it's free. Sign in or create a free Comquat account when you're ready to download."; tt.onclick = () => goToAccount(); }
+    else if (tt) tt.onclick = () => { if (topBox) { topBox.classList.toggle("hidden"); const e = $("#topSigninEmail"); if (e && !topBox.classList.contains("hidden")) e.focus(); } };
   }
 }
 function renderStep4Payment() {
@@ -520,7 +527,16 @@ function renderStep4Payment() {
   const a = STATE.account || { signedIn: false, credits: 0 };
   const signin = $("#signinBox"), buy = $("#buyBox"), dl = $("#downloads");
   [signin, buy, dl].forEach((x) => x && x.classList.add("hidden"));
-  if (!a.signedIn) { signin && signin.classList.remove("hidden"); return; }
+  if (!a.signedIn) {
+    if (signin && a.accountsOn && !signin.dataset.accounts) {
+      signin.dataset.accounts = "1";
+      signin.innerHTML = '<strong>Sign in to download.</strong> Use your free Comquat account: one login for CV Rewrite and Interview Prep, with your documents kept in one place. Your CV is saved here while you sign in, so nothing is lost.' +
+        '<div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn accent" type="button" id="acctSignin">Sign in</button><button class="btn ghost" type="button" id="acctSignup">Create a free account</button></div>';
+      $("#acctSignin").onclick = () => goToAccount();
+      $("#acctSignup").onclick = () => goToAccount("signup");
+    }
+    signin && signin.classList.remove("hidden"); return;
+  }
   if (a.free) {
     dl && dl.classList.remove("hidden");
     const b = $("#dlBalance"); if (b) b.textContent = "Free, always.";
@@ -535,6 +551,7 @@ function renderStep4Payment() {
 // Sign-in: email a 6-digit code (primary) plus a backup link. The code is
 // typed into THIS page, so signing in never reloads and never loses your work.
 async function requestSignin(email, msg) {
+  if (STATE.account && STATE.account.accountsOn) { goToAccount(); return; }
   if (!email) { busy(msg, false, "Enter your email."); return; }
   busy(msg, true, "Sending your code…");
   try {
