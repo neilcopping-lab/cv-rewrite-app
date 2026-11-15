@@ -253,6 +253,7 @@ function renderDraft(j) {
   j = j || STATE.pendingDraft || {};        // never crash on a missing draft
   STATE.pendingDraft = j;
   STATE.previewV = (STATE.previewV || 0) + 1; // new CV → refresh the PDF preview
+  resetConfirm("#confirmTrue"); // a new CV needs checking again
   const g = $("#softEmailGate"); if (g) g.classList.add("hidden");
   const c = $("#draftContent"); if (c) c.classList.remove("hidden");
   const banner = $("#checkBanner");
@@ -634,11 +635,24 @@ $$("[data-pack]").forEach((b) => (b.onclick = async () => {
   }
 }));
 
+// "I've read it and it's true" box: downloads stay greyed out until it's ticked.
+// A new CV or cover letter unticks it again, so each version gets checked.
+function syncConfirm() {
+  const cv = $("#confirmTrue"), cl = $("#confirmCover");
+  $$("[data-dl]").forEach((b) => { b.disabled = !(cv && cv.checked); b.style.opacity = b.disabled ? ".5" : ""; });
+  $$("[data-cover]").forEach((b) => { b.disabled = !(cl && cl.checked); b.style.opacity = b.disabled ? ".5" : ""; });
+}
+function resetConfirm(id) { const el = $(id); if (el) el.checked = false; syncConfirm(); }
+["#confirmTrue", "#confirmCover"].forEach((id) => { const el = $(id); if (el) el.addEventListener("change", syncConfirm); });
+syncConfirm();
+
 // Download: costs 1 credit for a new finished CV; handle sign-in / no-credit.
 async function downloadFile(type) {
-  const s = $("#s4b"); busy(s, true, "Preparing your file…");
+  const s = $("#s4b");
+  if (!($("#confirmTrue") || {}).checked) { busy(s, false, "Please tick the box above to confirm you've read your CV through and it's accurate."); return; }
+  busy(s, true, "Preparing your file…");
   try {
-    const r = await fetch(`/api/download?type=${type}&design=${encodeURIComponent(STATE.designId)}`);
+    const r = await fetch(`/api/download?type=${type}&design=${encodeURIComponent(STATE.designId)}&confirmed=1`);
     if (!r.ok) {
       const j = await r.json().catch(() => ({}));
       if (r.status === 401) { await refreshAccount(); busy(s, false, "Please sign in to download."); return; }
@@ -746,13 +760,15 @@ function renderCoverLetter(cl) {
   box.innerHTML = `<div style="font-family:Georgia,serif;color:#1A1A1A;background:#fff;padding:26px;line-height:1.6;border-radius:6px">${lines}${nameP}</div>`;
   box.classList.remove("hidden");
   $("#coverDownloads").classList.remove("hidden");
+  resetConfirm("#confirmCover"); // a new letter needs checking again
 }
 $$("[data-cover]").forEach((b) => (b.onclick = () => downloadCover(b.dataset.cover)));
 async function downloadCover(type) {
   const m = $("#coverMsg");
+  if (!($("#confirmCover") || {}).checked) { busy(m, false, "Please tick the box to confirm you've read your cover letter through and it's accurate."); return; }
   busy(m, true, "Preparing…");
   try {
-    const r = await fetch(`/api/cover-letter/download?type=${type}`);
+    const r = await fetch(`/api/cover-letter/download?type=${type}&confirmed=1`);
     if (!r.ok) { const j = await r.json().catch(() => ({})); busy(m, false, "⚠ " + (j.error || ("Error " + r.status))); return; }
     const blob = await r.blob();
     const cd = r.headers.get("Content-Disposition") || "";
