@@ -710,6 +710,31 @@ app.post("/api/confirm-payment", async (req, res) => {
 // Download: costs 1 credit per finished CV. All formats of the SAME finished CV
 // are free (paidVersion matches cvVersion). Regenerating makes a new CV that
 // costs another credit. Must be signed in.
+// ─── "I've checked it" confirmation before any download ─────────────────────
+// The person must tick a box saying they've read the document and it's true.
+// We keep a note of it in their session, and for Comquat account holders a
+// dated record in their consent history (once per version of the document).
+const CONFIRM_WORDING = {
+  cv: "I've read this CV from top to bottom. Everything in it is true and accurate, and I'll fix anything that isn't before I send it to anyone.",
+  cover: "I've read this cover letter from top to bottom. Everything in it is true and accurate, and I'll fix anything that isn't before I send it to anyone.",
+};
+const CONFIRM_NEEDED = "Please tick the box to confirm you've read it through and it's accurate.";
+async function recordConfirmation(req, kind) {
+  const st = S(req);
+  const version = kind === "cv" ? st.cvVersion || 0 : `${st.coverLetterVersion || 0}.${st.coverLetterGen || 0}`;
+  const key = `${kind}:${version}`;
+  st.confirmations = st.confirmations || {};
+  if (st.confirmations[key]) return;
+  st.confirmations[key] = new Date().toISOString();
+  if (accountsOn() && req.user && req.sb) {
+    const { error } = await req.sb.from("consent_log").insert({
+      user_id: req.user.id, topic: kind === "cv" ? "cv_confirm" : "cover_confirm",
+      granted: true, source: "cv-rewrite", wording: CONFIRM_WORDING[kind],
+    });
+    if (error) console.error("[confirm] could not record:", error.message);
+  }
+}
+
 app.get("/api/download", async (req, res) => {
   try {
     const st = S(req);
@@ -722,6 +747,8 @@ app.get("/api/download", async (req, res) => {
 
     const userEmail = currentEmail(req);
     if (!userEmail) return res.status(401).json({ error: "Please sign in to download." });
+    if (req.query.confirmed !== "1") return res.status(400).json({ error: CONFIRM_NEEDED });
+    await recordConfirmation(req, "cv");
 
     const alreadyPaid = st.paidVersion && st.paidVersion === st.cvVersion;
     if (!alreadyPaid) {
@@ -821,6 +848,7 @@ app.post("/api/cover-letter", async (req, res) => {
     });
     st.coverLetter = letter;
     st.coverLetterVersion = st.cvVersion;
+    st.coverLetterGen = (st.coverLetterGen || 0) + 1;
 
     // Email a copy on first creation (best-effort).
     if (email.hasKey()) {
@@ -843,6 +871,8 @@ app.get("/api/cover-letter/download", async (req, res) => {
     const st = S(req);
     if (!st.coverLetter) return res.status(400).json({ error: "No cover letter yet, add one first." });
     if (!currentEmail(req)) return res.status(401).json({ error: "Please sign in to download." });
+    if (req.query.confirmed !== "1") return res.status(400).json({ error: CONFIRM_NEEDED });
+    await recordConfirmation(req, "cover");
     const cleanCv = sanitizeForOutput(st.cv || {});
     const buf = await buildCoverDocx(st.coverLetter, cleanCv);
     const nameSafe = (cleanCv.header?.name || "cover").replace(/[^\w]+/g, "_");
