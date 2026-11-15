@@ -751,6 +751,25 @@ async function recordConfirmation(req, kind) {
   }
 }
 
+// Comquat accounts: a copy of every CV and cover letter a signed-in person
+// downloads is kept in "My documents" on their account page. A failed save
+// never stops the download; the page is told whether it worked.
+const { sourceKey: docKey } = require("./accounts/documents");
+async function keepCopy(req, res, kind, buf, fileName, made) {
+  if (!accountsOn() || !req.user || typeof req.saveDocument !== "function") return;
+  const role = (S(req).cv && S(req).cv.header && S(req).cv.header.targetRole) || "";
+  const r = await req.saveDocument({
+    kind,
+    title: (kind === "cv" ? "CV" : "Cover letter") + (role ? ` for ${role}` : ""),
+    jobTitle: role,
+    fileName,
+    mimeType: /\.pdf$/i.test(fileName) ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    data: buf,
+    sourceKey: docKey(kind, made, fileName.slice(fileName.lastIndexOf("_"))),
+  });
+  if (r && r.saved) res.setHeader("X-Comquat-Saved", "1");
+}
+
 app.get("/api/download", async (req, res) => {
   try {
     const st = S(req);
@@ -795,12 +814,14 @@ app.get("/api/download", async (req, res) => {
         const atsPdf = await docxToPdf(atsBuf);
         res.setHeader("Content-Type", "application/pdf");
         res.setHeader("Content-Disposition", `attachment; filename="${nameSafe}_ATS.pdf"`);
+        await keepCopy(req, res, "cv", atsPdf, `${nameSafe}_ATS.pdf`, cleanCv);
         return res.send(atsPdf);
       }
       if (!weasyAvailable()) return res.status(503).json({ error: "The designer PDF renderer isn't available on the server yet." });
       const dpdf = await renderHtmlPdf(renderDesignerHtml(cleanCv, reqId));
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="${nameSafe}_${reqId}.pdf"`);
+      await keepCopy(req, res, "cv", dpdf, `${nameSafe}_${reqId}.pdf`, cleanCv);
       return res.send(dpdf);
     }
 
@@ -813,12 +834,14 @@ app.get("/api/download", async (req, res) => {
     if (type === "docx") {
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
       res.setHeader("Content-Disposition", `attachment; filename="${nameSafe}_${suffix}.docx"`);
+      await keepCopy(req, res, "cv", buf, `${nameSafe}_${suffix}.docx`, cleanCv);
       return res.send(buf);
     }
     if (!libreAvailable()) return res.status(503).json({ error: "PDF conversion unavailable (LibreOffice not installed)." });
     const pdf = await docxToPdf(buf);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${nameSafe}_${suffix}.pdf"`);
+    await keepCopy(req, res, "cv", pdf, `${nameSafe}_${suffix}.pdf`, cleanCv);
     res.send(pdf);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -896,12 +919,14 @@ app.get("/api/cover-letter/download", async (req, res) => {
     if (type === "docx") {
       res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
       res.setHeader("Content-Disposition", `attachment; filename="${nameSafe}_CoverLetter.docx"`);
+      await keepCopy(req, res, "cover", buf, `${nameSafe}_CoverLetter.docx`, st.coverLetter);
       return res.send(buf);
     }
     if (!libreAvailable()) return res.status(503).json({ error: "PDF conversion unavailable (LibreOffice not installed)." });
     const pdf = await docxToPdf(buf);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${nameSafe}_CoverLetter.pdf"`);
+    await keepCopy(req, res, "cover", pdf, `${nameSafe}_CoverLetter.pdf`, st.coverLetter);
     res.send(pdf);
   } catch (e) {
     res.status(500).json({ error: e.message });
