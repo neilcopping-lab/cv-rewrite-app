@@ -666,7 +666,7 @@ async function downloadFile(type) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = name;
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    busy(s, false, "Downloaded.");
+    busy(s, false, r.headers.get("X-Comquat-Saved") ? 'Downloaded. A copy is saved in <a href="/account/me.html">My documents</a> on your account.' : "Downloaded.");
     await refreshAccount();
     maybeAskFeedback();
   } catch (e) { busy(s, false, "⚠ " + e.message); }
@@ -777,7 +777,7 @@ async function downloadCover(type) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a"); a.href = url; a.download = name;
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-    busy(m, false, "Downloaded.");
+    busy(m, false, r.headers.get("X-Comquat-Saved") ? 'Downloaded. A copy is saved in <a href="/account/me.html">My documents</a> on your account.' : "Downloaded.");
   } catch (e) { busy(m, false, "⚠ " + e.message); }
 }
 
