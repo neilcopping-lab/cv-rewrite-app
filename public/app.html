@@ -234,7 +234,8 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 
     <div id="draftContent" class="hidden">
       <div id="checkBanner" class="notice"></div>
-      <div class="notice" style="border-color:var(--teal)"><strong style="color:var(--teal)">✓ Honesty checked.</strong> Every figure, employer and claim below is traced back to what you told us - nothing invented, no inflated numbers. Written in plain English, with the usual AI clichés stripped out.</div>
+      <div class="notice" style="border-color:var(--teal)"><strong style="color:var(--teal)">✓ Honesty check passed.</strong> We've checked every figure, employer and claim against what you told us. Our checks are good but not perfect, so please read it through yourself.</div>
+      <div class="notice" style="border-color:var(--gold)"><strong>Written with help from AI.</strong> AI can get things wrong, so check every date, job title, number and claim before you use it. It's your CV and your name on it.</div>
       <div id="missingBox"></div>
       <div id="reviewBox"></div>
       <div id="matchBox"></div>
@@ -291,6 +292,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
     <!-- Downloads (shown when signed in with credits) -->
     <div id="downloads" class="hidden" style="margin-top:22px">
       <div class="notice" style="border-color:var(--gold)"><strong id="dlBalance"></strong> Download as many formats of your CV as you like. No credits, no card.</div>
+      <label class="confirm-row" style="display:flex;gap:10px;align-items:flex-start;text-transform:none;letter-spacing:normal;font-weight:400;font-size:15px;line-height:1.5;font-family:var(--font-body);color:inherit;margin:14px 0;cursor:pointer"><input type="checkbox" id="confirmTrue" style="width:18px;height:18px;margin-top:3px;flex:0 0 auto;accent-color:var(--teal)"><span>I've read this CV from top to bottom. Everything in it is true and accurate, and I'll fix anything that isn't before I send it to anyone.</span></label>
       <div class="dlrow">
         <button class="btn" data-dl="docx">Download Word</button>
         <button class="btn" data-dl="pdf">Download PDF</button>
@@ -307,9 +309,12 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
       <button class="btn accent" id="coverBtn">Write my cover letter</button>
       <span id="coverMsg" class="muted" style="margin-left:8px"></span>
       <div id="coverPreview" class="previewbox hidden" style="margin-top:14px"></div>
-      <div id="coverDownloads" class="dlrow hidden" style="margin-top:10px">
-        <button class="btn" data-cover="docx">Download Word</button>
-        <button class="btn" data-cover="pdf">Download PDF</button>
+      <div id="coverDownloads" class="hidden" style="margin-top:10px">
+        <label class="confirm-row" style="display:flex;gap:10px;align-items:flex-start;text-transform:none;letter-spacing:normal;font-weight:400;font-size:15px;line-height:1.5;font-family:var(--font-body);color:inherit;margin:0 0 12px;cursor:pointer"><input type="checkbox" id="confirmCover" style="width:18px;height:18px;margin-top:3px;flex:0 0 auto;accent-color:var(--teal)"><span>I've read this cover letter from top to bottom. Everything in it is true and accurate, and I'll fix anything that isn't before I send it to anyone.</span></label>
+        <div class="dlrow">
+          <button class="btn" data-cover="docx">Download Word</button>
+          <button class="btn" data-cover="pdf">Download PDF</button>
+        </div>
       </div>
     </div>
   </div>
