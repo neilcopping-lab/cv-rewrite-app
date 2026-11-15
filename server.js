@@ -81,6 +81,22 @@ app.use(
 );
 app.use(express.static(path.join(__dirname, "public")));
 
+// ─── Identity shield ─────────────────────────────────────────────────────────
+// Every AI call made while handling this request has the person's name, email,
+// phone, address, links and date of birth swapped for placeholders first (see
+// lib/identityShield.js and lib/anthropic.js). This tells the shield where to
+// find those details: read fresh at each AI call.
+const identityShield = require("./lib/identityShield");
+app.use((req, res, next) => identityShield.run(() => {
+  const st = (req.session && req.session.cv) || {};
+  const links = st.links && typeof st.links === "object" ? Object.values(st.links).filter((v) => typeof v === "string") : [];
+  return {
+    texts: [st.cvText, st.styleSample],
+    emails: [req.session && req.session.userEmail, req.user && req.user.email],
+    links,
+  };
+}, next));
+
 // ─── Comquat accounts (one login for CV Rewrite + Interview Prep) ───────────
 // Lives in ./accounts. Switched off until SUPABASE_URL and keys are set, in
 // which case the older email-code sign-in below keeps working as before.
