@@ -50,6 +50,8 @@ function scrubCv(cv) {
 }
 
 const app = express();
+// Render sits behind a proxy: trust it so rate limits see each visitor's real IP.
+app.set("trust proxy", 1);
 const upload = multer({ dest: path.join(__dirname, "tmp") });
 const BASE = process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
 
@@ -78,6 +80,12 @@ app.use(
   })
 );
 app.use(express.static(path.join(__dirname, "public")));
+
+// ─── Comquat accounts (one login for CV Rewrite + Interview Prep) ───────────
+// Lives in ./accounts. Switched off until SUPABASE_URL and keys are set, in
+// which case the older email-code sign-in below keeps working as before.
+const { mountAccounts, enabled: accountsOn } = require("./accounts");
+mountAccounts(app);
 
 // ─── Newsletter signup ──────────────────────────────────────────────────────
 // The static site at the-common-people.com posts here to add a subscriber to
@@ -149,7 +157,9 @@ app.post("/api/subscribe", async (req, res) => {
 });
 
 const S = (req) => (req.session.cv = req.session.cv || {});
-const currentEmail = (req) => req.session.userEmail || null;
+// With Comquat accounts switched on, the signed-in account is the only source
+// of truth. Credits stay keyed by email, so existing customers keep theirs.
+const currentEmail = (req) => accountsOn() ? ((req.user && req.user.email) || null) : (req.session.userEmail || null);
 
 // Margin guard: cap how many AI rewrites one session can run for free, so a
 // user can't rack up the AI bill by hammering "Regenerate" without ever paying.
@@ -265,6 +275,7 @@ app.get("/health", (req, res) =>
 
 // ─── Accounts (passwordless magic-link login) ───────────────────────────────
 app.post("/api/auth/request", async (req, res) => {
+  if (accountsOn()) return res.status(409).json({ error: "Please sign in with your Comquat account.", signIn: "/account/" });
   try {
     const out = await auth.requestLink(req.body.email);
     // Remember which email we're expecting a code from (so the user only types
@@ -329,7 +340,8 @@ app.get("/api/draft", (req, res) => {
 
 app.get("/api/auth/me", (req, res) => {
   const e = currentEmail(req);
-  res.json({ signedIn: !!e, email: e, credits: e ? db.credits(e) : 0, free: FREE_MODE });
+  res.set("Cache-Control", "no-store");
+  res.json({ signedIn: !!e, email: e, credits: e ? db.credits(e) : 0, free: FREE_MODE, accountsOn: accountsOn() });
 });
 
 // ─── Feedback (star rating + comment) ───────────────────────────────────────
@@ -369,8 +381,9 @@ app.get("/admin/feedback", (req, res) => {
     <table><tr><th>Rating</th><th>Comment</th><th>From</th><th>Role</th><th>When</th></tr>${rows || '<tr><td colspan="5">No feedback yet.</td></tr>'}</table>`);
 });
 
-app.post("/api/auth/logout", (req, res) => {
+app.post("/api/auth/logout", async (req, res) => {
   req.session.userEmail = null;
+  if (req.sb) await req.sb.auth.signOut().catch(() => {});
   res.json({ ok: true });
 });
 

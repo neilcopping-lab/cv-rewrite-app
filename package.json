@@ -12,10 +12,12 @@
     "test:e2e": "bash scripts/e2e.sh"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=22"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.0",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.0",
     "adm-zip": "^0.6.0",
     "docx": "^8.5.0",
     "dotenv": "^16.4.5",

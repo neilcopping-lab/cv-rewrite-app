@@ -1,6 +1,6 @@
 # The Com'mon People — CV Rewrite. Docker image so LibreOffice (PDF export)
 # is available on Render's container runtime.
-FROM node:18-bookworm-slim
+FROM node:22-bookworm-slim
 
 # HOME must be writable for LibreOffice's first-run profile.
 ENV NODE_ENV=production HOME=/tmp PORT=3000
