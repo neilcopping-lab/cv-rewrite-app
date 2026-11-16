@@ -757,7 +757,17 @@ async function recordConfirmation(req, kind) {
 const { sourceKey: docKey } = require("./accounts/documents");
 async function keepCopy(req, res, kind, buf, fileName, made) {
   if (!accountsOn() || !req.user || typeof req.saveDocument !== "function") return;
-  const role = (S(req).cv && S(req).cv.header && S(req).cv.header.targetRole) || "";
+  // The job title: from the CV if it's settled, otherwise from the advert.
+  const st = S(req);
+  const real = (v) => { const t = String(v || "").trim(); return !t || /\[[A-Z_ ]+\]/.test(t) ? "" : t; };
+  const fromAdvert = (txt) => {
+    const t = String(txt || "");
+    const labelled = t.match(/^\s*(?:job\s*title|role|position)\s*[:\-]\s*(.{3,60})$/im);
+    if (labelled) return labelled[1].trim();
+    const m = t.match(/\b(?:seeking|hiring|for)\s+(?:an?\s+)?([A-Z][A-Za-z/ ]{3,40}?)(?:\s+to\b|[.,\n])/);
+    return m ? m[1].trim() : "";
+  };
+  const role = real(made && made.header && made.header.targetRole) || real(st.cv && st.cv.header && st.cv.header.targetRole) || real(fromAdvert(st.advertText));
   const r = await req.saveDocument({
     kind,
     title: (kind === "cv" ? "CV" : "Cover letter") + (role ? ` for ${role}` : ""),
