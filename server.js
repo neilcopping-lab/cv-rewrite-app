@@ -282,6 +282,7 @@ app.get("/health", (req, res) =>
   res.json({
     ok: true,
     anthropic: !!process.env.ANTHROPIC_API_KEY,
+    voice: !!process.env.OPENAI_API_KEY,
     stripe: payment.hasKey(),
     resend: email.hasKey(),
     libreoffice: libreAvailable(),
@@ -784,9 +785,15 @@ async function keepCopy(req, res, kind, buf, fileName, made) {
 
 // ---- Master CV: one full CV kept in a Comquat account -----------------------------
 // Signed-in people only. Stored in Supabase as the person themselves, so only
-// they can reach it. Nothing here goes to the AI: that only happens if they
-// choose to tailor it for a job, and then the identity shield applies as usual.
+// they can reach it. Nothing here goes to the AI unless they press "Write it up
+// for me" or tailor it for a job, and then the identity shield applies as usual.
+const aiHasKey = () => require("./lib/anthropic").hasKey();
 const masterCv = require("./lib/masterCv");
+const fresh = require("./lib/freshCv");
+const masterWriter = require("./lib/masterWriter");
+// A Fresh design downloaded as Word uses the nearest editable Word design.
+const FRESH_WORD = { "f-sunrise": "warm-operational", "f-green": "two-column-sidebar", "f-bold": "bold-header-block", "f-sky": "graduate-entry" };
+const freshClean = (cv) => sanitizeForOutput(masterCv.forFresh(cv));
 function needAccount(req, res) {
   if (accountsOn() && req.user && req.sb) return true;
   res.status(401).json({ error: "Please sign in to use your master CV.", signIn: "/account/?next=" + encodeURIComponent("/master.html") });
@@ -811,6 +818,9 @@ app.get("/api/master", async (req, res) => {
     res.json({ cv, saved: !!m, updatedAt: m ? m.updatedAt : null, progress: masterCv.progress(cv), behaviours: require("./lib/behaviours").catalogue(),
       designs: designs.map((d) => ({ id: d.id, name: d.name, category: d.category, description: d.description })),
       designerTemplates: DESIGNER_TEMPLATES.map((d) => ({ id: d.id, name: d.name, category: d.category, description: d.description })),
+      freshTemplates: fresh.FRESH_TEMPLATES.map((d) => ({ id: d.id, name: d.name, category: d.category, description: d.description })),
+      writeUp: aiHasKey(),
+      voice: !!process.env.OPENAI_API_KEY,
       banned: cliches.BANNED_PHRASES });
   } catch (e) { masterFail(res, e, "load"); }
 });
@@ -837,7 +847,7 @@ app.get("/api/master/text", async (req, res) => {
   try {
     const m = await loadMaster(req);
     res.set("Cache-Control", "no-store");
-    res.json({ text: m && masterCv.hasContent(m.cv) ? masterCv.toText(m.cv) : "" });
+    res.json({ text: m && masterCv.hasContent(m.cv) ? masterCv.toText(m.cv) : "", writingStyle: m ? m.cv.writingStyle : null, styleSample: m ? m.cv.styleSample || "" : "" });
   } catch (e) { masterFail(res, e, "text"); }
 });
 
@@ -853,7 +863,19 @@ app.get("/api/master/download", async (req, res) => {
     const type = String(req.query.type || "docx").toLowerCase();
     const nameSafe = (clean.header.name || "My").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") || "My";
     let buf, ext, label;
-    if (isDesigner(reqId)) {
+    if (fresh.isFresh(reqId) && (type === "pdf" || type === "")) {
+      if (!weasyAvailable()) return res.status(503).json({ error: "The PDF isn't available just now. Please try Word instead." });
+      buf = await renderHtmlPdf(fresh.renderFresh(freshClean(m.cv), reqId)); ext = "pdf"; label = reqId.replace(/^f-/, "");
+    } else if (fresh.isFresh(reqId)) {
+      const ats = type === "ats" || type === "ats-pdf";
+      const docx = await buildDocx(clean, byId(FRESH_WORD[reqId]), { ats });
+      label = ats ? "ATS" : reqId.replace(/^f-/, "");
+      if (type === "docx") { buf = docx; ext = "docx"; }
+      else {
+        if (!libreAvailable()) return res.status(503).json({ error: "The ATS-safe PDF isn't available just now. Please try Word instead." });
+        buf = await docxToPdf(docx); ext = "pdf";
+      }
+    } else if (isDesigner(reqId)) {
       if (type === "docx") return res.status(400).json({ error: "Designer templates download as PDF. For an editable Word file, choose a Word template." });
       if (type === "ats" || type === "ats-pdf") {
         if (!libreAvailable()) return res.status(503).json({ error: "The ATS-safe PDF isn't available just now. Please try Word instead." });
@@ -884,6 +906,53 @@ app.get("/api/master/download", async (req, res) => {
     if (saved && saved.saved) res.setHeader("X-Comquat-Saved", "1");
     res.send(buf);
   } catch (e) { masterFail(res, e, "download"); }
+});
+
+// The live preview beside the builder: the Fresh design, exactly as the PDF
+// will look, made from what's on the page right now (saved or not).
+app.post("/api/master/preview", (req, res) => {
+  if (!needAccount(req, res)) return;
+  if (!req.is("application/json")) return res.status(415).json({ error: "Please send JSON." });
+  try {
+    const cv = masterCv.normalise(req.body && req.body.cv);
+    const id = fresh.isFresh(req.body && req.body.design) ? req.body.design : "f-sunrise";
+    res.set("Cache-Control", "no-store");
+    res.type("html").send(fresh.renderFresh(freshClean(cv), id, { forScreen: true }));
+  } catch (e) { masterFail(res, e, "preview"); }
+});
+
+// "Write it up for me": their answers or their words about a job, written up
+// in the style they picked. Only uses what they told us (lib/masterWriter.js).
+const writeCounts = new Map();
+function writeAllowed(userId) {
+  const day = new Date().toISOString().slice(0, 10), key = userId + day;
+  const n = (writeCounts.get(key) || 0) + 1;
+  if (writeCounts.size > 5000) writeCounts.clear();
+  writeCounts.set(key, n);
+  return n <= 40;
+}
+app.post("/api/master/write", async (req, res) => {
+  if (!needAccount(req, res)) return;
+  if (!req.is("application/json")) return res.status(415).json({ error: "Please send JSON." });
+  if (!aiHasKey()) return res.status(503).json({ error: "Writing it up isn't available just now. You can still build it from your answers." });
+  if (!writeAllowed(req.user.id)) return res.status(429).json({ error: "You've written up a lot today. Have a go at editing it yourself, and try again tomorrow." });
+  const b = req.body || {};
+  try {
+    const style = String(b.style || ""), styleSample = String(b.styleSample || "").slice(0, 3000);
+    if (b.task === "statement") {
+      const out = await masterWriter.statement({ answers: b.answers || {}, current: String(b.current || "").slice(0, 2500), targetRole: String(b.targetRole || "").slice(0, 120), style, styleSample });
+      return res.json({ ok: true, ...out });
+    }
+    if (b.task === "job") {
+      const out = await masterWriter.job({ job: b.job || {}, style, styleSample });
+      return res.json({ ok: true, ...out });
+    }
+    res.status(400).json({ error: "Unknown request." });
+  } catch (e) {
+    if (e.status && e.status < 500) return res.status(e.status).json({ error: e.message });
+    console.error("[master] write:", e.message);
+    res.status(502).json({ error: e.status === 502 ? e.message : "We couldn't write that up just now. Please try again in a moment." });
+  }
 });
 
 app.post("/api/master/delete", async (req, res) => {
