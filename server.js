@@ -796,7 +796,7 @@ const FRESH_WORD = { "f-sunrise": "warm-operational", "f-green": "two-column-sid
 const freshClean = (cv) => sanitizeForOutput(masterCv.forFresh(cv));
 function needAccount(req, res) {
   if (accountsOn() && req.user && req.sb) return true;
-  res.status(401).json({ error: "Please sign in to use your master CV.", signIn: "/account/?next=" + encodeURIComponent("/master.html") });
+  res.status(401).json({ error: "Please sign in to use your master CV.", signIn: "/account/?next=" + encodeURIComponent("/account/me.html") });
   return false;
 }
 async function loadMaster(req) {
