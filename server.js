@@ -100,8 +100,10 @@ app.use((req, res, next) => identityShield.run(() => {
 // ─── Comquat accounts (one login for CV Rewrite + Interview Prep) ───────────
 // Lives in ./accounts. Switched off until SUPABASE_URL and keys are set, in
 // which case the older email-code sign-in below keeps working as before.
-const { mountAccounts, enabled: accountsOn } = require("./accounts");
+const { mountAccounts, enabled: accountsOn, startInactiveAccountJob } = require("./accounts");
 mountAccounts(app);
+// The three-year clean-up of unused accounts runs here, and only here.
+startInactiveAccountJob();
 
 // ─── Newsletter signup ──────────────────────────────────────────────────────
 // The static site at the-common-people.com posts here to add a subscriber to
@@ -779,6 +781,94 @@ async function keepCopy(req, res, kind, buf, fileName, made) {
   });
   if (r && r.saved) res.setHeader("X-Comquat-Saved", "1");
 }
+
+// ---- Master CV: one full CV kept in a Comquat account -----------------------------
+// Signed-in people only. Stored in Supabase as the person themselves, so only
+// they can reach it. Nothing here goes to the AI: that only happens if they
+// choose to tailor it for a job, and then the identity shield applies as usual.
+const masterCv = require("./lib/masterCv");
+function needAccount(req, res) {
+  if (accountsOn() && req.user && req.sb) return true;
+  res.status(401).json({ error: "Please sign in to use your master CV.", signIn: "/account/?next=" + encodeURIComponent("/master.html") });
+  return false;
+}
+async function loadMaster(req) {
+  const { data, error } = await req.sb.from("master_cvs").select("data, updated_at").eq("user_id", req.user.id);
+  if (error) throw new Error(error.message);
+  return data && data[0] ? { cv: masterCv.normalise(data[0].data), updatedAt: data[0].updated_at } : null;
+}
+const masterFail = (res, e, what) => {
+  console.error(`[master] ${what}:`, e.message);
+  res.status(500).json({ error: "Something went wrong there. Your work is still on this page, so please try again in a moment." });
+};
+
+app.get("/api/master", async (req, res) => {
+  if (!needAccount(req, res)) return;
+  try {
+    const m = await loadMaster(req);
+    const cv = m ? m.cv : masterCv.normalise({});
+    res.set("Cache-Control", "no-store");
+    res.json({ cv, saved: !!m, updatedAt: m ? m.updatedAt : null, progress: masterCv.progress(cv) });
+  } catch (e) { masterFail(res, e, "load"); }
+});
+
+app.post("/api/master", async (req, res) => {
+  if (!needAccount(req, res)) return;
+  if (!req.is("application/json")) return res.status(415).json({ error: "Please send JSON." });
+  try {
+    const cv = masterCv.normalise(req.body && req.body.cv);
+    const now = new Date().toISOString();
+    const { data, error } = await req.sb.from("master_cvs").update({ data: cv, updated_at: now }).eq("user_id", req.user.id).select("user_id");
+    if (error) throw new Error(error.message);
+    if (!data || !data.length) {
+      const { error: e2 } = await req.sb.from("master_cvs").insert({ user_id: req.user.id, data: cv, updated_at: now });
+      if (e2) throw new Error(e2.message);
+    }
+    res.json({ ok: true, updatedAt: now, progress: masterCv.progress(cv) });
+  } catch (e) { masterFail(res, e, "save"); }
+});
+
+// Plain text, to drop into CV Rewrite's "paste your CV" box.
+app.get("/api/master/text", async (req, res) => {
+  if (!needAccount(req, res)) return;
+  try {
+    const m = await loadMaster(req);
+    res.set("Cache-Control", "no-store");
+    res.json({ text: m && masterCv.hasContent(m.cv) ? masterCv.toText(m.cv) : "" });
+  } catch (e) { masterFail(res, e, "text"); }
+});
+
+app.get("/api/master/download", async (req, res) => {
+  if (!needAccount(req, res)) return;
+  try {
+    const m = await loadMaster(req);
+    if (!m || !masterCv.hasContent(m.cv)) return res.status(400).json({ error: "There's nothing in your master CV yet. Add a few details first." });
+    const clean = sanitizeForOutput(m.cv);
+    const design = byId(String(req.query.design || "")) || byId("modern-minimal");
+    const buf = await buildDocx(clean, design, { ats: false });
+    const nameSafe = (clean.header.name || "My").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") || "My";
+    const fileName = `${nameSafe}_Master_CV.docx`;
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    const saved = await req.saveDocument({
+      kind: "cv", title: "Master CV", jobTitle: clean.header.targetRole || "",
+      fileName, mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      data: buf, sourceKey: docKey("master", m.cv, design.id),
+    });
+    if (saved && saved.saved) res.setHeader("X-Comquat-Saved", "1");
+    res.send(buf);
+  } catch (e) { masterFail(res, e, "download"); }
+});
+
+app.post("/api/master/delete", async (req, res) => {
+  if (!needAccount(req, res)) return;
+  if (!req.is("application/json")) return res.status(415).json({ error: "Please send JSON." });
+  try {
+    const { error } = await req.sb.from("master_cvs").delete().eq("user_id", req.user.id);
+    if (error) throw new Error(error.message);
+    res.json({ ok: true });
+  } catch (e) { masterFail(res, e, "delete"); }
+});
 
 app.get("/api/download", async (req, res) => {
   try {
