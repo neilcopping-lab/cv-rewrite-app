@@ -125,7 +125,8 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 }
 @media (max-width:480px){.nav .cq-brand .cq-feat{display:none}}
 </style>
-</head><body>
+<link rel="stylesheet" href="/account/fresh.css?v=20261118">
+</head><body class="fx fx-cv">
 
 <header class="site"><nav class="nav">
   <a class="cq-brand" href="/" aria-label="Comquat CV Rewrite, from The Com'mon People"><img src="/img/comquat-logo.svg" alt="Comquat" width="150" height="34"><span class="cq-feat cv">CV Rewrite</span></a>
@@ -143,9 +144,15 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
     <a class="cp-book" href="https://cal.com/the-common-people.com/interviewcoaching" target="_blank" rel="noopener">Book a coaching call</a>
   </div>
 </nav></header>
+<section class="fx-hero"><div class="fx-hero-in">
+  <p class="fx-kicker">CV Rewrite &middot; Free, always</p>
+  <h1>Let's rewrite your CV.</h1>
+  <p class="fx-lede">Paste your CV and the job advert. We spot what's missing, ask a few quick questions, then rewrite it for this one job, in your own words. Nothing invented.</p>
+  <ul class="fx-how"><li><span class="d">1</span>Paste your CV and the advert</li><li><span class="d">2</span>Fill the gaps</li><li><span class="d">3</span>Check it</li><li><span class="d">4</span>Pick a design</li></ul>
+</div></section>
 
 <main><section style="border:none"><div class="wrap">
-  <div class="eyebrow">CV Rewrite &middot; Free, always</div>
+  
 
   <!-- Account bar -->
   <div id="accountBar" class="notice" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
@@ -172,7 +179,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 
   <!-- STEP 1 -->
   <div class="panel active" id="p1">
-    <h2>Paste your CV and the job advert</h2>
+    <h2><span class="fx-num">1</span>Paste your CV and the job advert</h2>
     <p class="muted">Upload a file (PDF or Word) or paste the text. Either works. Files are deleted from our server the moment we've read them.</p>
     <label>Your current CV</label>
     <p id="masterLoad" class="hidden" style="margin:0 0 10px;padding:10px 14px;background:#F4FAF6;border:1px solid #CFE3D7;border-radius:10px;font-size:15px"><span id="masterLoadText">You've got a master CV in your account.</span> <button type="button" id="masterLoadBtn" style="margin-left:6px;background:#1F6B45;color:#fff;border:0;border-radius:999px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer">Use my master CV</button></p>
@@ -214,7 +221,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 
   <!-- STEP 2 -->
   <div class="panel" id="p2">
-    <h2>Answer a few questions</h2>
+    <h2><span class="fx-num">2</span>Answer a few questions</h2>
     <p class="muted">We compared the advert against your CV. These are the only things we couldn't already see. Short answers are fine. Type, or record and we'll transcribe.</p>
     <div id="gapNote" class="notice hidden"></div>
     <div id="reqSummary"></div>
@@ -224,7 +231,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 
   <!-- STEP 3 -->
   <div class="panel" id="p3">
-    <h2>Your rewritten CV</h2>
+    <h2><span class="fx-num">3</span>Your rewritten CV</h2>
 
     <!-- Soft email step: shown once, just before revealing the CV -->
     <div id="softEmailGate" class="notice hidden" style="margin-bottom:16px">
@@ -251,7 +258,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 
   <!-- STEP 4 -->
   <div class="panel" id="p4">
-    <h2>Choose a design</h2>
+    <h2><span class="fx-num">4</span>Choose a design</h2>
     <div style="display:flex;gap:8px;margin:6px 0 4px;flex-wrap:wrap">
       <button class="btn ghost" id="tplWord" style="padding:8px 14px">Word / ATS templates</button>
       <button class="btn ghost" id="tplDesigner" style="padding:8px 14px">Designer templates (PDF)</button>
