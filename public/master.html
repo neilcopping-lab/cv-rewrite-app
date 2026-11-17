@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your master CV | Comquat</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/account/img/comquat-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/account/account.css?v=20261116-tools">
+<style>
+.mcv-lede{max-width:640px}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+@media (max-width:560px){.cq-head .cq-feat{display:none}.cq-head nav{display:flex;gap:12px;font-size:12px}.cq-head nav a:first-child{display:none}.mcv-bar{padding:10px 12px;gap:8px}.mcv-prog{flex:1 1 100%;display:flex;align-items:center;gap:10px}.mcv-meter{flex:1;min-width:0;margin:0}.mcv-acts{flex:1 1 auto}.mcv-acts .btn{flex:1;padding:9px 10px;font-size:14px}.mcv-status{min-width:0;flex:1 1 100%;text-align:left;font-size:12.5px}}
+.mcv-bar{position:sticky;top:0;z-index:5;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:#fff;border:1px solid var(--pith);border-radius:14px;padding:12px 16px;margin:0 0 18px;box-shadow:0 6px 18px rgba(23,25,28,.06)}
+.mcv-prog{font-size:14.5px}
+.mcv-prog strong{color:var(--leaf)}
+.mcv-meter{height:8px;background:var(--pith);border-radius:99px;overflow:hidden;margin-top:6px;min-width:180px}
+.mcv-meter span{display:block;height:100%;background:var(--leaf);width:0;transition:width .3s}
+.mcv-status{font-size:13.5px;color:var(--muted);min-width:110px;text-align:right}
+.mcv-status.err{color:#B3261E;font-weight:700}
+.mcv-acts{display:flex;gap:8px;flex-wrap:wrap}
+.mcv-acts .btn{padding:9px 16px;font-size:14.5px}
+.mcv-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.mcv-grid .full{grid-column:1/-1}
+@media (max-width:640px){.mcv-grid{grid-template-columns:1fr}}
+.mcv label{display:block;font-weight:700;font-size:14.5px;margin:0 0 5px}
+.mcv label small{font-weight:400;color:var(--muted)}
+.mcv input[type=text],.mcv input[type=email],.mcv input[type=tel],.mcv input[type=url],.mcv textarea{width:100%;font:inherit;font-size:15.5px;padding:10px 12px;border:1.5px solid var(--pith);border-radius:10px;background:#fff;color:var(--ink)}
+.mcv textarea{min-height:96px;resize:vertical;line-height:1.45}
+.mcv input:focus,.mcv textarea:focus{outline:3px solid var(--kq);outline-offset:1px;border-color:var(--kq)}
+.tip{font-size:14px;color:var(--muted);background:var(--peel);border-left:3px solid var(--kq);border-radius:0 8px 8px 0;padding:8px 12px;margin:0 0 14px}
+.item{border:1px solid var(--pith);border-radius:12px;padding:14px;margin:0 0 12px;background:#fffdf9}
+.item-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 10px}
+.item-head strong{font-size:15px}
+.item-tools{display:flex;gap:6px}
+.icon-btn{border:1px solid var(--pith);background:#fff;border-radius:8px;padding:5px 10px;font:inherit;font-size:13px;cursor:pointer;color:var(--ink)}
+.icon-btn:hover{border-color:var(--leaf)}
+.icon-btn.del{color:#B3261E}
+.add-btn{border:2px dashed var(--pith);background:transparent;border-radius:12px;padding:12px;width:100%;font:inherit;font-weight:700;color:var(--leaf);cursor:pointer}
+.add-btn:hover{border-color:var(--leaf);background:#F4FAF6}
+.signin-card{text-align:left}
+.danger-zone{margin-top:6px;font-size:14px}
+</style>
+</head>
+<body>
+<header class="cq-head">
+  <a class="cq-brand" href="https://the-common-people.com/" aria-label="Comquat, from The Com'mon People"><img src="/account/img/comquat-logo.svg" alt="Comquat" width="140" height="32"><span class="cq-feat">Master CV</span></a>
+  <nav aria-label="Comquat apps"><a href="/">CV Rewrite</a><a href="https://prep.the-common-people.com/">Interview Prep</a><a href="/account/me.html">My account</a></nav>
+</header>
+
+<main class="wide mcv">
+  <h1>Your master CV</h1>
+  <p class="lede mcv-lede">Put everything you've done in one place, once. Then, whenever a job comes up, tailor it with CV Rewrite in a few minutes instead of starting from scratch. It saves as you type, and only you can see it.</p>
+
+  <section class="card signin-card hidden" id="signed-out">
+    <h2>Sign in to build your master CV</h2>
+    <p>Your master CV lives in your free Comquat account, so it's there whenever you need it.</p>
+    <p><a class="btn btn-primary" href="/account/?mode=signup&amp;next=%2Fmaster.html">Create my free account</a> <a class="btn btn-ghost" href="/account/?next=%2Fmaster.html">Sign in</a></p>
+  </section>
+
+  <p class="small" id="loading">Loading your master CV…</p>
+
+  <div id="builder" class="hidden">
+    <div class="mcv-bar" role="region" aria-label="Progress and actions">
+      <div class="mcv-prog">
+        <div id="prog-text"><strong>0 of 6</strong> done</div>
+        <div class="mcv-meter" aria-hidden="true"><span id="prog-bar"></span></div>
+      </div>
+      <div class="mcv-acts">
+        <button type="button" class="btn btn-ghost" id="dl">Download as Word</button>
+        <button type="button" class="btn btn-primary" id="tailor">Tailor it for a job</button>
+      </div>
+      <div class="mcv-status" id="status" aria-live="polite"></div>
+    </div>
+    <p class="small hidden" id="still-to-add"></p>
+    <div class="msg hidden" id="msg" role="status"></div>
+
+    <section class="card">
+      <h2>1. About you</h2>
+      <div class="mcv-grid">
+        <div><label for="f-name">Your name</label><input type="text" id="f-name" data-path="header.name" autocomplete="name"></div>
+        <div><label for="f-role">The kind of job you're after <small>(optional)</small></label><input type="text" id="f-role" data-path="header.targetRole" placeholder="e.g. Front of House Manager"></div>
+        <div><label for="f-email">Email</label><input type="email" id="f-email" data-path="header.contacts.email" autocomplete="email"></div>
+        <div><label for="f-phone">Phone</label><input type="tel" id="f-phone" data-path="header.contacts.phone" autocomplete="tel"></div>
+        <div><label for="f-loc">Town or city <small>(no need for your full address)</small></label><input type="text" id="f-loc" data-path="header.contacts.location" autocomplete="address-level2"></div>
+        <div><label for="f-li">LinkedIn <small>(optional)</small></label><input type="url" id="f-li" data-path="header.linkedin" placeholder="linkedin.com/in/yourname"></div>
+        <div class="full"><label for="f-web">Website or portfolio <small>(optional)</small></label><input type="url" id="f-web" data-path="header.portfolio"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2. A few lines about you</h2>
+      <p class="tip">Three or four sentences: what you do, what you're good at, and what you want next. Write it the way you'd say it to someone at work. CV Rewrite will sharpen it for each job.</p>
+      <label for="f-profile" class="sr-only">Your profile</label>
+      <textarea id="f-profile" data-path="personalStatement" rows="5"></textarea>
+    </section>
+
+    <section class="card">
+      <h2>3. Work history</h2>
+      <p class="tip">Start with your most recent job and work back. Put everything in, even jobs you'd leave off some applications: CV Rewrite picks what fits each job. One line per task or result. Numbers help, like team sizes, targets and what changed because of you.</p>
+      <div id="list-experience"></div>
+      <button type="button" class="add-btn" data-add="experience">+ Add a job</button>
+    </section>
+
+    <section class="card">
+      <h2>4. Key skills</h2>
+      <p class="tip">The things you're good at, each with a line of proof if you can. "Rota planning: ran rotas for a team of 20 for three years" beats "excellent organiser".</p>
+      <div id="list-skills"></div>
+      <button type="button" class="add-btn" data-add="skills">+ Add a skill</button>
+    </section>
+
+    <section class="card">
+      <h2>5. Education and training</h2>
+      <p class="tip">Qualifications, apprenticeships, courses and certificates. Food hygiene, first aid and licences count.</p>
+      <div id="list-education"></div>
+      <button type="button" class="add-btn" data-add="education">+ Add a qualification</button>
+    </section>
+
+    <section class="card">
+      <h2>6. Interests <small class="small">(optional)</small></h2>
+      <p class="tip">One per line. Specific beats general: "Coaching under-11s football" says more than "sport".</p>
+      <label for="f-interests" class="sr-only">Interests</label>
+      <textarea id="f-interests" data-path="interests" rows="4"></textarea>
+    </section>
+
+    <section class="card">
+      <h2>Done for now?</h2>
+      <p>Everything's saved. Come back and add to it whenever you like. When a job comes up, press <strong>Tailor it for a job</strong> and CV Rewrite will start with this CV already filled in. Every Word download is kept in <a href="/account/me.html">My documents</a>.</p>
+      <p class="danger-zone"><button type="button" class="linkbtn" id="wipe">Delete my master CV</button></p>
+    </section>
+  </div>
+</main>
+
+<script src="/js/master.js?v=20261116" defer></script>
+</body>
+</html>

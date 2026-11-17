@@ -121,7 +121,8 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 .nav .links{display:flex!important;align-items:center;gap:8px 16px!important;flex-wrap:nowrap;font-size:13.5px!important;letter-spacing:.04em!important}
 .nav .links a{white-space:nowrap}
 .nav .links a.cp-book{margin-left:auto;letter-spacing:.02em;color:#17191C!important}
-@media (max-width:1100px){.nav .links{flex-wrap:wrap}}
+@media (max-width:1179px){.nav .links{flex-wrap:wrap}.nav .links a.cp-book{position:absolute;top:20px;right:24px;margin:0}}
+@media (min-width:761px) and (max-width:1023px){.nav .links{gap:8px 12px!important;font-size:12.5px!important;letter-spacing:.03em!important}}
 @media (max-width:760px){
   .nav .links{flex-wrap:nowrap!important;overflow-x:auto;gap:18px!important;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .nav .links::-webkit-scrollbar{display:none}
@@ -148,7 +149,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 </nav></header>
 
 <main><div class="legal">
-  <div class="date">Last updated: 15 November 2026</div>
+  <div class="date">Last updated: 17 November 2026</div>
   <h1>Privacy Policy</h1>
   <p>This policy explains what happens to your information when you use Comquat CV Rewrite at cv.the-common-people.com. We keep it plain, and we keep your data for as little time as we can.</p>
 
@@ -167,6 +168,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
     <li>One essential <strong>session cookie</strong> (see Cookies below).</li>
   </ul>
   <p>Your CV will contain personal information such as your name, contact details and work history. Please leave out anything you wouldn't want processed, and avoid special category data (for example health or ethnicity) unless it is genuinely needed for the role.</p>
+  <p><strong>Do you have to give us this?</strong> No. But we need your CV and the job advert to rewrite your CV, and an email address if you want an account. Without them, we can't do that part for you.</p>
 
   <h2>Why we use it, and our legal basis</h2>
   <ul>
@@ -184,24 +186,27 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
     <li><strong>Your email choices</strong>: which of our newsletters and updates you've ticked, plus a record of when you ticked or unticked each one.</li>
     <li><strong>Your download confirmations</strong>: a record, with the date and time, each time you tick the box to say you've checked your CV or cover letter before downloading it.</li>
     <li><strong>Your saved documents</strong>: a copy of each CV, cover letter and interview prep report you download while signed in, so you can download it again from your account page. Each one holds whatever is in the document, such as your name, contact details and work history.</li>
+    <li><strong>Your master CV</strong>, if you build one: everything you type into it, such as your name, contact details, work history, skills and qualifications, so you can come back to it and tailor it for each job.</li>
     <li><strong>When you joined</strong> and when you last signed in.</li>
   </ul>
-  <p>As we add features, your account will also hold your master CV and an optional profile with a photo. We'll update this notice before each of those goes live.</p>
-  <p><strong>Why, and our legal basis.</strong> We use your account details and keep your saved documents to provide the account you asked for (<strong>contract</strong>). We keep your download confirmations because we have a <strong>legitimate interest</strong> in being able to show you checked your documents yourself before using them. We only send you the newsletters and updates you've ticked (<strong>consent</strong>), and you can untick them at any time from your account page.</p>
-  <p><strong>Where it's kept.</strong> Your account and your saved documents are stored with Supabase, in their London data centre. Only you can see them, and there are no public links to your documents. We only look at your account to help when you ask us to, or to fix a problem.</p>
-  <p><strong>AI and your details.</strong> Nothing in your account (your name, email, password, email choices or saved documents) is sent to an AI service.</p>
-  <p><strong>How long we keep it.</strong> Until you delete it. You can delete any saved document on its own, or your whole account, from your account page at any time, and it's removed straight away. We also take you off the Comquat emails you ticked. If you signed up to The Loudspeaker or anything else separately on our website, that stays as it is, and you can unsubscribe using the link in any email. If you don't sign in for three years, we'll email you a month before closing your account, and then delete it.</p>
+  <p>As we add features, your account will also hold an optional profile with a photo. We'll update this notice before that goes live.</p>
+  <p><strong>Why, and our legal basis.</strong> We use your account details, your master CV and your saved documents to provide the account you asked for (<strong>contract</strong>). We keep your download confirmations because we have a <strong>legitimate interest</strong> in being able to show you checked your documents yourself before using them. We only send you the newsletters and updates you've ticked (<strong>consent</strong>), and you can untick them at any time from your account page.</p>
+  <p><strong>Where it's kept.</strong> Your account, your master CV and your saved documents are stored with Supabase, in their London data centre. Only you can see them, and there are no public links to your documents. We only look at your account to help when you ask us to, or to fix a problem.</p>
+  <p><strong>AI and your details.</strong> Nothing in your account (your name, email, password, email choices, master CV or saved documents) is sent to an AI service. If you choose to tailor your master CV for a job, it goes into CV Rewrite like any other CV, and your personal details are taken out before the AI sees it (see How we keep your details from the AI below).</p>
+  <p><strong>How long we keep it.</strong> Until you delete it. You can delete any saved document or your master CV on its own, or your whole account, from your account page at any time, and it's removed straight away. We also take you off the Comquat emails you ticked. If you signed up to The Loudspeaker or anything else separately on our website, that stays as it is, and you can unsubscribe using the link in any email. If you don't use your account for three years, we'll email you a month before closing your account, and then delete it.</p>
 
   <h2>How we keep your details from the AI</h2>
   <p>Before your CV, your answers or anything else you give us goes to the AI, we take out your name, email address, phone number, home address and postcode, website and social media links, and date of birth. We swap each one for a placeholder, such as [NAME]. The AI only ever sees the placeholders. When its work comes back, we put your real details back in before you see it.</p>
   <p>We can only take out details we can recognise, so please leave out anything else personal that the job doesn't need, such as your referees' contact details. If you record a voice answer, the recording goes to OpenAI as it is to be turned into text, so if you'd rather it didn't, type your answer instead.</p>
+
+  <p><strong>No decisions made by computer.</strong> We don't make any decisions about you using automated means. The AI drafts your CV, skills match report or interview prep for you to check and change, and you decide what to do with them.</p>
 
   <h2>Who processes your data for us</h2>
   <p>We use a small number of trusted service providers ("processors"), who act only on our instructions:</p>
   <ul>
     <li><strong>Anthropic</strong>: the AI that reads your CV and the advert, rewrites your CV and builds your skills match report, working on a copy with your personal details taken out (see above).</li>
     <li><strong>OpenAI</strong>: turns a voice answer into text, only if you record one.</li>
-    <li><strong>Supabase</strong>: stores your Comquat account and your saved documents, and handles signing in, in their London data centre.</li>
+    <li><strong>Supabase</strong>: stores your Comquat account, your master CV and your saved documents, and handles signing in, in their London data centre.</li>
     <li><strong>Resend</strong>: sends your sign-in emails, your finished CV if you ask, and any newsletters you've ticked.</li>
     <li><strong>Render</strong>: hosts the app.</li>
   </ul>
@@ -219,7 +224,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 
   <h2>Your rights</h2>
   <p>Under UK data protection law you have the right to access your data, to have it corrected or erased, to restrict or object to its use, to data portability, and to withdraw consent at any time. If you have a Comquat account, you can download everything it holds, correct your name and delete the account yourself from your account page. For anything else, email us at the address above. Unless you've saved documents to a Comquat account, we delete your CV data quickly, so there may be little left to act on once your session has ended.</p>
-  <p>If you're unhappy with how we've handled your data, you can complain to the Information Commissioner's Office (ICO) at <a href="https://ico.org.uk" target="_blank" rel="noopener">ico.org.uk</a>.</p>
+  <p>If you're unhappy with how we've handled your data, tell us first by emailing the address above with "Data protection complaint" in the subject line. We'll confirm we've got it within 30 days, and keep you posted while we look into it. You can also complain to the Information Commissioner's Office (ICO) at <a href="https://ico.org.uk" target="_blank" rel="noopener">ico.org.uk</a> or on 0303 123 1113.</p>
 
   <h2>Cookies</h2>
   <p>We use one essential "session" cookie so the app can remember your progress while you use it. If you sign in to a Comquat account, we also use essential sign-in cookies that keep you signed in across CV Rewrite and Interview Prep. We don't use tracking, analytics or advertising cookies, so there's nothing to opt into.</p>

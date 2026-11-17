@@ -116,7 +116,8 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 .nav .links{display:flex!important;align-items:center;gap:8px 16px!important;flex-wrap:nowrap;font-size:13.5px!important;letter-spacing:.04em!important}
 .nav .links a{white-space:nowrap}
 .nav .links a.cp-book{margin-left:auto;letter-spacing:.02em;color:#17191C!important}
-@media (max-width:1100px){.nav .links{flex-wrap:wrap}}
+@media (max-width:1179px){.nav .links{flex-wrap:wrap}.nav .links a.cp-book{position:absolute;top:20px;right:24px;margin:0}}
+@media (min-width:761px) and (max-width:1023px){.nav .links{gap:8px 12px!important;font-size:12.5px!important;letter-spacing:.03em!important}}
 @media (max-width:760px){
   .nav .links{flex-wrap:nowrap!important;overflow-x:auto;gap:18px!important;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
   .nav .links::-webkit-scrollbar{display:none}
@@ -173,6 +174,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
     <h2>Paste your CV and the job advert</h2>
     <p class="muted">Upload a file (PDF or Word) or paste the text. Either works. Files are deleted from our server the moment we've read them.</p>
     <label>Your current CV</label>
+    <p id="masterLoad" class="hidden" style="margin:0 0 10px;padding:10px 14px;background:#F4FAF6;border:1px solid #CFE3D7;border-radius:10px;font-size:15px"><span id="masterLoadText">You've got a master CV in your account.</span> <button type="button" id="masterLoadBtn" style="margin-left:6px;background:#1F6B45;color:#fff;border:0;border-radius:999px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer">Use my master CV</button></p>
     <input type="file" id="cvFile" accept=".pdf,.docx,.txt">
     <textarea id="cvText" placeholder="…or paste your CV text here"></textarea>
     <label>The job advert</label>
@@ -347,7 +349,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
   </div>
 </div>
 
-<script src="/js/app.js?v=20261115-docs"></script>
+<script src="/js/app.js?v=20261116-master"></script>
 <script src="/account/nav.js?v=20261115" defer></script>
-<script src="/account/popup.js?v=20261116" defer></script>
+<script src="/account/popup.js?v=20261116b" defer></script>
 </body></html>
