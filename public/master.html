@@ -41,7 +41,50 @@
 .add-btn{border:2px dashed var(--pith);background:transparent;border-radius:12px;padding:12px;width:100%;font:inherit;font-weight:700;color:var(--leaf);cursor:pointer}
 .add-btn:hover{border-color:var(--leaf);background:#F4FAF6}
 .signin-card{text-align:left}
+.guide-note{font-size:14.5px;background:#fff;border:1px solid var(--pith);border-left:4px solid var(--leaf);border-radius:10px;padding:10px 14px;margin:0 0 18px;max-width:760px}
+.first-cv{border-left-color:var(--leaf)!important;background:#F4FAF6!important}
+details.eg{margin:0 0 16px;border:1px solid var(--pith);border-radius:10px;padding:10px 14px;background:#fff}
+details.eg summary{cursor:pointer;font-weight:700;color:var(--leaf)}
+details.eg .bad{margin:10px 0 6px;color:#7A2E2E}
+details.eg .good{margin:0 0 6px;color:#14532D}
+.q{border:1px solid var(--pith);border-radius:12px;padding:14px;margin:0 0 12px;background:#fffdf9}
+.q h4{font-size:16px;margin:0 0 4px}
+.q .think{font-size:14px;color:var(--muted);margin:0 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.chip{border:1.5px solid var(--leaf);background:#fff;color:var(--leaf);border-radius:999px;padding:5px 12px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}
+.chip:hover{background:#F4FAF6}
+.q .eg-line{font-size:13.5px;color:var(--muted);font-style:italic;margin:6px 0 0}
+.build-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:4px 0 18px}
+details.ideas{margin:0 0 14px;border:1px solid var(--pith);border-radius:10px;padding:10px 14px;background:#fff;font-size:14.5px}
+details.ideas summary{cursor:pointer;font-weight:700;color:var(--leaf)}
+details.ideas ul{margin:8px 0;padding-left:20px}
+details.ideas li{margin:0 0 4px}
+.q ul.ideas-list{margin:4px 0 10px;padding-left:20px;font-size:14px;color:var(--muted)}
+#design-card{scroll-margin-top:110px}
+.kind-toggle{display:flex;gap:8px;margin:0 0 12px}
+.kind{border:1.5px solid var(--pith);background:#fff;border-radius:999px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer}
+.kind.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.design-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:0 0 10px}
+.dcard{border:2px solid var(--pith);border-radius:10px;background:#fff;padding:6px;cursor:pointer;text-align:center;font:inherit;font-size:12.5px;font-weight:700;color:var(--ink)}
+.dcard img{width:100%;aspect-ratio:210/297;object-fit:cover;object-position:top;border-radius:6px;display:block;margin:0 0 5px;background:#f6f1e8}
+.dcard.sel{border-color:var(--leaf);box-shadow:0 0 0 3px rgba(31,107,69,.18)}
+.dl-row{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 8px}
+.stmt-check{font-size:14px;margin:8px 0 0;color:var(--muted)}
+.stmt-check.warn{color:#B44E00;font-weight:700}
+.stmt-check.ok{color:var(--leaf);font-weight:700}
 .danger-zone{margin-top:6px;font-size:14px}
+.mcv h3.sub{font-size:17px;margin:20px 0 8px}
+.beh-count{font-weight:700;color:var(--leaf);margin:0 0 10px}
+.beh-count.many{color:#B44E00}
+.beh-group{margin:0 0 14px}
+.beh-group h4{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.beh-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media (max-width:640px){.beh-grid{grid-template-columns:1fr}}
+.mcv label.beh{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1.5px solid var(--pith);border-radius:10px;padding:10px 12px;cursor:pointer;font-size:15px;line-height:1.35;font-weight:400!important;margin:0!important}
+.mcv label.beh:hover{border-color:var(--leaf)}
+.mcv label.beh input{width:20px;height:20px;flex:0 0 20px;margin:0;accent-color:#1F6B45;cursor:pointer}
+.mcv label.beh:has(input:checked){background:#F4FAF6;border-color:var(--leaf)}
+.mcv label.beh small{display:block;color:var(--leaf);font-weight:700;font-size:12.5px;margin-top:3px}
 </style>
 </head>
 <body>
@@ -52,7 +95,8 @@
 
 <main class="wide mcv">
   <h1>Your master CV</h1>
-  <p class="lede mcv-lede">Put everything you've done in one place, once. Then, whenever a job comes up, tailor it with CV Rewrite in a few minutes instead of starting from scratch. It saves as you type, and only you can see it.</p>
+  <p class="lede mcv-lede">Put everything about you in one place, once. Then, whenever a job comes up, tailor it with CV Rewrite in a few minutes instead of starting from scratch. It saves as you type, and only you can see it.</p>
+  <p class="guide-note">Built on <a href="https://the-common-people.com/guide-cv" target="_blank" rel="noopener">The CV That Gets Read</a>, The Com'mon People's free CV guide. We follow its route: header, personal statement, skills with proof, career history, interests, education. No AI writes any of this. The voice has to be yours.</p>
 
   <section class="card signin-card hidden" id="signed-out">
     <h2>Sign in to build your master CV</h2>
@@ -69,7 +113,7 @@
         <div class="mcv-meter" aria-hidden="true"><span id="prog-bar"></span></div>
       </div>
       <div class="mcv-acts">
-        <button type="button" class="btn btn-ghost" id="dl">Download as Word</button>
+        <button type="button" class="btn btn-ghost" id="dl">Download my CV</button>
         <button type="button" class="btn btn-primary" id="tailor">Tailor it for a job</button>
       </div>
       <div class="mcv-status" id="status" aria-live="polite"></div>
@@ -78,61 +122,143 @@
     <div class="msg hidden" id="msg" role="status"></div>
 
     <section class="card">
-      <h2>1. About you</h2>
+      <h2>1. Your name and how to reach you</h2>
+      <p class="tip">Recruiters shouldn't have to hunt for how to contact you. Name at the top, contact details right under it.</p>
       <div class="mcv-grid">
         <div><label for="f-name">Your name</label><input type="text" id="f-name" data-path="header.name" autocomplete="name"></div>
-        <div><label for="f-role">The kind of job you're after <small>(optional)</small></label><input type="text" id="f-role" data-path="header.targetRole" placeholder="e.g. Front of House Manager"></div>
+        <div><label for="f-role">The job you're going for, in one line <small>(optional)</small></label><input type="text" id="f-role" data-path="header.targetRole" placeholder="e.g. Trainee chef, or Front of House Manager"></div>
         <div><label for="f-email">Email</label><input type="email" id="f-email" data-path="header.contacts.email" autocomplete="email"></div>
         <div><label for="f-phone">Phone</label><input type="tel" id="f-phone" data-path="header.contacts.phone" autocomplete="tel"></div>
         <div><label for="f-loc">Town or city <small>(no need for your full address)</small></label><input type="text" id="f-loc" data-path="header.contacts.location" autocomplete="address-level2"></div>
-        <div><label for="f-li">LinkedIn <small>(optional)</small></label><input type="url" id="f-li" data-path="header.linkedin" placeholder="linkedin.com/in/yourname"></div>
-        <div class="full"><label for="f-web">Website or portfolio <small>(optional)</small></label><input type="url" id="f-web" data-path="header.portfolio"></div>
+        <div><label for="f-li">LinkedIn <small>(only if your profile is strong and up to date)</small></label><input type="url" id="f-li" data-path="header.linkedin" placeholder="linkedin.com/in/yourname"></div>
+        <div><label for="f-web">Website or portfolio <small>(optional)</small></label><input type="url" id="f-web" data-path="header.portfolio"></div>
+        <div><label for="f-vid">Intro video link <small>(optional, <a href="https://the-common-people.com/guide-video-intro.html" target="_blank" rel="noopener">how to make one</a>)</small></label><input type="url" id="f-vid" data-path="header.introVideo" placeholder="youtube.com/..."></div>
       </div>
     </section>
 
     <section class="card">
-      <h2>2. A few lines about you</h2>
-      <p class="tip">Three or four sentences: what you do, what you're good at, and what you want next. Write it the way you'd say it to someone at work. CV Rewrite will sharpen it for each job.</p>
-      <label for="f-profile" class="sr-only">Your profile</label>
-      <textarea id="f-profile" data-path="personalStatement" rows="5"></textarea>
+      <h2>2. Your personal statement</h2>
+      <p class="tip">This is the first thing they read about you. Be a person, not a press release. Answer a few of the questions below in your own words, then press <strong>Build my statement</strong>. You don't need a work history to write a good one: school, college, caring for someone, sport, volunteering and the things you love all count.</p>
+
+      <details class="eg">
+        <summary>See what good looks like</summary>
+        <p class="bad"><strong>Avoid:</strong> "A creative, structured professional with the ability to engage with customers in both effective and impactful ways."</p>
+        <p class="good"><strong>Do this:</strong> "I'm a marketer who learned the trade running events for my mum's café. Twelve years on, I still believe the best campaigns start with knowing one customer properly. I work best in honest teams. My border collie thinks I should retire and walk her more."</p>
+        <p class="small">From The Com'mon People CV guide. Specific, warm and memorable, and it sounds like a real person.</p>
+      </details>
+
+      <div id="qs"></div>
+      <div class="build-row">
+        <button type="button" class="btn btn-primary" id="build">Build my statement</button>
+        <span class="small" id="build-msg" aria-live="polite"></span>
+      </div>
+
+      <label for="f-profile">Your statement <small>(edit it as much as you like)</small></label>
+      <textarea id="f-profile" data-path="personalStatement" rows="6"></textarea>
+      <p class="stmt-check" id="stmt-check" aria-live="polite"></p>
     </section>
 
     <section class="card">
-      <h2>3. Work history</h2>
-      <p class="tip">Start with your most recent job and work back. Put everything in, even jobs you'd leave off some applications: CV Rewrite picks what fits each job. One line per task or result. Numbers help, like team sizes, targets and what changed because of you.</p>
-      <div id="list-experience"></div>
-      <button type="button" class="add-btn" data-add="experience">+ Add a job</button>
-    </section>
-
-    <section class="card">
-      <h2>4. Key skills</h2>
-      <p class="tip">The things you're good at, each with a line of proof if you can. "Rota planning: ran rotas for a team of 20 for three years" beats "excellent organiser".</p>
+      <h2>3. Key skills and behaviours</h2>
+      <h3 class="sub">How you work: tick what sounds like you</h3>
+      <p class="tip">Tick the ones that sound most like you. Each tick becomes a strength on your CV, written for you. The list includes traits many people with ADHD, autism, dyslexia and other kinds of neurodivergence recognise in themselves, written as the strengths they are. Nothing on your CV mentions a condition, and we never ask about one. Eight to twelve ticks works best on a CV.</p>
+      <p class="beh-count" id="beh-count" aria-live="polite">Nothing ticked yet</p>
+      <div id="behaviours"></div>
+      <h3 class="sub">Skills you can prove</h3>
+      <p class="tip">Name the skill in a few words, then write a "prove it" line: what you actually did, and what came of it. "Rota planning: ran rotas for a team of 20 for three years" beats "excellent organiser". When you tailor your CV, the skills you lead with should match the job.</p>
+      <details class="ideas">
+        <summary>Stuck? Ideas for skills you can prove</summary>
+        <ul>
+          <li><strong>Customer service:</strong> served 200 covers on a Saturday shift; regulars asked for me by name.</li>
+          <li><strong>Cash handling:</strong> cashed up the till every closing shift for a year without a discrepancy.</li>
+          <li><strong>Looking after people:</strong> cared for my grandad after his stroke, managing his medication and appointments.</li>
+          <li><strong>Organising:</strong> planned our Year 11 prom for 120 students, including the budget and the DJ.</li>
+          <li><strong>Leading a team:</strong> captain of the under-16s for two seasons; set up the training rota.</li>
+          <li><strong>Digital skills:</strong> built and ran the Instagram page for my aunt's bakery, which grew to 1,400 followers.</li>
+          <li><strong>Languages:</strong> fluent in Polish; translated for customers at my Saturday job.</li>
+          <li><strong>Practical skills:</strong> rebuilt two bikes from parts and now fix friends' bikes.</li>
+        </ul>
+        <p class="small">Only write what's true for you. Small, real proof beats big, vague claims.</p>
+      </details>
       <div id="list-skills"></div>
-      <button type="button" class="add-btn" data-add="skills">+ Add a skill</button>
+      <button type="button" class="add-btn" data-add="skills">+ Add another skill</button>
     </section>
 
     <section class="card">
-      <h2>5. Education and training</h2>
-      <p class="tip">Qualifications, apprenticeships, courses and certificates. Food hygiene, first aid and licences count.</p>
-      <div id="list-education"></div>
-      <button type="button" class="add-btn" data-add="education">+ Add a qualification</button>
+      <h2>4. Work history</h2>
+      <p class="tip">Latest first, then work backwards. For each one: what you did, then what you achieved. One line per point, and numbers help, like team sizes, targets and what changed because of you. Add your reason for leaving, because if you don't, the reader will make one up.</p>
+      <p class="tip first-cv"><strong>First CV, or no paid work yet?</strong> That's fine. Add Saturday jobs, work experience, volunteering, caring for family, running a club or team, a fundraiser, or a big project at school or college. Treat each one like a job: what you did, and what came of it. "Organised a bake sale that raised £240 for the hospice" is real experience.</p>
+      <details class="ideas">
+        <summary>Stuck? Ideas for what to write</summary>
+        <p><strong>Start each "what you did" line with a doing word:</strong> served, cooked, cleaned, cashed up, greeted, answered, restocked, delivered, looked after, trained, organised, planned, fixed, built, sold, set up, ran, sorted, checked, helped new starters.</p>
+        <p><strong>For "what you achieved", think about:</strong></p>
+        <ul>
+          <li>Something you were praised, thanked or trusted with ("Trusted to open up on my own after three months").</li>
+          <li>Something that got better because of you ("Rearranged the stockroom so deliveries were put away in half the time").</li>
+          <li>Numbers: money raised, people served, hours worked, targets hit, days without missing a shift.</li>
+          <li>Anything new you learned or were given more responsibility for.</li>
+          <li>Awards, certificates or a good reference.</li>
+        </ul>
+        <p><strong>Reasons for leaving that read well:</strong> went back to college, moved house, a better opportunity, the job was seasonal, the contract ended, left to care for family, still here.</p>
+      </details>
+      <div id="list-experience"></div>
+      <button type="button" class="add-btn" data-add="experience">+ Add another job or experience</button>
     </section>
 
     <section class="card">
-      <h2>6. Interests <small class="small">(optional)</small></h2>
-      <p class="tip">One per line. Specific beats general: "Coaching under-11s football" says more than "sport".</p>
+      <h2>5. Interests</h2>
+      <p class="tip">Underrated and powerful. Interests are how a stranger finds a reason to like you before you've met. Be specific ("trail running" beats "running"), be real, and mix a team thing, a solo thing and a creative thing. Volunteering counts. Three to six lines is plenty. One per line.</p>
       <label for="f-interests" class="sr-only">Interests</label>
-      <textarea id="f-interests" data-path="interests" rows="4"></textarea>
+      <p class="small" style="margin:0 0 6px">Tap an idea to add it, then make it yours: say which team, which games, which cause.</p>
+      <div class="chips" id="interest-ideas"></div>
+      <textarea id="f-interests" data-path="interests" rows="4" placeholder="Coaching my brother's under-9s football team&#10;Baking bread at weekends&#10;Volunteering at the food bank on Saturdays"></textarea>
+    </section>
+
+    <section class="card">
+      <h2>6. Education and training</h2>
+      <p class="tip">Don't be vague: where, what, when and, if they're good, what you got. Add certificates and short courses too: food hygiene, first aid and licences all count. On a first CV, this is where you make your case, so use it.</p>
+      <details class="ideas">
+        <summary>Stuck? Ideas for what counts</summary>
+        <ul>
+          <li>GCSEs: list your subjects and grades, or say "9 GCSEs including English and Maths".</li>
+          <li>A levels, BTECs, T Levels, NVQs and diplomas, with grades if you have them.</li>
+          <li>Apprenticeships and traineeships, finished or in progress.</li>
+          <li>Food Hygiene Level 2, First Aid, Manual Handling, Fire Marshal.</li>
+          <li>Driving licence, CSCS card, Personal Licence, forklift licence.</li>
+          <li>Duke of Edinburgh, Prince's Trust, National Citizen Service, Scouts or Guides awards.</li>
+          <li>Online courses you finished, such as Google, OpenLearn or FutureLearn.</li>
+          <li>Still studying? Put "Expected" and the date.</li>
+        </ul>
+      </details>
+      <div id="list-education"></div>
+      <button type="button" class="add-btn" data-add="education">+ Add another qualification</button>
+    </section>
+
+    <section class="card" id="design-card">
+      <h2>7. Pick a design and download</h2>
+      <p class="tip">The same designs as CV Rewrite. <strong>Word templates</strong> download as Word (you can edit it), PDF, or an ATS-safe PDF for online application systems. <strong>Designer templates</strong> are print-ready PDFs. Every download is saved in My documents.</p>
+      <div class="kind-toggle" role="tablist">
+        <button type="button" class="kind on" data-kind="word">Word templates</button>
+        <button type="button" class="kind" data-kind="designer">Designer PDFs</button>
+      </div>
+      <div class="design-grid" id="design-grid"></div>
+      <p class="small" id="design-picked"></p>
+      <div class="dl-row">
+        <button type="button" class="btn btn-primary" data-type="docx">Download Word</button>
+        <button type="button" class="btn btn-ghost" data-type="pdf">Download PDF</button>
+        <button type="button" class="btn btn-ghost" data-type="ats">ATS-safe PDF</button>
+      </div>
+      <p class="small">Applying through an online form? Use the ATS-safe PDF: it's plain and easy for application systems to read.</p>
     </section>
 
     <section class="card">
       <h2>Done for now?</h2>
-      <p>Everything's saved. Come back and add to it whenever you like. When a job comes up, press <strong>Tailor it for a job</strong> and CV Rewrite will start with this CV already filled in. Every Word download is kept in <a href="/account/me.html">My documents</a>.</p>
+      <p>Everything's saved. Come back and add to it whenever you like. When a job comes up, press <strong>Tailor it for a job</strong>. CV Rewrite starts with this CV already filled in, and builds the guide's last stop for you: a skills match that lines up each thing the job asks for with your proof. Apply for the two jobs you really want, not fifty. Every Word download is kept in <a href="/account/me.html">My documents</a>.</p>
       <p class="danger-zone"><button type="button" class="linkbtn" id="wipe">Delete my master CV</button></p>
     </section>
   </div>
 </main>
 
-<script src="/js/master.js?v=20261116" defer></script>
+<script src="/js/master.js?v=20261117b" defer></script>
 </body>
 </html>
