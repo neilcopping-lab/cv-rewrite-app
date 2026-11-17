@@ -808,7 +808,10 @@ app.get("/api/master", async (req, res) => {
     const m = await loadMaster(req);
     const cv = m ? m.cv : masterCv.normalise({});
     res.set("Cache-Control", "no-store");
-    res.json({ cv, saved: !!m, updatedAt: m ? m.updatedAt : null, progress: masterCv.progress(cv) });
+    res.json({ cv, saved: !!m, updatedAt: m ? m.updatedAt : null, progress: masterCv.progress(cv), behaviours: require("./lib/behaviours").catalogue(),
+      designs: designs.map((d) => ({ id: d.id, name: d.name, category: d.category, description: d.description })),
+      designerTemplates: DESIGNER_TEMPLATES.map((d) => ({ id: d.id, name: d.name, category: d.category, description: d.description })),
+      banned: cliches.BANNED_PHRASES });
   } catch (e) { masterFail(res, e, "load"); }
 });
 
@@ -843,17 +846,40 @@ app.get("/api/master/download", async (req, res) => {
   try {
     const m = await loadMaster(req);
     if (!m || !masterCv.hasContent(m.cv)) return res.status(400).json({ error: "There's nothing in your master CV yet. Add a few details first." });
-    const clean = sanitizeForOutput(m.cv);
-    const design = byId(String(req.query.design || "")) || byId("modern-minimal");
-    const buf = await buildDocx(clean, design, { ats: false });
+    const clean = sanitizeForOutput(masterCv.forOutput(m.cv));
+    // Same designs and formats as CV Rewrite: Word/ATS templates (Word, PDF or
+    // ATS-safe PDF) and Designer templates (PDF only).
+    const reqId = String(req.query.design || "modern-minimal");
+    const type = String(req.query.type || "docx").toLowerCase();
     const nameSafe = (clean.header.name || "My").replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "_") || "My";
-    const fileName = `${nameSafe}_Master_CV.docx`;
-    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    let buf, ext, label;
+    if (isDesigner(reqId)) {
+      if (type === "docx") return res.status(400).json({ error: "Designer templates download as PDF. For an editable Word file, choose a Word template." });
+      if (type === "ats" || type === "ats-pdf") {
+        if (!libreAvailable()) return res.status(503).json({ error: "The ATS-safe PDF isn't available just now. Please try Word instead." });
+        buf = await docxToPdf(await buildDocx(clean, byId("modern-minimal"), { ats: true })); ext = "pdf"; label = "ATS";
+      } else {
+        if (!weasyAvailable()) return res.status(503).json({ error: "Designer PDFs aren't available just now. Please pick a Word template." });
+        buf = await renderHtmlPdf(renderDesignerHtml(clean, reqId)); ext = "pdf"; label = reqId;
+      }
+    } else {
+      const design = byId(reqId) || byId("modern-minimal");
+      const ats = type === "ats" || type === "ats-pdf";
+      const docx = await buildDocx(clean, design, { ats });
+      label = ats ? "ATS" : design.id;
+      if (type === "docx") { buf = docx; ext = "docx"; }
+      else {
+        if (!libreAvailable()) return res.status(503).json({ error: "PDF isn't available just now. Please download Word instead." });
+        buf = await docxToPdf(docx); ext = "pdf";
+      }
+    }
+    const fileName = `${nameSafe}_Master_CV_${label}.${ext}`;
+    const mime = ext === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    res.setHeader("Content-Type", mime);
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
     const saved = await req.saveDocument({
       kind: "cv", title: "Master CV", jobTitle: clean.header.targetRole || "",
-      fileName, mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      data: buf, sourceKey: docKey("master", m.cv, design.id),
+      fileName, mimeType: mime, data: buf, sourceKey: docKey("master", m.cv, label, ext),
     });
     if (saved && saved.saved) res.setHeader("X-Comquat-Saved", "1");
     res.send(buf);
