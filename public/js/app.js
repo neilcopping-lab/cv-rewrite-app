@@ -870,6 +870,11 @@ async function recordAnswer(id) {
         box.value = j.text;
         box.dispatchEvent(new Event("input", { bubbles: true }));
         const f = document.getElementById("cvFile"); if (f) f.value = "";
+        // Carry over the writing style they picked in the CV builder.
+        const ws = document.getElementById("writingStyle");
+        if (ws && j.writingStyle && [...ws.options].some((o) => o.value === j.writingStyle)) ws.value = j.writingStyle;
+        const ss = document.getElementById("styleSample");
+        if (ss && j.styleSample && !ss.value.trim()) ss.value = j.styleSample;
         document.getElementById("masterLoadText").textContent = "Your master CV is in the box below. Now add the job advert.";
         document.getElementById("masterLoadBtn").remove();
       };
