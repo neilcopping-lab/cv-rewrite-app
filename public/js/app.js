@@ -854,3 +854,28 @@ async function recordAnswer(id) {
     btn.textContent = "■ Stop"; btn.onclick = () => { rec.stop(); btn.textContent = "● Record answer"; btn.onclick = () => recordAnswer(id); };
   } catch (e) { label.textContent = "⚠ Mic blocked."; }
 }
+
+// Master CV: signed-in people with a master CV can drop it straight into the
+// CV box. "Tailor it for a job" on the master CV page lands here with
+// ?from=master, which fills it in automatically.
+(function () {
+  const bar = document.getElementById("masterLoad");
+  const box = document.getElementById("cvText");
+  if (!bar || !box) return;
+  fetch("/api/master/text", { credentials: "same-origin", cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((j) => {
+      if (!j || !j.text) return;
+      const fill = () => {
+        box.value = j.text;
+        box.dispatchEvent(new Event("input", { bubbles: true }));
+        const f = document.getElementById("cvFile"); if (f) f.value = "";
+        document.getElementById("masterLoadText").textContent = "Your master CV is in the box below. Now add the job advert.";
+        document.getElementById("masterLoadBtn").remove();
+      };
+      bar.classList.remove("hidden");
+      document.getElementById("masterLoadBtn").addEventListener("click", fill);
+      if (/[?&]from=master\b/.test(location.search) && !box.value.trim()) fill();
+    })
+    .catch(() => {});
+})();
