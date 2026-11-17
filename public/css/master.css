@@ -4,11 +4,11 @@
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
 
 /* ---- hero ---- */
-.hero{background:linear-gradient(120deg,#FF8A1F 0%,#F25C54 55%,#E8467C 100%);color:#fff;position:relative;overflow:hidden}
+.hero{background:linear-gradient(120deg,#7C3AED 0%,#B23FC4 50%,#E8467C 100%);color:#fff;position:relative;overflow:hidden}
 .hero:before,.hero:after{content:"";position:absolute;border-radius:50%;opacity:.18;background:#fff}
 .hero:before{width:340px;height:340px;right:-90px;top:-150px}
 .hero:after{width:180px;height:180px;left:46%;bottom:-120px;background:var(--sun);opacity:.35}
-.hero-in{max-width:1240px;margin:0 auto;padding:34px 24px 30px;display:flex;gap:28px;align-items:center;justify-content:space-between;position:relative;z-index:1}
+.hero-in{max-width:1080px;box-sizing:border-box;margin:0 auto;padding:34px 24px 30px;display:flex;gap:28px;align-items:center;justify-content:space-between;position:relative;z-index:1}
 .kicker{display:inline-block;font-weight:700;font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;background:rgba(255,255,255,.2);border-radius:999px;padding:5px 12px;margin:0 0 10px}
 .hero h1{color:#fff;font-size:clamp(34px,6vw,54px);margin:0 0 10px}
 .hero-lede{font-size:17.5px;max-width:620px;margin:0 0 16px;color:#FFF4EA}
@@ -27,7 +27,7 @@
 @media (max-width:700px){.hero-how{display:none}.hero h1{font-size:34px}.hero-lede{font-size:15.5px;margin:0}.ring-wrap{width:96px;height:96px;flex-basis:96px}.ring{width:96px;height:96px}.ring-num strong{font-size:22px}.hero-in{padding:24px 18px 22px;align-items:flex-start}.hero-lede{font-size:16px}.hero-how li{font-size:13px}}
 
 /* ---- page ---- */
-.mcv-main{max-width:1240px;margin:0 auto 70px;padding:0 24px}
+.mcv-main{max-width:1080px;box-sizing:border-box;margin:0 auto 70px;padding:0 24px}
 #loading,#signed-out{margin-top:28px}
 .steps{display:flex;gap:8px;overflow-x:auto;padding:16px 2px 12px;margin:0 0 6px;scrollbar-width:thin;position:sticky;top:0;z-index:20;background:var(--cream)}
 .stp{flex:0 0 auto;display:flex;align-items:center;gap:8px;border:2px solid var(--pith);background:#fff;border-radius:999px;padding:6px 14px 6px 6px;font:inherit;font-weight:700;font-size:14px;color:var(--ink);cursor:pointer;transition:transform .15s,border-color .15s}
@@ -37,8 +37,8 @@
 .stp.done .n:before{content:"✓"}
 .stp.done .n span{display:none}
 .stp[aria-current="step"]{background:var(--ink);color:#fff;border-color:var(--ink)}
-.stp[aria-current="step"] .n{background:var(--kq);color:var(--ink)}
-.layout{display:grid;grid-template-columns:minmax(0,1fr) 430px;gap:28px;align-items:start}
+.stp[aria-current="step"] .n{background:var(--kq);color:#fff}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:24px;align-items:start}
 @media (max-width:1100px){.layout{grid-template-columns:1fr}}
 .col-form{min-width:0}
 
@@ -54,7 +54,7 @@
 .mcv-main label small{font-weight:400;color:var(--muted)}
 .mcv-main input[type=text],.mcv-main input[type=email],.mcv-main input[type=tel],.mcv-main input[type=url],.mcv-main textarea{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:11px 13px;border:2px solid var(--pith);border-radius:12px;background:#fff;color:var(--ink);transition:border-color .15s,box-shadow .15s}
 .mcv-main textarea{min-height:92px;resize:vertical;line-height:1.5}
-.mcv-main input:focus,.mcv-main textarea:focus{outline:none;border-color:var(--kq);box-shadow:0 0 0 4px rgba(255,138,31,.18)}
+.mcv-main input:focus,.mcv-main textarea:focus{outline:none;border-color:var(--kq);box-shadow:0 0 0 4px rgba(124,58,237,.18)}
 .tip{font-size:15px;color:#3F444B;background:var(--peel);border-left:4px solid var(--kq);border-radius:0 12px 12px 0;padding:10px 14px;margin:0 0 14px}
 .first-cv{border-left-color:var(--mint)!important;background:#E9FBF6!important}
 .mcv-main h3.sub{font-family:'Bricolage Grotesque',sans-serif;font-size:19px;margin:22px 0 10px}
@@ -219,3 +219,6 @@ details.ideas li{margin:0 0 4px}
 @keyframes fall{to{transform:translateY(105vh) rotate(540deg);opacity:.9}}
 @media (prefers-reduced-motion:reduce){.step,.beh.pop,.btn-mic.rec{animation:none}.confetti{display:none}.ring-fg{transition:none}}
 .hidden{display:none!important}
+/* CV Builder lead colour: purple to pink, matching its My account card */
+.hero,.mcv-main,.layout{--kq:#7C3AED;--coral:#E8467C;--peel:#F3ECFF}
+.hero:after{background:#FF9BC4}
