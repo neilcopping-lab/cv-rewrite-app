@@ -113,7 +113,7 @@
   $("next").addEventListener("click", function () { go(step + 1); });
 
   // ---- saving ------------------------------------------------------------------
-  function changed() { queueSave(); queuePreview(); refreshProgress(); }
+  function changed() { queueSave(); queuePreview(); refreshProgress(); resetConfirm(); }
   function queueSave() {
     dirty = true;
     status("Saving soon…");
@@ -584,12 +584,37 @@
   $("preview").addEventListener("click", function (e) { if (e.target === $("preview")) closePreview(); });
   $("pv-more").addEventListener("click", function () { closePreview(); go(7); });
 
+  // ---- "I've read it and it's true" box -------------------------------------------
+  // Same rule as CV Rewrite: the download buttons stay greyed out until it's
+  // ticked, and any change to the words unticks it so each version gets checked.
+  // The server checks it too (confirmed=1) and keeps a dated record.
+  var CONFIRM_NEEDED = "Please tick the box to confirm you've read your CV through and it's accurate.";
+  function confirmed() { var c = $("confirmTrue"); return !!(c && c.checked); }
+  function syncConfirm() {
+    var ok = confirmed();
+    document.querySelectorAll("#design-card [data-type]").forEach(function (b) {
+      if (b.textContent !== "Making your file…") b.disabled = !ok;
+    });
+    var row = document.querySelector(".confirm-row"); if (row && ok) row.classList.remove("nudge");
+  }
+  function resetConfirm() { var c = $("confirmTrue"); if (c && c.checked) { c.checked = false; syncConfirm(); } }
+  function nudgeConfirm() {
+    if ($("preview").classList.contains("open")) closePreview();
+    go(7);
+    var row = document.querySelector(".confirm-row");
+    if (row) { row.classList.remove("nudge"); void row.offsetWidth; row.classList.add("nudge"); if (row.scrollIntoView) row.scrollIntoView({ block: "center", behavior: "smooth" }); }
+    say(CONFIRM_NEEDED, false); toast(CONFIRM_NEEDED);
+  }
+  if ($("confirmTrue")) $("confirmTrue").addEventListener("change", syncConfirm);
+  syncConfirm();
+
   // ---- downloads -------------------------------------------------------------------
   function download(type, btn) {
+    if (!confirmed()) { nudgeConfirm(); return; }
     btn.disabled = true; say("");
     var old = btn.textContent; btn.textContent = "Making your file…";
     flush().then(function () {
-      return fetch("/api/master/download?type=" + encodeURIComponent(type) + "&design=" + encodeURIComponent(cv.design), { credentials: "same-origin" });
+      return fetch("/api/master/download?type=" + encodeURIComponent(type) + "&design=" + encodeURIComponent(cv.design) + "&confirmed=1", { credentials: "same-origin" });
     }).then(function (r) {
       if (!r.ok) return r.json().then(function (j) { throw new Error(j.error || "Couldn't make the file"); });
       var saved = r.headers.get("X-Comquat-Saved");
@@ -601,7 +626,7 @@
         confetti();
       });
     }).catch(function (e) { say(e.message, false); toast(e.message); })
-      .then(function () { btn.disabled = false; btn.textContent = old; });
+      .then(function () { btn.disabled = false; btn.textContent = old; syncConfirm(); });
   }
   document.querySelectorAll("[data-type]").forEach(function (b) {
     b.addEventListener("click", function () { download(b.getAttribute("data-type"), b); });

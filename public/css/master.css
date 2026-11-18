@@ -162,6 +162,11 @@ details.ideas li{margin:0 0 4px}
 .fcard span{font-weight:700;font-size:14px;color:var(--ink)}
 .fcard.sel{border-color:var(--kq)}
 .dl-row{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 8px}
+.confirm-row{display:flex;gap:12px;align-items:flex-start;background:#fff;border:2px solid var(--pith);border-radius:14px;padding:12px 14px;margin:14px 0 10px;font-size:15.5px;line-height:1.5;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.confirm-row input{width:20px;height:20px;margin:2px 0 0;flex:0 0 auto;accent-color:#B23FC4;cursor:pointer}
+.confirm-row:has(input:checked){border-color:var(--leaf)}
+.confirm-row.nudge{border-color:var(--coral);box-shadow:0 0 0 4px rgba(242,92,84,.18)}
+.dl-row .btn:disabled{opacity:.5;cursor:not-allowed}
 .more-designs{margin:16px 0;border:1px solid var(--pith);border-radius:12px;padding:10px 14px;background:#fff}
 .more-designs summary{cursor:pointer;font-weight:700;color:var(--leaf)}
 .kind-toggle{display:flex;gap:8px;margin:12px 0}

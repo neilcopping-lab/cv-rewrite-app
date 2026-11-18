@@ -736,19 +736,24 @@ app.post("/api/confirm-payment", async (req, res) => {
 const CONFIRM_WORDING = {
   cv: "I've read this CV from top to bottom. Everything in it is true and accurate, and I'll fix anything that isn't before I send it to anyone.",
   cover: "I've read this cover letter from top to bottom. Everything in it is true and accurate, and I'll fix anything that isn't before I send it to anyone.",
+  master: "I've read this CV from top to bottom. Everything in it is true and accurate, and I'll fix anything that isn't before I send it to anyone.",
 };
+const CONFIRM_TOPIC = { cv: "cv_confirm", cover: "cover_confirm", master: "master_cv_confirm" };
+const CONFIRM_SOURCE = { cv: "cv-rewrite", cover: "cv-rewrite", master: "cv-builder" };
 const CONFIRM_NEEDED = "Please tick the box to confirm you've read it through and it's accurate.";
-async function recordConfirmation(req, kind) {
+// `version` is optional: the CV Builder passes the master CV's last-saved time,
+// so each saved version of it is confirmed (and recorded) once.
+async function recordConfirmation(req, kind, version) {
   const st = S(req);
-  const version = kind === "cv" ? st.cvVersion || 0 : `${st.coverLetterVersion || 0}.${st.coverLetterGen || 0}`;
+  if (version === undefined) version = kind === "cv" ? st.cvVersion || 0 : `${st.coverLetterVersion || 0}.${st.coverLetterGen || 0}`;
   const key = `${kind}:${version}`;
   st.confirmations = st.confirmations || {};
   if (st.confirmations[key]) return;
   st.confirmations[key] = new Date().toISOString();
   if (accountsOn() && req.user && req.sb) {
     const { error } = await req.sb.from("consent_log").insert({
-      user_id: req.user.id, topic: kind === "cv" ? "cv_confirm" : "cover_confirm",
-      granted: true, source: "cv-rewrite", wording: CONFIRM_WORDING[kind],
+      user_id: req.user.id, topic: CONFIRM_TOPIC[kind],
+      granted: true, source: CONFIRM_SOURCE[kind], wording: CONFIRM_WORDING[kind],
     });
     if (error) console.error("[confirm] could not record:", error.message);
   }
@@ -856,6 +861,9 @@ app.get("/api/master/download", async (req, res) => {
   try {
     const m = await loadMaster(req);
     if (!m || !masterCv.hasContent(m.cv)) return res.status(400).json({ error: "There's nothing in your master CV yet. Add a few details first." });
+    // Same rule as CV Rewrite: no file until they've ticked the "it's all true" box.
+    if (req.query.confirmed !== "1") return res.status(400).json({ error: CONFIRM_NEEDED });
+    await recordConfirmation(req, "master", m.updatedAt || "");
     const clean = sanitizeForOutput(masterCv.forOutput(m.cv));
     // Same designs and formats as CV Rewrite: Word/ATS templates (Word, PDF or
     // ATS-safe PDF) and Designer templates (PDF only).
