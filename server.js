@@ -738,7 +738,9 @@ const CONFIRM_WORDING = {
   cover: "I've read this cover letter from top to bottom. Everything in it is true and accurate, and I'll fix anything that isn't before I send it to anyone.",
   master: "I've read this CV from top to bottom. Everything in it is true and accurate, and I'll fix anything that isn't before I send it to anyone.",
 };
-const CONFIRM_TOPIC = { cv: "cv_confirm", cover: "cover_confirm", master: "master_cv_confirm" };
+// The CV Builder uses the same topic as CV Rewrite (the database accepts it); the
+// source "cv-builder" tells the two apart.
+const CONFIRM_TOPIC = { cv: "cv_confirm", cover: "cover_confirm", master: "cv_confirm" };
 const CONFIRM_SOURCE = { cv: "cv-rewrite", cover: "cv-rewrite", master: "cv-builder" };
 const CONFIRM_NEEDED = "Please tick the box to confirm you've read it through and it's accurate.";
 // `version` is optional: the CV Builder passes the master CV's last-saved time,
