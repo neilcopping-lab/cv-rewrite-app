@@ -605,7 +605,13 @@
     if (row) { row.classList.remove("nudge"); void row.offsetWidth; row.classList.add("nudge"); if (row.scrollIntoView) row.scrollIntoView({ block: "center", behavior: "smooth" }); }
     say(CONFIRM_NEEDED, false); toast(CONFIRM_NEEDED);
   }
-  if ($("confirmTrue")) $("confirmTrue").addEventListener("change", syncConfirm);
+  if ($("confirmTrue")) {
+    // Always start unticked. Browsers restore ticked boxes on reload or Back,
+    // which would let someone skip the check without reading their CV.
+    $("confirmTrue").checked = false;
+    $("confirmTrue").addEventListener("change", syncConfirm);
+  }
+  window.addEventListener("pageshow", function (e) { if (e.persisted) resetConfirm(); });
   syncConfirm();
 
   // ---- downloads -------------------------------------------------------------------
