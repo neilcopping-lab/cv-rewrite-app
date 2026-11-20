@@ -759,6 +759,7 @@ function renderCoverLetter(cl) {
   const box = $("#coverPreview");
   box.innerHTML = `<div style="font-family:Georgia,serif;color:#1A1A1A;background:#fff;padding:26px;line-height:1.6;border-radius:6px">${lines}${nameP}</div>`;
   box.classList.remove("hidden");
+  if ($("#coverWarn")) $("#coverWarn").classList.remove("hidden");
   $("#coverDownloads").classList.remove("hidden");
   resetConfirm("#confirmCover"); // a new letter needs checking again
 }

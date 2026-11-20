@@ -350,3 +350,6 @@ details.ideas li{margin:0 0 4px}
 .mic-row.mini{margin:5px 0 0}
 .btn-mic.mini{padding:4px 11px;font-size:13px;border-width:1.5px}
 .btn-mic.mini svg{width:15px;height:15px}
+
+.ai-warn{font-size:14.5px;line-height:1.5;border-left:4px solid #FF8A1F;background:#FFF8EE;color:#17191C;padding:12px 14px;border-radius:0 10px 10px 0;margin:14px 0}
+.ai-warn-top{margin:10px 0 14px}
