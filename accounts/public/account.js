@@ -302,38 +302,75 @@
       document.getElementById("docs-loading").classList.add("hidden");
       document.getElementById("docs-empty").classList.toggle("hidden", docs.length > 0);
       docsList.textContent = "";
+      // Newest first. Word and PDF copies saved in the same minute become one entry,
+      // and older versions of the same document fold away under "Older versions".
+      docs = docs.slice().sort(function (a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+      function whatOf(d) { return d.job_title && d.company ? d.job_title + " at " + d.company : (d.title || d.kind_label); }
+      var saves = [], byKey = {};
       docs.forEach(function (d) {
+        var key = d.kind_label + "|" + whatOf(d) + "|" + String(d.created_at).slice(0, 16);
+        if (!byKey[key]) { byKey[key] = { kind: d.kind_label, what: whatOf(d), when: d.created_at, files: [] }; saves.push(byKey[key]); }
+        byKey[key].files.push(d);
+      });
+      var titles = [], byTitle = {};
+      saves.forEach(function (sv) {
+        var t = sv.kind + "|" + sv.what;
+        if (!byTitle[t]) { byTitle[t] = []; titles.push(t); }
+        byTitle[t].push(sv);
+      });
+      function fmtOf(d) { return /pdf/.test(d.mime_type) ? "PDF" : /word/.test(d.mime_type) ? "Word" : "File"; }
+      function row(sv, latest) {
         var li = el("li");
         var info = el("div");
-        info.appendChild(el("span", "doc-kind", d.kind_label));
-        var what = d.job_title && d.company ? d.job_title + " at " + d.company : (d.title || d.kind_label);
-        info.appendChild(el("span", "doc-title", what));
-        var fmt = /pdf/.test(d.mime_type) ? "PDF" : /word/.test(d.mime_type) ? "Word" : "File";
-        info.appendChild(el("span", "doc-meta", "Saved " + niceDate(d.created_at) + " · " + fmt));
+        info.appendChild(el("span", "doc-kind", sv.kind + (latest ? " · Latest" : "")));
+        info.appendChild(el("span", "doc-title", sv.what));
+        info.appendChild(el("span", "doc-meta", "Saved " + niceDate(sv.when)));
         var actions = el("div", "doc-actions");
-        var dl = el("a", "btn btn-ghost", "Download");
-        dl.href = "/api/account/documents/" + encodeURIComponent(d.id) + "/file";
-        dl.setAttribute("download", d.file_name);
-        var del = el("button", "btn btn-danger", "Delete");
+        sv.files.forEach(function (d) {
+          var dl = el("a", "btn btn-ghost", "Download " + fmtOf(d));
+          dl.href = "/api/account/documents/" + encodeURIComponent(d.id) + "/file";
+          dl.setAttribute("download", d.file_name);
+          actions.appendChild(dl);
+        });
+        // Delete sits apart from the downloads and needs two clicks, so nothing goes by accident.
+        var del = el("button", "btn btn-link doc-del", "Delete");
         del.type = "button";
-        // Two clicks to delete, so nothing goes by accident.
+        del.setAttribute("aria-label", "Delete " + sv.what + ", saved " + niceDate(sv.when));
         del.addEventListener("click", function () {
           if (!del.dataset.sure) {
             del.dataset.sure = "1";
             del.textContent = "Delete for good?";
-            setTimeout(function () { if (del.isConnected) { delete del.dataset.sure; del.textContent = "Delete"; } }, 5000);
+            del.classList.add("sure");
+            setTimeout(function () { if (del.isConnected) { delete del.dataset.sure; del.textContent = "Delete"; del.classList.remove("sure"); } }, 5000);
             return;
           }
           del.disabled = true;
-          post("/api/account/documents/" + encodeURIComponent(d.id) + "/delete", {})
-            .then(function (j) { say(j.message, true); loadDocs(); })
+          sv.files.reduce(function (p, d) {
+            return p.then(function () { return post("/api/account/documents/" + encodeURIComponent(d.id) + "/delete", {}); });
+          }, Promise.resolve())
+            .then(function (j) { say((j && j.message) || "Deleted.", true); loadDocs(); })
             .catch(function (err) { say(err.message, false); del.disabled = false; });
         });
-        actions.appendChild(dl);
         actions.appendChild(del);
         li.appendChild(info);
         li.appendChild(actions);
-        docsList.appendChild(li);
+        return li;
+      }
+      titles.forEach(function (t) {
+        var list = byTitle[t];
+        docsList.appendChild(row(list[0], list.length > 1));
+        if (list.length > 1) {
+          var li = el("li", "doc-older");
+          var det = document.createElement("details");
+          var sum = document.createElement("summary");
+          sum.textContent = "Older versions (" + (list.length - 1) + ")";
+          det.appendChild(sum);
+          var ul = el("ul", "docs");
+          list.slice(1).forEach(function (sv) { ul.appendChild(row(sv, false)); });
+          det.appendChild(ul);
+          li.appendChild(det);
+          docsList.appendChild(li);
+        }
       });
     }
     function loadDocs() {

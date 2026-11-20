@@ -147,7 +147,6 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
   <p class="fx-kicker">CV Rewrite &middot; Free, always</p>
   <h1>Let's rewrite your CV.</h1>
   <p class="fx-lede">Paste your CV and the job advert. We spot what's missing, ask a few quick questions, then rewrite it for this one job, in your own words. Nothing invented.</p>
-  <ul class="fx-how"><li><span class="d">1</span>Paste your CV and the advert</li><li><span class="d">2</span>Fill the gaps</li><li><span class="d">3</span>Check it</li><li><span class="d">4</span>Pick a design</li></ul>
 </div></section>
 
 <main><section style="border:none"><div class="wrap">
@@ -163,7 +162,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
   <div id="topSigninBox" class="notice hidden" style="margin-top:10px">
     <strong>Welcome back.</strong> Sign in to pick up where you left off.
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px">
-      <input type="email" id="topSigninEmail" placeholder="you@email.com" style="max-width:280px">
+      <input type="email" id="topSigninEmail" aria-label="Your email address" placeholder="you@email.com" style="max-width:280px">
       <button class="btn accent" id="topSigninBtn" style="padding:10px 18px">Email me a sign-in code</button>
     </div>
     <p style="margin-top:8px"><span id="topSigninMsg" class="muted"></span></p>
@@ -180,30 +179,30 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
   <div class="panel active" id="p1">
     <h2><span class="fx-num">1</span>Paste your CV and the job advert</h2>
     <p class="muted">Upload a file (PDF or Word) or paste the text. Either works. Files are deleted from our server the moment we've read them.</p>
-    <label>Your current CV</label>
+    <label for="cvText">Your current CV</label>
     <p id="masterLoad" class="hidden" style="margin:0 0 10px;padding:10px 14px;background:#F4FAF6;border:1px solid #CFE3D7;border-radius:10px;font-size:15px"><span id="masterLoadText">You've got a master CV in your account.</span> <button type="button" id="masterLoadBtn" style="margin-left:6px;background:#1F6B45;color:#fff;border:0;border-radius:999px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer">Use my master CV</button></p>
-    <input type="file" id="cvFile" accept=".pdf,.docx,.txt">
-    <textarea id="cvText" placeholder="…or paste your CV text here"></textarea>
-    <label>The job advert</label>
-    <input type="file" id="advertFile" accept=".pdf,.docx,.txt">
-    <input type="url" id="advertUrl" placeholder="…or paste a link to the live listing" style="margin-top:8px">
-    <textarea id="advertText" placeholder="…or paste the advert text here"></textarea>
+    <input type="file" id="cvFile" aria-label="Upload your current CV (PDF, Word or text file)" accept=".pdf,.docx,.txt">
+    <textarea id="cvText" aria-label="Or paste your CV text" placeholder="…or paste your CV text here"></textarea>
+    <label for="advertText">The job advert</label>
+    <input type="file" id="advertFile" aria-label="Upload the job advert (PDF, Word or text file)" accept=".pdf,.docx,.txt">
+    <input type="url" id="advertUrl" aria-label="Or paste a link to the job advert" placeholder="…or paste a link to the live listing" style="margin-top:8px">
+    <textarea id="advertText" aria-label="Or paste the job advert text" placeholder="…or paste the advert text here"></textarea>
 
     <details style="margin-top:16px">
       <summary style="cursor:pointer;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:13px;color:var(--gold);padding:6px 0">Add links and a photo (optional)</summary>
       <label>Your links - shown as clickable links on your CV (great for the Creative design)</label>
-      <input type="url" id="linkLinkedin" placeholder="LinkedIn URL">
-      <input type="url" id="linkPortfolio" placeholder="Portfolio URL" style="margin-top:8px">
-      <input type="url" id="linkWebsite" placeholder="Website URL" style="margin-top:8px">
-      <input type="url" id="linkGithub" placeholder="GitHub URL" style="margin-top:8px">
-      <input type="url" id="linkYoutube" placeholder="YouTube intro video URL" style="margin-top:8px">
+      <input type="url" id="linkLinkedin" aria-label="LinkedIn URL" placeholder="LinkedIn URL">
+      <input type="url" id="linkPortfolio" aria-label="Portfolio URL" placeholder="Portfolio URL" style="margin-top:8px">
+      <input type="url" id="linkWebsite" aria-label="Website URL" placeholder="Website URL" style="margin-top:8px">
+      <input type="url" id="linkGithub" aria-label="GitHub URL" placeholder="GitHub URL" style="margin-top:8px">
+      <input type="url" id="linkYoutube" aria-label="YouTube intro video URL" placeholder="YouTube intro video URL" style="margin-top:8px">
       <p class="muted" style="font-size:13px;margin:6px 0 0">Only add links you're happy to appear on your CV. We show them exactly as you type them.</p>
       <label>Photo (optional) - appears on the designed CV, never on the ATS version</label>
       <p class="muted" style="font-size:13px;margin:2px 0 6px">Under 18? Leave the photo off. Your CV goes to people you haven't met, and your skills are what count.</p>
-      <input type="file" id="photoFile" accept="image/*">
+      <input type="file" id="photoFile" aria-label="Photo (optional)" accept="image/*">
     </details>
 
-    <label style="margin-top:16px">How should your CV be written?</label>
+    <label for="writingStyle" style="margin-top:16px">How should your CV be written?</label>
     <select id="writingStyle" style="width:100%;max-width:420px;padding:11px 12px;background:var(--panel);color:var(--cream);border:1px solid var(--line);border-radius:6px;font-family:var(--font-body);font-size:15px">
       <option value="professional">Professional &amp; polished - clear and recruiter-friendly</option>
       <option value="warm">Warm &amp; personable - friendly and human</option>
@@ -213,7 +212,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
     <details style="margin-top:12px">
       <summary style="cursor:pointer;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:13px;color:var(--gold);padding:6px 0">Or match my own writing style (optional)</summary>
       <p class="muted" style="font-size:13px;margin:6px 0">Paste a paragraph or two you've written yourself - a bio, a cover letter, anything - and we'll mirror your voice (your tone, not your content).</p>
-      <textarea id="styleSample" placeholder="Paste some of your own writing here…"></textarea>
+      <textarea id="styleSample" aria-label="A sample of your own writing (optional)" placeholder="Paste some of your own writing here…"></textarea>
     </details>
 
     <p style="margin-top:18px"><button class="btn accent" id="go1">Find the gaps →</button> <span id="s1" class="muted"></span></p>
@@ -237,7 +236,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
     <div id="softEmailGate" class="notice hidden" style="margin-bottom:16px">
       <strong>Your CV is ready.</strong> Pop your email in and we'll save your place and send you a link to download it whenever you're ready.
       <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <input type="email" id="softEmail" placeholder="you@email.com" style="max-width:300px">
+        <input type="email" id="softEmail" aria-label="Your email address" placeholder="you@email.com" style="max-width:300px">
         <button class="btn accent" id="softEmailBtn">Show my CV →</button>
       </div>
       <p style="margin-top:8px"><a href="#" id="softSkip" class="muted" style="text-decoration:underline">No thanks, just show it</a> <span id="softMsg" class="muted" style="margin-left:10px"></span></p>
@@ -294,7 +293,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
     <div id="signinBox" class="notice hidden" style="margin-top:22px">
       <strong>Sign in to download.</strong> We'll email you a 6-digit code - type it in below and you'll stay right here, nothing lost. It's free, no card needed.
       <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-        <input type="email" id="signinEmail" placeholder="you@email.com" style="max-width:300px">
+        <input type="email" id="signinEmail" aria-label="Your email address" placeholder="you@email.com" style="max-width:300px">
         <button class="btn accent" id="signinBtn">Email me a sign-in code</button>
       </div>
       <p style="margin-top:8px"><span id="signinMsg" class="muted"></span></p>
@@ -349,7 +348,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
       <span data-star="4" role="radio" tabindex="0">★</span>
       <span data-star="5" role="radio" tabindex="0">★</span>
     </div>
-    <textarea id="fbComment" placeholder="Anything you'd change, or that worked well? (optional)" style="margin-top:12px;min-height:90px"></textarea>
+    <textarea id="fbComment" aria-label="Your feedback (optional)" placeholder="Anything you'd change, or that worked well? (optional)" style="margin-top:12px;min-height:90px"></textarea>
     <div style="display:flex;gap:12px;align-items:center;margin-top:12px">
       <button class="btn accent" id="fbSend">Send feedback</button>
       <a href="#" id="fbSkip" class="muted" style="text-decoration:underline">No thanks</a>

@@ -77,7 +77,7 @@
   };
   var STEPS = [];
   function buildSteps() {
-    var order = (J && J.order) || ["about", "story", "strengths", "experience", "education", "interests", "download", "video"];
+    var order = (J && J.order) || ["about", "story", "strengths", "experience", "education", "interests", "video", "download"];
     STEPS = order.map(function (k, i) {
       var d = STEP_DEFS[k];
       return { n: i + 1, key: k, label: (J && J.labels && J.labels[k]) || d.label, done: d.done, cheer: d.cheer };

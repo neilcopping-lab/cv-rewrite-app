@@ -113,3 +113,12 @@ h3.sub{font-family:'Bricolage Grotesque','DM Sans',sans-serif;font-weight:800;fo
 #share-text{display:block;width:100%;margin:10px 0 12px;padding:12px 14px;font:inherit;border:1.5px solid var(--pith);border-radius:10px;resize:vertical}
 .one-tap h1{font-size:30px}
 @media (max-width:560px){.me-top{flex-direction:column;align-items:center;text-align:center}.photo-acts{justify-content:center}}
+/* UX review, Nov 2026: grouped documents, quieter delete, jump menu */
+.docs .doc-del{background:none;border:0;box-shadow:none;color:var(--muted);text-decoration:underline;margin-left:6px;padding:8px 6px;cursor:pointer}
+.docs .doc-del.sure{color:#B3261E;font-weight:700}
+.docs .doc-older{display:block;border-top:0;padding:0 0 6px}
+.docs .doc-older summary{cursor:pointer;font-size:14px;color:var(--muted);padding:2px 0 8px}
+.docs .doc-older .docs{margin:0 0 0 16px}
+.acct-jump{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.acct-jump a{display:inline-flex;align-items:center;min-height:40px;padding:6px 14px;border-radius:999px;background:#fff;border:1px solid var(--pith);font-weight:700;font-size:14px;text-decoration:none;color:inherit}
+.acct-jump a:hover{border-color:currentColor}
