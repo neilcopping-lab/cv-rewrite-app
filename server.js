@@ -985,6 +985,13 @@ app.post("/api/master/write", async (req, res) => {
       const out = await run([], () => masterWriter.proof({ strength: String(b.strength || ""), words: String(b.words || ""), style, styleSample }));
       return res.json({ ok: true, ...out });
     }
+    if (b.task === "video") {
+      // Planned from the saved master CV, so the page saves first.
+      const m = await loadMaster(req);
+      if (!m) return res.status(400).json({ error: "Add a bit more to your CV first, then we can plan your 90 seconds." });
+      const out = await run([], () => masterWriter.videoPlan({ cv: m.cv, company: String(b.company || "").slice(0, 120), role: String(b.role || "").slice(0, 120) }));
+      return res.json({ ok: true, plan: out });
+    }
     if (b.task === "followup") {
       if (journeys.privateKeys(journey).includes(String(b.questionId || ""))) return res.json({ ok: true, heard: [], followUp: "" });
       const out = await run([], () => masterWriter.followUp({ question: String(b.question || ""), answer: String(b.answer || ""), journey, context: String(b.context || "").slice(0, 300) }));

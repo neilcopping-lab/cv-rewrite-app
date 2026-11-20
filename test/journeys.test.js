@@ -49,3 +49,14 @@ test("contact details come from the CV text, not the AI", () => {
   assert.strictEqual(h.contacts.phone, "07700 900456");
   assert.ok(h.linkedin.startsWith("https://"));
 });
+
+test("90 seconds: four parts that add up to the guide's timings, and safety checks for everyone", () => {
+  const parts = journeys.VIDEO_PARTS;
+  assert.deepStrictEqual(parts.map((p) => p.id), ["intro", "story1", "story2", "close"]);
+  assert.strictEqual(parts[parts.length - 1].to, 90);
+  assert.ok(journeys.VIDEO_CHECKS.some((c) => c.id === "unlisted" && c.group === "safe"));
+  for (const id of journeys.IDS) assert.ok(journeys.JOURNEYS[id].order.includes("video"));
+  const cv = masterCv.normalise({ videoPlan: { intro: "Hi", nope: "x" }, videoChecks: ["adult", "made-up"] });
+  assert.deepStrictEqual(cv.videoPlan, { intro: "Hi" });
+  assert.deepStrictEqual(cv.videoChecks, ["adult"]);
+});

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/account/account.css?v=20261118-wide">
-<link rel="stylesheet" href="/css/master.css?v=20261120-journeys">
+<link rel="stylesheet" href="/css/master.css?v=20261120-video">
 </head>
 <body class="mcv-body">
 <header class="cq-head">
@@ -261,6 +261,62 @@
           </div>
         </section>
 
+        <!-- 8. Your 90 seconds (optional) -->
+        <section class="step" data-key="video" aria-labelledby="h8s" id="video-card">
+          <h2 id="h8s"><span class="snum"></span> Your 90 seconds <span class="opt-tag">Optional</span></h2>
+          <p class="tip" data-tip="video"></p>
+          <p class="small">Built on Field Guide N&deg;02. It works in four parts: who you are, two short stories from your work, and what you'd bring. We'll turn your CV into talking notes for each part. They're prompts to practise from, not a script to read out.</p>
+          <div class="mcv-grid v-who">
+            <div><label for="v-role">The job you're going for</label><input type="text" id="v-role" placeholder="e.g. Trainee chef"></div>
+            <div><label for="v-company">The company <small>(if you know it)</small></label><input type="text" id="v-company" placeholder="e.g. The Swan, Hitchin"></div>
+          </div>
+          <div class="build-row">
+            <button type="button" class="btn btn-spark" id="v-plan"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6zM19 14l.9 2.6L22.5 17l-2.6.9L19 20.5l-.9-2.6-2.6-.9 2.6-.4z"/></svg>Plan my 90 seconds</button>
+            <span class="small" id="v-msg" aria-live="polite"></span>
+          </div>
+          <p class="ai-note v-ai">Plan my 90 seconds uses AI to turn what's in your CV into notes. It only uses what you've told us, and your name and contact details are taken out first. Anything it couldn't find is left as a question in brackets for you to fill in.</p>
+          <div class="v-parts" id="v-parts"></div>
+
+          <div class="v-practice">
+            <h3 class="sub">Practise it</h3>
+            <p class="small">Read your notes, then put them away and tell it out loud. Press start and the timer moves through the four parts. Three goes is the sweet spot.</p>
+            <div class="v-timer">
+              <div class="v-clock" id="v-clock" aria-live="off">0:00</div>
+              <div class="v-bar" aria-hidden="true"><div class="v-fill" id="v-fill"></div><i style="left:16.7%"></i><i style="left:37.5%"></i><i style="left:58.3%"></i><i class="v-90" style="left:75%"></i></div>
+              <p class="small" id="v-now" aria-live="polite">Aim for 90 seconds. Two minutes is the ceiling.</p>
+              <p><button type="button" class="btn btn-primary" id="v-go">Start the timer</button></p>
+            </div>
+            <details class="v-cam" id="v-cam">
+              <summary>Practise on camera</summary>
+              <p class="v-private"><strong>This stays on your device.</strong> We never see it and nothing is uploaded. When you close this page it's gone, unless you save it.</p>
+              <video id="v-live" class="hidden" autoplay muted playsinline></video>
+              <video id="v-play" class="hidden" controls playsinline></video>
+              <p class="small" id="v-cam-msg" aria-live="polite"></p>
+              <p class="v-cam-acts"><button type="button" class="btn btn-ghost" id="v-cam-on">Turn on my camera</button> <button type="button" class="btn btn-primary hidden" id="v-rec">Record a practice take</button> <a class="btn btn-ghost hidden" id="v-save" download="my-90-seconds.webm">Save to my device</a> <button type="button" class="linkbtn hidden" id="v-del">Delete this take</button></p>
+            </details>
+          </div>
+
+          <div class="v-safe">
+            <h3 class="sub">Keeping yourself safe</h3>
+            <ul>
+              <li>Upload it to YouTube as <strong>Unlisted</strong>, not Public. Only people you give the link to can watch it.</li>
+              <li>Keep where you live and study out of shot: no school or college uniform or badge, no street signs, no front door or house number.</li>
+              <li>Say your name, but leave out your address, date of birth and anything personal the job doesn't need.</li>
+              <li>Only send the link through the employer's own application, or to an email address on their website. If someone you don't know messages you asking for a video, don't send one.</li>
+              <li>You can take it down whenever you like: delete it, or set it to Private.</li>
+              <li><strong>Under 18?</strong> Watch it with a parent, carer, teacher or tutor before you send it. If anything online ever worries you, Childline is free and confidential on <a href="tel:08001111">0800 1111</a> or at <a href="https://www.childline.org.uk" target="_blank" rel="noopener">childline.org.uk</a>.</li>
+            </ul>
+          </div>
+
+          <h3 class="sub">Before you press record</h3>
+          <div class="v-checks" id="v-checks"></div>
+
+          <h3 class="sub">Put it on your CV</h3>
+          <p class="small">Paste the link and it goes at the top of your CV, next to your contact details.</p>
+          <label for="f-vid2">Your video link</label>
+          <input type="url" id="f-vid2" data-path="header.introVideo" placeholder="youtube.com/...">
+        </section>
+
         <div class="step-nav">
           <button type="button" class="btn btn-ghost" id="prev">Back</button>
           <span class="save-status" id="status" aria-live="polite"></span>
@@ -292,7 +348,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="confetti" id="confetti" aria-hidden="true"></div>
 
-<script src="/js/master.js?v=20261120-journeys" defer></script>
+<script src="/js/master.js?v=20261120-video" defer></script>
 <script src="/account/nav.js?v=20261118" defer></script>
 </body>
 </html>

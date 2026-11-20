@@ -306,3 +306,41 @@ details.ideas li{margin:0 0 4px}
 .fq-acts{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .small.ok{color:#1F6B45;font-weight:700}
 .private-note{font-size:14px;background:#F4F1FF;border-radius:10px;padding:8px 12px;margin:10px 0 0}
+
+/* ---- your 90 seconds ---- */
+.opt-tag{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:var(--peel);color:var(--muted);border-radius:999px;padding:4px 10px}
+.v-who{margin:12px 0 4px}
+.v-parts{display:grid;gap:12px;margin:14px 0 6px}
+.v-part{border:2px solid var(--pith);border-radius:16px;padding:14px 16px;background:#fff;transition:border-color .2s,box-shadow .2s}
+.v-part.live{border-color:var(--kq);box-shadow:0 0 0 5px rgba(124,58,237,.14)}
+.v-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.v-n{width:28px;height:28px;border-radius:9px;background:linear-gradient(135deg,var(--kq),var(--coral));color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+.v-head strong{font-family:'Bricolage Grotesque',sans-serif;font-size:18px}
+.v-time{font-size:13px;font-weight:700;background:var(--peel);border-radius:999px;padding:3px 10px;color:#3F444B}
+.v-in,.v-out{font-size:14px;margin:2px 0 6px}
+.v-in b{color:#1F6B45}.v-out b{color:#B44E00}
+.v-practice{margin-top:18px}
+.v-timer{border:2px solid var(--pith);border-radius:16px;padding:14px 16px;background:#fff}
+.v-clock{font-family:'Bricolage Grotesque',sans-serif;font-size:40px;font-weight:800;line-height:1}
+.v-bar{position:relative;height:12px;border-radius:999px;background:var(--peel);overflow:hidden;margin:10px 0 6px}
+.v-fill{height:100%;width:0;background:linear-gradient(90deg,var(--kq),var(--coral));transition:width .2s linear}
+.v-bar i{position:absolute;top:0;bottom:0;width:2px;background:rgba(23,25,28,.25)}
+.v-bar i.v-90{background:#1F6B45;width:3px}
+.v-timer.wrap .v-clock{color:#B07400}
+.v-timer.over .v-clock{color:#C2272D}
+.v-timer.over .v-fill{background:#E5484D}
+.v-cam{margin-top:12px;border:2px solid var(--pith);border-radius:14px;padding:10px 14px;background:#fff}
+.v-cam summary{font-weight:800;cursor:pointer}
+.v-private{font-size:14px;background:#F4F1FF;border-radius:10px;padding:8px 12px;margin:10px 0}
+.v-cam video{width:100%;max-width:560px;border-radius:12px;background:#111;display:block;margin:8px 0}
+#v-live{transform:scaleX(-1)}
+.v-cam-acts{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.v-safe{margin-top:18px;border-left:4px solid var(--mint);background:#E9FBF6;border-radius:0 14px 14px 0;padding:4px 16px 10px}
+.v-safe h3{margin-top:12px!important}
+.v-safe ul{margin:0;padding-left:20px}
+.v-safe li{margin:0 0 6px;font-size:15px}
+.v-checks{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:760px){.v-checks{grid-template-columns:1fr}}
+.v-check-grp h4{margin:0 0 6px;font-size:15px}
+.v-check{display:flex;gap:10px;align-items:flex-start;font-weight:500!important;font-size:14.5px!important;margin:0 0 6px!important;cursor:pointer}
+.v-check input{margin-top:3px;width:18px;height:18px;accent-color:#1F6B45;flex:0 0 18px}

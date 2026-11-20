@@ -73,10 +73,11 @@
     education: { label: "Education", done: function () { return (cv.education || []).some(function (e) { return (e.qualification || "").trim() || (e.institution || "").trim(); }); }, cheer: "Education sorted." },
     interests: { label: "Interests", done: function () { return lineCount(cv.interests) >= 1; }, cheer: "Now they've got a reason to like you." },
     download: { label: "Look and download", done: function () { return false; } },
+    video: { label: "Your 90 seconds", done: function () { var v = cv.videoPlan || {}; return !!((cv.header || {}).introVideo || (String(v.intro || "").trim() && String(v.story1 || "").trim() && String(v.close || "").trim())); } },
   };
   var STEPS = [];
   function buildSteps() {
-    var order = (J && J.order) || ["about", "story", "strengths", "experience", "education", "interests", "download"];
+    var order = (J && J.order) || ["about", "story", "strengths", "experience", "education", "interests", "download", "video"];
     STEPS = order.map(function (k, i) {
       var d = STEP_DEFS[k];
       return { n: i + 1, key: k, label: (J && J.labels && J.labels[k]) || d.label, done: d.done, cheer: d.cheer };
@@ -99,7 +100,8 @@
     });
   }
   function refreshProgress() {
-    var content = STEPS.filter(function (s) { return s.key !== "download"; }), done = content.filter(function (s) { return s.done(); }).length;
+    // Download and the optional video step don't count towards "done".
+    var content = STEPS.filter(function (s) { return s.key !== "download" && s.key !== "video"; }), done = content.filter(function (s) { return s.done(); }).length;
     var pct = Math.round((done / content.length) * 100);
     $("ring-pct").textContent = pct + "%";
     $("ring-fg").style.strokeDashoffset = String(314.16 * (1 - pct / 100));
@@ -216,7 +218,12 @@
     fillFields();
     document.querySelectorAll("[data-path]").forEach(function (input) {
       var path = input.getAttribute("data-path");
-      input.addEventListener("input", function () { set(cv, path, input.value); changed(); });
+      input.addEventListener("input", function () {
+        set(cv, path, input.value);
+        // Some boxes appear twice (the video link is on step 1 and the video step).
+        document.querySelectorAll('[data-path="' + path + '"]').forEach(function (o) { if (o !== input) o.value = input.value; });
+        changed();
+      });
     });
   }
 
@@ -853,6 +860,135 @@
     healthStrip();
   }
 
+  // ---- Your 90 seconds: talking notes for an intro video (Field Guide N°02) -------------
+  var VIDEO = { parts: [], checks: [] };
+  function vPlan() { if (!cv.videoPlan || typeof cv.videoPlan !== "object") cv.videoPlan = {}; return cv.videoPlan; }
+  function renderVideo() {
+    VIDEO = (CFG && CFG.video) || VIDEO;
+    var vp = vPlan(), box = $("v-parts"); box.textContent = "";
+    $("v-role").value = vp.role || (cv.header || {}).targetRole || "";
+    $("v-company").value = vp.company || "";
+    VIDEO.parts.forEach(function (pt, i) {
+      var id = "v-" + pt.id;
+      var ta = el("textarea", { id: id, rows: "4", placeholder: pt.placeholder });
+      ta.value = vp[pt.id] || "";
+      ta.addEventListener("input", function () { vPlan()[pt.id] = ta.value; changed(); });
+      box.appendChild(el("div", { class: "v-part", "data-part": pt.id }, [
+        el("div", { class: "v-head" }, [el("span", { class: "v-n", text: String(i + 1) }), el("strong", { text: pt.title }), el("span", { class: "v-time", text: pt.time })]),
+        el("p", { class: "v-in" }, [el("b", { text: "Put in: " }), document.createTextNode(pt.putIn)]),
+        el("p", { class: "v-out" }, [el("b", { text: "Leave out: " }), document.createTextNode(pt.leaveOut)]),
+        el("label", { for: id, text: "Your notes, one per line" }), ta,
+      ]));
+    });
+    var cb = $("v-checks"); cb.textContent = "";
+    var ticked = new Set(cv.videoChecks || []);
+    [["record", "Recording"], ["safe", "Staying safe"]].forEach(function (grp) {
+      var list = el("div", { class: "v-check-grp" }, [el("h4", { text: grp[1] })]);
+      VIDEO.checks.filter(function (c) { return c.group === grp[0]; }).forEach(function (c) {
+        var input = el("input", { type: "checkbox" }); input.checked = ticked.has(c.id);
+        input.addEventListener("change", function () {
+          if (input.checked) ticked.add(c.id); else ticked.delete(c.id);
+          cv.videoChecks = VIDEO.checks.filter(function (x) { return ticked.has(x.id); }).map(function (x) { return x.id; });
+          queueSave();
+        });
+        list.appendChild(el("label", { class: "v-check" }, [input, el("span", { text: c.text })]));
+      });
+      cb.appendChild(list);
+    });
+    if (!writeUp) { $("v-plan").classList.add("hidden"); document.querySelector(".v-ai").classList.add("hidden"); }
+  }
+  $("v-role").addEventListener("input", function () { vPlan().role = $("v-role").value; queueSave(); });
+  $("v-company").addEventListener("input", function () { vPlan().company = $("v-company").value; queueSave(); });
+  $("v-plan").addEventListener("click", function () {
+    var b = $("v-plan"), base = b.innerHTML, vp = vPlan();
+    var has = VIDEO.parts.some(function (pt) { return String(vp[pt.id] || "").trim(); });
+    if (has && !b.dataset.sure) { b.dataset.base = base; sure(b, "Replace my notes?", base); $("v-msg").textContent = "This replaces the notes below. Press again to go ahead."; return; }
+    delete b.dataset.sure;
+    b.disabled = true; b.textContent = "Planning your 90 seconds…"; $("v-msg").textContent = "";
+    flush().then(function () { return postJSON("/api/master/write", { task: "video", role: $("v-role").value, company: $("v-company").value }); })
+      .then(function (j) {
+        var name = ((cv.header || {}).name || "").trim();
+        VIDEO.parts.forEach(function (pt) {
+          var lines = (j.plan[pt.id] || []).map(function (l) { return l.replace(/\[(FIRST_)?NAME\]/g, name ? (/\[FIRST_NAME\]/.test(l) ? name.split(" ")[0] : name) : "(your name)"); });
+          vPlan()[pt.id] = lines.join("\n");
+        });
+        renderVideo(); changed();
+        $("v-msg").textContent = "Done. Change anything that doesn't sound like you, and fill in anything in brackets.";
+        toast("Your 90 seconds is planned.");
+      })
+      .catch(function (e) { $("v-msg").textContent = e.message; })
+      .then(function () { b.disabled = false; b.innerHTML = base; });
+  });
+
+  // The practice timer: moves through the four parts; 90 seconds to aim for, two minutes tops.
+  var tStart = 0, tTick = null;
+  function tickVideo() {
+    var sec = (Date.now() - tStart) / 1000, whole = Math.floor(sec);
+    $("v-clock").textContent = Math.floor(whole / 60) + ":" + ("0" + (whole % 60)).slice(-2);
+    $("v-fill").style.width = Math.min(100, (sec / 120) * 100) + "%";
+    var part = VIDEO.parts.filter(function (pt) { return sec >= pt.from && sec < pt.to; })[0];
+    document.querySelectorAll(".v-part").forEach(function (c) { c.classList.toggle("live", !!part && c.getAttribute("data-part") === part.id); });
+    var now = $("v-now"), tm = document.querySelector(".v-timer");
+    tm.classList.toggle("over", sec >= 120); tm.classList.toggle("wrap", sec >= 90 && sec < 120);
+    now.textContent = part ? "Now: " + part.title.toLowerCase() + " (" + part.time + ")" : sec < 120 ? "Time to wrap up. You're past 90 seconds." : "Over two minutes. Stop here, and cut a sentence or two before the next go.";
+  }
+  function timerStart() { tStart = Date.now(); clearInterval(tTick); tTick = setInterval(tickVideo, 200); $("v-go").textContent = "Stop"; tickVideo(); }
+  function timerStop() {
+    if (!tTick) return;
+    clearInterval(tTick); tTick = null; $("v-go").textContent = "Start the timer";
+    document.querySelectorAll(".v-part").forEach(function (c) { c.classList.remove("live"); });
+    var sec = Math.round((Date.now() - tStart) / 1000);
+    $("v-now").textContent = sec + " seconds. " + (sec < 60 ? "A bit short: there's room for more detail in your stories." : sec <= 120 ? "Nicely inside two minutes. Try it again without looking at your notes." : "That's over two minutes. Cut a sentence or two and try again.");
+  }
+  $("v-go").addEventListener("click", function () { if (tTick) timerStop(); else timerStart(); });
+
+  // Practise on camera. Recorded in the browser and kept on the device: nothing is uploaded.
+  var camStream = null, camRec = null, camChunks = [], camUrl = null;
+  function camOff() {
+    if (camRec && camRec.state === "recording") camRec.stop();
+    if (camStream) camStream.getTracks().forEach(function (t) { t.stop(); });
+    camStream = null; $("v-live").classList.add("hidden"); $("v-rec").classList.add("hidden"); $("v-cam-on").classList.remove("hidden");
+  }
+  $("v-cam").addEventListener("toggle", function () { if (!$("v-cam").open) camOff(); });
+  $("v-cam-on").addEventListener("click", function () {
+    var msg = $("v-cam-msg");
+    if (!navigator.mediaDevices || !window.MediaRecorder) { msg.textContent = "This browser can't record video. You can still practise with the timer."; return; }
+    navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true }).then(function (st) {
+      camStream = st; var v = $("v-live"); v.srcObject = st; v.classList.remove("hidden");
+      $("v-cam-on").classList.add("hidden"); $("v-rec").classList.remove("hidden");
+      v.onloadedmetadata = function () { msg.textContent = v.videoHeight > v.videoWidth ? "Turn your phone sideways: landscape plays properly on a laptop." : "Look at the lens, not at yourself. Press record when you're ready."; };
+    }).catch(function () { msg.textContent = "We couldn't use your camera. Check your browser lets this page use it."; });
+  });
+  $("v-rec").addEventListener("click", function () {
+    if (camRec && camRec.state === "recording") { camRec.stop(); return; }
+    if (!camStream) return;
+    camChunks = [];
+    var types = ["video/webm;codecs=vp9,opus", "video/webm", "video/mp4"];
+    var type = types.filter(function (t) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0];
+    camRec = type ? new MediaRecorder(camStream, { mimeType: type }) : new MediaRecorder(camStream);
+    camRec.ondataavailable = function (e) { if (e.data && e.data.size) camChunks.push(e.data); };
+    camRec.onstop = function () {
+      timerStop();
+      var mime = (camRec.mimeType || "video/webm").split(";")[0];
+      if (camUrl) URL.revokeObjectURL(camUrl);
+      camUrl = URL.createObjectURL(new Blob(camChunks, { type: mime }));
+      var p = $("v-play"); p.src = camUrl; p.classList.remove("hidden");
+      var sv = $("v-save"); sv.href = camUrl; sv.setAttribute("download", "my-90-seconds." + (mime.indexOf("mp4") > -1 ? "mp4" : "webm")); sv.classList.remove("hidden");
+      $("v-del").classList.remove("hidden");
+      $("v-rec").textContent = "Record another take";
+      $("v-cam-msg").textContent = "Watch it back. Take two is usually the best one.";
+    };
+    camRec.start(); timerStart();
+    $("v-rec").textContent = "■ Stop recording";
+    $("v-cam-msg").textContent = "Recording. The timer above shows where you should be.";
+  });
+  $("v-del").addEventListener("click", function () {
+    if (camUrl) URL.revokeObjectURL(camUrl); camUrl = null;
+    var p = $("v-play"); p.removeAttribute("src"); p.classList.add("hidden");
+    $("v-save").classList.add("hidden"); $("v-del").classList.add("hidden");
+    $("v-cam-msg").textContent = "Deleted.";
+  });
+
   // ---- the journeys: Create your 1st CV, Update your CV, Back to work -------------------
   var findJourney = function (id) { return CFG.journeys.filter(function (j) { return j.id === id; })[0] || null; };
   function hero(h) {
@@ -874,7 +1010,7 @@
       var card = el("aside", { class: "guide-card" }, [
         el("span", { class: "gc-kick", text: "From the guide · " + g.stop }),
         el("strong", { text: g.title }), el("p", { text: g.line }),
-        el("a", { href: g.url, target: "_blank", rel: "noopener", text: "Read the full stop in The CV That Gets Read" }),
+        el("a", { href: g.url, target: "_blank", rel: "noopener", text: g.linkText || "Read the full stop in The CV That Gets Read" }),
       ]);
       var h = sec.querySelector("h2"); h.parentNode.insertBefore(card, h.nextSibling);
     });
@@ -883,11 +1019,11 @@
     J = findJourney(cv.journey);
     hero(J && J.hero);
     $("jname").textContent = J ? J.name : "";
-    document.querySelectorAll("[data-tip]").forEach(function (t) { t.textContent = (J && J.tips && J.tips[t.getAttribute("data-tip")]) || ""; });
+    document.querySelectorAll("[data-tip]").forEach(function (t) { var k = t.getAttribute("data-tip"); t.textContent = (J && J.tips && J.tips[k]) || (J && k === "video" && J.video) || ""; });
     var et = document.querySelector('p[data-tip="experience"]'); if (et) et.classList.toggle("first-cv", !!(J && (J.counts || J.breaks)));
     $("add-break").classList.toggle("hidden", !(J && J.id !== "first"));
     if (J && J.questions && J.questions.length) { QUESTIONS = J.questions; qi = 0; }
-    buildSteps(); guideCards(); renderInterestIdeas();
+    buildSteps(); guideCards(); renderInterestIdeas(); renderVideo();
     if (loaded) renderQuestion();
     $("up-title").textContent = J && J.upload ? J.upload.title : "Upload a CV you've got";
     $("up-text").textContent = J && J.upload ? J.upload.text : "";
