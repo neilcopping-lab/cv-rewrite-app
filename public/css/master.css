@@ -329,8 +329,9 @@ details.ideas li{margin:0 0 4px}
 .v-timer.wrap .v-clock{color:#B07400}
 .v-timer.over .v-clock{color:#C2272D}
 .v-timer.over .v-fill{background:#E5484D}
-.v-cam{margin-top:12px;border:2px solid var(--pith);border-radius:14px;padding:10px 14px;background:#fff}
-.v-cam summary{font-weight:800;cursor:pointer}
+.v-cam{margin-top:18px;border:2px solid var(--pith);border-radius:14px;padding:14px 16px;background:#fff}
+.v-cam .sub{margin-top:0}
+.v-cam-acts .btn svg{width:18px;height:18px;fill:currentColor;vertical-align:-3px;margin-right:6px}
 .v-private{font-size:14px;background:#F4F1FF;border-radius:10px;padding:8px 12px;margin:10px 0}
 .v-cam video{width:100%;max-width:560px;border-radius:12px;background:#111;display:block;margin:8px 0}
 #v-live{transform:scaleX(-1)}
@@ -345,3 +346,7 @@ details.ideas li{margin:0 0 4px}
 .v-check{display:flex;gap:10px;align-items:flex-start;font-weight:500!important;font-size:14.5px!important;margin:0 0 6px!important;cursor:pointer}
 .v-check input{margin-top:3px;width:18px;height:18px;accent-color:#1F6B45;flex:0 0 18px}
 .help-row{display:flex;gap:16px;font-size:14px;font-weight:700;margin:6px 0 0}
+/* the small microphone under one-line boxes */
+.mic-row.mini{margin:5px 0 0}
+.btn-mic.mini{padding:4px 11px;font-size:13px;border-width:1.5px}
+.btn-mic.mini svg{width:15px;height:15px}

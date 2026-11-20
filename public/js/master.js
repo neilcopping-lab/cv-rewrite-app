@@ -158,9 +158,13 @@
 
   // ---- talk instead of type ----------------------------------------------------------
   // Records a voice answer, turns it into text, and adds it to the box.
-  function mic(ta, label, after) {
+  // opts.lines: each sentence goes on its own line (lists and notes).
+  // One-line boxes get a smaller button, and the words go in without a full stop.
+  function mic(ta, label, after, opts) {
     if (!voice) return el("span", { class: "hidden" });
-    var btn = el("button", { type: "button", class: "btn-mic", "aria-label": "Record your answer" });
+    opts = opts || {};
+    var single = ta.tagName === "INPUT";
+    var btn = el("button", { type: "button", class: "btn-mic" + (single ? " mini" : ""), "aria-label": "Say it instead of typing" + (ta.id ? ": " + ((document.querySelector('label[for="' + ta.id + '"]') || {}).textContent || "").trim() : "") });
     var idle = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 003-3V6a3 3 0 10-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.9V22h2v-3.1A7 7 0 0019 12h-2z"/></svg>' + (label || "Say it instead");
     btn.innerHTML = idle;
     var st = el("span", { class: "mic-status" });
@@ -185,8 +189,16 @@
           fetch("/api/transcribe", { method: "POST", body: fd, credentials: "same-origin" })
             .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok || !j.text) throw new Error(j.error || "We couldn't hear that clearly."); return j.text; }); })
             .then(function (text) {
-              var cur = ta.value.trim();
-              ta.value = (cur ? cur + (/[.!?]$/.test(cur) ? " " : ". ") : "") + text.trim();
+              var cur = ta.value.trim(), said = text.trim();
+              if (single) {
+                said = said.replace(/[.!?]+$/, "");
+                ta.value = cur ? cur + " " + said : said;
+              } else if (opts.lines) {
+                var bits = said.split(/(?<=[.!?])\s+/).map(function (b) { return b.replace(/[.]+$/, "").trim(); }).filter(Boolean);
+                ta.value = (cur ? cur + "\n" : "") + bits.join("\n");
+              } else {
+                ta.value = (cur ? cur + (/[.!?]$/.test(cur) ? " " : ". ") : "") + said;
+              }
               ta.dispatchEvent(new Event("input", { bubbles: true }));
               st.textContent = "Got it. Have a read and change anything we misheard.";
               if (typeof after === "function") after();
@@ -204,7 +216,7 @@
         }, 500);
       }).catch(function () { st.className = "mic-status err"; st.textContent = "We couldn't use your microphone. Check your browser lets this page use it, or type instead."; });
     });
-    return el("div", { class: "mic-row" }, [btn, st]);
+    return el("div", { class: "mic-row" + (single ? " mini" : "") }, [btn, st]);
   }
 
   // ---- simple fields -----------------------------------------------------------
@@ -606,7 +618,7 @@
           grid.appendChild(el("div", { class: "about-box" }, [el("label", { for: id, text: f[1] }), input, mic(input, null, runFu ? function () { runFu(true); } : null), el("div", { class: "about-acts" }, [wb, fuBtn, out]), fuBox]));
           return;
         }
-        grid.appendChild(el("div", { class: multi ? "full" : "" }, [el("label", { for: id, text: f[1] }), input]));
+        grid.appendChild(el("div", { class: multi ? "full" : "" }, [el("label", { for: id, text: f[1] }), input, mic(input, multi ? "Say it instead" : "Say it", null, { lines: f[2] === "lines" })]));
       });
       var item = el("div", { class: "item" }, [el("div", { class: "item-head" }, [head, tools]), grid]);
       tools.querySelectorAll("button").forEach(function (b) {
@@ -877,7 +889,7 @@
         el("div", { class: "v-head" }, [el("span", { class: "v-n", text: String(i + 1) }), el("strong", { text: pt.title }), el("span", { class: "v-time", text: pt.time })]),
         el("p", { class: "v-in" }, [el("b", { text: "Put in: " }), document.createTextNode(pt.putIn)]),
         el("p", { class: "v-out" }, [el("b", { text: "Leave out: " }), document.createTextNode(pt.leaveOut)]),
-        el("label", { for: id, text: "Your notes, one per line" }), ta,
+        el("label", { for: id, text: "Your notes, one per line" }), ta, mic(ta, "Say it instead", null, { lines: true }),
       ]));
     });
     var cb = $("v-checks"); cb.textContent = "";
@@ -947,15 +959,16 @@
   function camOff() {
     if (camRec && camRec.state === "recording") camRec.stop();
     if (camStream) camStream.getTracks().forEach(function (t) { t.stop(); });
-    camStream = null; $("v-live").classList.add("hidden"); $("v-rec").classList.add("hidden"); $("v-cam-on").classList.remove("hidden");
+    camStream = null; $("v-live").classList.add("hidden"); $("v-rec").classList.add("hidden"); $("v-cam-off").classList.add("hidden"); $("v-cam-on").classList.remove("hidden");
   }
-  $("v-cam").addEventListener("toggle", function () { if (!$("v-cam").open) camOff(); });
+  $("v-cam-off").addEventListener("click", function () { camOff(); $("v-cam-msg").textContent = "Camera off."; });
+  window.addEventListener("pagehide", camOff);
   $("v-cam-on").addEventListener("click", function () {
     var msg = $("v-cam-msg");
     if (!navigator.mediaDevices || !window.MediaRecorder) { msg.textContent = "This browser can't record video. You can still practise with the timer."; return; }
     navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true }).then(function (st) {
       camStream = st; var v = $("v-live"); v.srcObject = st; v.classList.remove("hidden");
-      $("v-cam-on").classList.add("hidden"); $("v-rec").classList.remove("hidden");
+      $("v-cam-on").classList.add("hidden"); $("v-rec").classList.remove("hidden"); $("v-cam-off").classList.remove("hidden");
       v.onloadedmetadata = function () { msg.textContent = v.videoHeight > v.videoWidth ? "Turn your phone sideways: landscape plays properly on a laptop." : "Look at the lens, not at yourself. Press record when you're ready."; };
     }).catch(function () { msg.textContent = "We couldn't use your camera. Check your browser lets this page use it."; });
   });
@@ -963,7 +976,8 @@
     if (camRec && camRec.state === "recording") { camRec.stop(); return; }
     if (!camStream) return;
     camChunks = [];
-    var types = ["video/webm;codecs=vp9,opus", "video/webm", "video/mp4"];
+    // mp4 first: it plays on iPhones, Windows and in email. webm is the fallback.
+    var types = ["video/mp4;codecs=avc1,mp4a", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"];
     var type = types.filter(function (t) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0];
     camRec = type ? new MediaRecorder(camStream, { mimeType: type }) : new MediaRecorder(camStream);
     camRec.ondataavailable = function (e) { if (e.data && e.data.size) camChunks.push(e.data); };
@@ -975,7 +989,7 @@
       var p = $("v-play"); p.src = camUrl; p.classList.remove("hidden");
       var sv = $("v-save"); sv.href = camUrl; sv.setAttribute("download", "my-90-seconds." + (mime.indexOf("mp4") > -1 ? "mp4" : "webm")); sv.classList.remove("hidden");
       $("v-del").classList.remove("hidden");
-      $("v-rec").textContent = "Record another take";
+      $("v-rec").textContent = "● Record another take";
       $("v-cam-msg").textContent = "Watch it back. Take two is usually the best one.";
     };
     camRec.start(); timerStart();
@@ -1142,6 +1156,12 @@
       if (!allDesigns().some(function (d) { return d.id === cv.design; })) cv.design = (DESIGNS.fresh[0] || {}).id || "modern-minimal";
       if (!voice) document.querySelectorAll(".voice-only").forEach(function (x) { x.classList.add("hidden"); });
       if (!writeUp) { $("write-stmt").classList.add("hidden"); document.querySelector(".ai-note").classList.add("hidden"); }
+      // A microphone on every box that asks for words (not email, phone or links).
+      [["f-name"], ["f-role"], ["f-loc"], ["f-profile"], ["f-interests", { lines: true }], ["f-sample"], ["v-role"], ["v-company"]].forEach(function (x) {
+        var f = $(x[0]); if (!f || f.dataset.mic) return;
+        f.dataset.mic = "1";
+        f.parentNode.insertBefore(mic(f, f.tagName === "INPUT" ? "Say it" : "Say it instead", null, x[1]), f.nextSibling);
+      });
       J = findJourney(cv.journey);
       if (J && J.questions) QUESTIONS = J.questions;
       buildSteps();

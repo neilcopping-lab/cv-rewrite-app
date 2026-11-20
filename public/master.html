@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/account/account.css?v=20261118-wide">
-<link rel="stylesheet" href="/css/master.css?v=20261120-video">
+<link rel="stylesheet" href="/css/master.css?v=20261120-rec">
 </head>
 <body class="mcv-body">
 <header class="cq-head">
@@ -286,14 +286,17 @@
               <p class="small" id="v-now" aria-live="polite">Aim for 90 seconds. Two minutes is the ceiling.</p>
               <p><button type="button" class="btn btn-primary" id="v-go">Start the timer</button></p>
             </div>
-            <details class="v-cam" id="v-cam">
-              <summary>Practise on camera</summary>
-              <p class="v-private"><strong>This stays on your device.</strong> We never see it and nothing is uploaded. When you close this page it's gone, unless you save it.</p>
-              <video id="v-live" class="hidden" autoplay muted playsinline></video>
-              <video id="v-play" class="hidden" controls playsinline></video>
-              <p class="small" id="v-cam-msg" aria-live="polite"></p>
-              <p class="v-cam-acts"><button type="button" class="btn btn-ghost" id="v-cam-on">Turn on my camera</button> <button type="button" class="btn btn-primary hidden" id="v-rec">Record a practice take</button> <a class="btn btn-ghost hidden" id="v-save" download="my-90-seconds.webm">Save to my device</a> <button type="button" class="linkbtn hidden" id="v-del">Delete this take</button></p>
-            </details>
+          </div>
+
+          <div class="v-cam" id="v-cam">
+            <h3 class="sub">Record your video</h3>
+            <p class="small">When you can say it without your notes, record it here. Use your laptop, or your phone turned sideways. Record as many takes as you like and keep the best one.</p>
+            <p class="v-private"><strong>This stays on your device.</strong> We never see it and nothing is uploaded. When you close this page it's gone, unless you save it.</p>
+            <video id="v-live" class="hidden" autoplay muted playsinline></video>
+            <video id="v-play" class="hidden" controls playsinline></video>
+            <p class="small" id="v-cam-msg" aria-live="polite"></p>
+            <p class="v-cam-acts"><button type="button" class="btn btn-primary" id="v-cam-on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h11a2 2 0 0 1 2 2v1.5l4-2.5v10l-4-2.5V16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>Turn on my camera</button> <button type="button" class="btn btn-primary hidden" id="v-rec">● Start recording</button> <a class="btn btn-ghost hidden" id="v-save" download="my-90-seconds.mp4">Save to my device</a> <button type="button" class="linkbtn hidden" id="v-del">Delete this take</button> <button type="button" class="linkbtn hidden" id="v-cam-off">Turn camera off</button></p>
+            <p class="small">Once you've saved it, upload it to YouTube (set to Unlisted), Vimeo or a cloud drive, then paste the link below so it goes on your CV.</p>
           </div>
 
           <div class="v-safe">
@@ -349,7 +352,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="confetti" id="confetti" aria-hidden="true"></div>
 
-<script src="/js/master.js?v=20261120-video" defer></script>
+<script src="/js/master.js?v=20261120-rec" defer></script>
 <script src="/account/nav.js?v=20261118" defer></script>
 </body>
 </html>
