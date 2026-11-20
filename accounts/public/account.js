@@ -90,7 +90,7 @@
       ["loudspeaker", "guides", "dispatches", "apprenticeships"].forEach(function (t) { subs[t] = fd.get(t) === "on"; });
       return post("/api/account/signup", {
         name: fd.get("name"), email: fd.get("email"), password: fd.get("password"),
-        agree: fd.get("agree") === "on", over13: fd.get("over13") === "on", subscriptions: subs, next: next,
+        agree: fd.get("agree") === "on", over16: fd.get("over16") === "on", subscriptions: subs, next: next,
       }).then(function (j) {
         form.reset();
         // Swap the form for the message, so it's obvious the email has gone.

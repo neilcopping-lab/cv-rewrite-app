@@ -252,9 +252,9 @@ function mountAccounts(app, opts = {}) {
     if (!name) return res.status(400).json({ error: "Please tell us your name." });
     if (!isEmail(email)) return res.status(400).json({ error: "Please enter a valid email address." });
     if (password.length < 10) return res.status(400).json({ error: "Please choose a password of at least 10 characters." });
-    // Comquat is for people aged 13 and over: younger children can't agree to
-    // our emails or recordings for themselves (UK GDPR Article 8).
-    if (!req.body.over13) return res.status(400).json({ error: "Comquat is for people aged 13 or over. Please tick to confirm you're 13 or older." });
+    // Comquat is for people aged 16 and over (our choice, above the UK GDPR
+    // Article 8 floor of 13 for agreeing to emails and recordings).
+    if (!req.body.over16) return res.status(400).json({ error: "Comquat is for people aged 16 or over. Please tick to confirm you're 16 or older." });
     if (!req.body.agree) return res.status(400).json({ error: "Please confirm you've read how we look after your data." });
     const wanted = Object.fromEntries(TOPICS.map((t) => [t, Boolean(req.body.subscriptions && req.body.subscriptions[t])]));
     const { error } = await req.sb.auth.signUp({
