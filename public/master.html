@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/account/account.css?v=20261118-wide">
-<link rel="stylesheet" href="/css/master.css?v=20261119-confirm2">
+<link rel="stylesheet" href="/css/master.css?v=20261120-journeys">
 </head>
 <body class="mcv-body">
 <header class="cq-head">
@@ -21,9 +21,9 @@
 <section class="hero">
   <div class="hero-in">
     <div class="hero-text">
-      <p class="kicker">Your master CV</p>
-      <h1>Let's build your CV.</h1>
-      <p class="hero-lede">No experience? No problem. Talk or type your answers, tick what sounds like you, and watch your CV build itself as you go. It saves as you work, and only you can see it.</p>
+      <p class="kicker" id="hero-kicker">Your master CV</p>
+      <h1 id="hero-title">Let's build your CV.</h1>
+      <p class="hero-lede" id="hero-lede">Pick the one that sounds like you. Talk or type your answers, and watch your CV build itself as you go. It saves as you work, and only you can see it.</p>
       <ul class="hero-how">
         <li><span class="dot d1">1</span>Talk or type</li>
         <li><span class="dot d2">2</span>Tick what sounds like you</li>
@@ -46,7 +46,45 @@
 
   <p class="small" id="loading">Loading your CV…</p>
 
+  <!-- The front door: which one's you? -->
+  <section class="chooser hidden" id="chooser" aria-labelledby="ch-h">
+    <h2 id="ch-h">Which one's you?</h2>
+    <p class="small">Pick the one that fits. The questions, tips and examples change to suit you. You can switch later without losing anything you've said.</p>
+    <div class="ch-grid" id="ch-grid"></div>
+  </section>
+
+  <!-- Start from a CV you've got, or from scratch -->
+  <section class="starter hidden" id="starter" aria-labelledby="st-h">
+    <div class="st-choose" id="st-choose">
+      <h2 id="st-h">How do you want to start?</h2>
+      <div class="st-grid">
+        <div class="st-opt st-upload" id="st-upload">
+          <h3 id="up-title">Upload a CV you've got</h3>
+          <p id="up-text">Word or PDF. We'll fill in the builder for you and check it against the seven stops in The CV That Gets Read.</p>
+          <label class="file-pick"><input type="file" id="up-file" accept=".docx,.pdf,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"><span id="up-name">Choose my CV</span></label>
+          <button type="button" class="btn btn-primary" id="up-go" disabled>Read my CV</button>
+          <p class="small up-note">Your name and contact details are picked out here and never sent to the AI. The file is deleted as soon as we've read it.</p>
+          <p class="small" id="up-msg" aria-live="polite"></p>
+        </div>
+        <div class="st-opt st-fresh">
+          <h3>Start from scratch</h3>
+          <p>We'll ask you questions one at a time. Talk or type, whichever's easier.</p>
+          <button type="button" class="btn btn-ghost" id="st-fresh">Start from scratch</button>
+        </div>
+      </div>
+    </div>
+    <div class="st-result hidden" id="st-result" aria-live="polite">
+      <h2>Here's how your CV did</h2>
+      <p class="small" id="st-sum"></p>
+      <div class="health" id="health-import"></div>
+      <p class="small">Press <strong>Use this CV</strong> and we'll put it into the builder. Then work through the ones in red and amber first: each one takes you to the right step.</p>
+      <p class="st-acts"><button type="button" class="btn btn-primary" id="st-use">Use this CV</button> <button type="button" class="btn btn-ghost" id="st-cancel">Cancel</button></p>
+      <p class="small" id="st-replace" hidden>This replaces what's in your builder now, apart from your name and contact details.</p>
+    </div>
+  </section>
+
   <div id="builder" class="hidden">
+    <div class="jbar" id="jbar"><span>Building: <strong id="jname"></strong></span><button type="button" class="linkbtn" id="jchange">Change</button><button type="button" class="linkbtn" id="jupload">Upload a CV</button></div>
     <nav class="steps" id="steps" aria-label="Steps"></nav>
     <div class="msg hidden" id="msg" role="status"></div>
 
@@ -54,8 +92,8 @@
       <div class="col-form">
 
         <!-- 1. About you -->
-        <section class="step" data-step="1" aria-labelledby="h1s">
-          <h2 id="h1s"><span class="snum">1</span> About you</h2>
+        <section class="step" data-key="about" aria-labelledby="h1s">
+          <h2 id="h1s"><span class="snum"></span> About you</h2>
           <p class="tip">Name at the top, how to reach you right under it. Recruiters shouldn't have to hunt.</p>
           <div class="mcv-grid">
             <div><label for="f-name">Your name</label><input type="text" id="f-name" data-path="header.name" autocomplete="name" placeholder="e.g. Maya Okafor"></div>
@@ -70,9 +108,9 @@
         </section>
 
         <!-- 2. Your story -->
-        <section class="step" data-step="2" aria-labelledby="h2s">
-          <h2 id="h2s"><span class="snum">2</span> Your story</h2>
-          <p class="tip">This is the first thing they read about you. Be a person, not a press release. Answer the questions in your own words. <strong class="voice-only">Typing not your thing? Press the microphone and just talk.</strong> School, college, caring for someone, sport, volunteering and the things you love all count.</p>
+        <section class="step" data-key="story" aria-labelledby="h2s">
+          <h2 id="h2s"><span class="snum"></span> Your story</h2>
+          <p class="tip"><span data-tip="story"></span> <strong class="voice-only">Typing not your thing? Press the microphone and just talk.</strong></p>
 
           <div class="style-box">
             <h3 class="sub">How should your CV sound?</h3>
@@ -106,11 +144,16 @@
         </section>
 
         <!-- 3. Strengths -->
-        <section class="step" data-step="3" aria-labelledby="h3s">
-          <h2 id="h3s"><span class="snum">3</span> Key skills and behaviours</h2>
+        <section class="step" data-key="strengths" aria-labelledby="h3s">
+          <h2 id="h3s"><span class="snum"></span> Key skills and behaviours</h2>
           <p class="tip">Tap the ones that sound like you. Each one becomes a strength on your CV, written for you. Be honest: the best CVs sound like the person. Eight to twelve works best.</p>
           <p class="beh-count" id="beh-count" aria-live="polite">Nothing picked yet</p>
           <div id="behaviours"></div>
+          <div class="proofs hidden" id="proofs">
+            <h3 class="sub">Now prove it</h3>
+            <p class="tip">For each strength you ticked, tell us about a time you did it<span class="voice-only">, typed or spoken</span>. Your example goes on your CV in place of ours, and that's what makes a recruiter believe it.</p>
+            <div id="proof-list"></div>
+          </div>
           <h3 class="sub">Skills you can prove</h3>
           <p class="tip">Name the skill, then one line that proves it: what you did, and what came of it. "Cash handling: cashed up the till every Saturday for a year" beats "good with money".</p>
           <details class="ideas">
@@ -132,9 +175,9 @@
         </section>
 
         <!-- 4. Experience -->
-        <section class="step" data-step="4" aria-labelledby="h4s">
-          <h2 id="h4s"><span class="snum">4</span> Experience</h2>
-          <p class="tip first-cv"><strong>First CV, or no paid work yet?</strong> That's fine. Saturday jobs, work experience, volunteering, caring for family, running a club or team, a fundraiser or a big project at school or college all count. "Organised a bake sale that raised £240 for the hospice" is real experience.</p>
+        <section class="step" data-key="experience" aria-labelledby="h4s">
+          <h2 id="h4s"><span class="snum"></span> Experience</h2>
+          <p class="tip" data-tip="experience"></p>
           <p class="tip">Latest first. Just tell us about it in your own words<span class="voice-only">, typed or spoken</span>, then press <strong>Turn this into CV points</strong>. Or write the points yourself.</p>
           <details class="ideas">
             <summary>Stuck? Ideas for what to say</summary>
@@ -150,12 +193,13 @@
           </details>
           <div id="list-experience"></div>
           <button type="button" class="add-btn" data-add="experience">+ Add another job or experience</button>
+          <button type="button" class="add-btn add-break hidden" id="add-break">+ Add a career break</button>
         </section>
 
         <!-- 5. Education -->
-        <section class="step" data-step="5" aria-labelledby="h5s">
-          <h2 id="h5s"><span class="snum">5</span> Education and training</h2>
-          <p class="tip">Where, what, when and, if they're good, what you got. Certificates and short courses count too. On a first CV, this is where you make your case, so use it.</p>
+        <section class="step" data-key="education" aria-labelledby="h5s">
+          <h2 id="h5s"><span class="snum"></span> Education and training</h2>
+          <p class="tip">Where, what, when and, if they're good, what you got. Certificates and short courses count too. <span data-tip="education"></span></p>
           <details class="ideas">
             <summary>Stuck? Ideas for what counts</summary>
             <ul>
@@ -174,8 +218,8 @@
         </section>
 
         <!-- 6. Interests -->
-        <section class="step" data-step="6" aria-labelledby="h6s">
-          <h2 id="h6s"><span class="snum">6</span> Interests</h2>
+        <section class="step" data-key="interests" aria-labelledby="h6s">
+          <h2 id="h6s"><span class="snum"></span> Interests</h2>
           <p class="tip">Underrated and powerful. Interests are how a stranger finds a reason to like you before you've met. Be specific ("netball for a local team" beats "sport") and be real. Three to six is plenty, one per line.</p>
           <p class="small" style="margin:0 0 6px">Tap an idea to add it, then make it yours: say which team, which games, which cause.</p>
           <div class="chips" id="interest-ideas"></div>
@@ -184,9 +228,15 @@
         </section>
 
         <!-- 7. Design and download -->
-        <section class="step" data-step="7" aria-labelledby="h7s" id="design-card">
-          <h2 id="h7s"><span class="snum">7</span> Pick a look and download</h2>
+        <section class="step" data-key="download" aria-labelledby="h7s" id="design-card">
+          <h2 id="h7s"><span class="snum"></span> Pick a look and download</h2>
           <p class="tip">Pick the look you like best. You'll see it straight away in the preview. The PDF is ready to send. Want to change the wording yourself? Download Word. Every download is saved in <a href="/account/me.html">My documents</a>.</p>
+          <div class="health-box">
+            <h3 class="sub">Your CV health check</h3>
+            <p class="small" id="health-sum">Checked against the seven stops in <a href="https://the-common-people.com/guide-cv.html" target="_blank" rel="noopener">The CV That Gets Read</a>. It updates as you go.</p>
+            <div class="health" id="health-live"></div>
+          </div>
+          <h3 class="sub">Pick a look</h3>
           <div class="fresh-grid" id="fresh-grid"></div>
           <label class="confirm-row" for="confirmTrue"><input type="checkbox" id="confirmTrue" autocomplete="off"><span>I've read this CV from top to bottom. Everything in it is true and accurate, and I'll fix anything that isn't before I send it to anyone.</span></label>
           <div class="dl-row">
@@ -242,7 +292,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <div class="confetti" id="confetti" aria-hidden="true"></div>
 
-<script src="/js/master.js?v=20261119-confirm2" defer></script>
+<script src="/js/master.js?v=20261120-journeys" defer></script>
 <script src="/account/nav.js?v=20261118" defer></script>
 </body>
 </html>

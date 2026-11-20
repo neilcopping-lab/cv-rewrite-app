@@ -227,3 +227,82 @@ details.ideas li{margin:0 0 4px}
 /* CV Builder lead colour: purple to pink, matching its My account card */
 .hero,.mcv-main,.layout{--kq:#7C3AED;--coral:#E8467C;--peel:#F3ECFF}
 .hero:after{background:#FF9BC4}
+
+/* ---- the three journeys: front door ---- */
+.chooser{margin:28px 0 10px}
+.chooser h2{font-size:30px;margin:0 0 6px}
+.ch-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:16px}
+@media (max-width:860px){.ch-grid{grid-template-columns:1fr}}
+.ch-card{display:flex;flex-direction:column;gap:10px;text-align:left;font:inherit;color:var(--ink);background:#fff;border:2px solid var(--pith);border-radius:22px;padding:22px 22px 20px;cursor:pointer;box-shadow:0 10px 30px rgba(23,25,28,.06);transition:transform .15s,border-color .15s,box-shadow .15s;position:relative;overflow:hidden}
+.ch-card:before{content:"";position:absolute;left:0;right:0;top:0;height:8px}
+.ch-card.c1:before{background:linear-gradient(90deg,#FF8A1F,#F25C54)}
+.ch-card.c2:before{background:linear-gradient(90deg,#7C3AED,#E8467C)}
+.ch-card.c3:before{background:linear-gradient(90deg,#12A88A,#2B7BE4)}
+.ch-card:hover,.ch-card:focus-visible{transform:translateY(-3px);border-color:var(--kq);box-shadow:0 16px 36px rgba(23,25,28,.12);outline:none}
+.ch-card.sel{border-color:var(--ink)}
+.ch-kick{font-size:13px;font-weight:700;color:var(--muted);margin-top:4px}
+.ch-card strong{font-family:'Bricolage Grotesque',sans-serif;font-size:24px;line-height:1.1}
+.ch-text{font-size:15.5px;line-height:1.5;color:#3F444B;flex:1}
+.ch-go{font-weight:800;color:var(--kq)}
+
+/* ---- start from a CV you've got ---- */
+.starter{background:#fff;border:1px solid var(--pith);border-radius:20px;padding:22px 24px;margin:18px 0 6px;box-shadow:0 10px 30px rgba(23,25,28,.06)}
+.starter h2{font-size:25px;margin:0 0 12px}
+.st-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.st-grid{grid-template-columns:1fr}}
+.st-opt{border:2px solid var(--pith);border-radius:16px;padding:16px 18px;background:var(--cream)}
+.st-opt.lead{border-color:var(--kq);background:#fff;box-shadow:0 0 0 4px rgba(124,58,237,.1)}
+.st-opt h3{font-family:'Bricolage Grotesque',sans-serif;font-size:19px;margin:0 0 6px}
+.st-opt p{margin:0 0 12px;font-size:15px}
+.file-pick{display:block;margin:0 0 10px;cursor:pointer}
+.file-pick input{position:absolute;opacity:0;width:1px;height:1px}
+.file-pick span{display:block;border:2px dashed var(--kq);border-radius:12px;padding:12px 14px;font-weight:700;background:#fff;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-pick input:focus-visible+span{box-shadow:0 0 0 4px rgba(124,58,237,.25)}
+.up-note{margin-top:10px!important}
+.st-acts{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 6px}
+.jbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:18px 0 0;font-size:15px}
+.jbar strong{font-weight:800}
+
+/* ---- health check ---- */
+.health{display:grid;gap:8px}
+.hs{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--pith);border-radius:14px;padding:10px 14px;background:#fff}
+.hs-dot{width:14px;height:14px;border-radius:50%;flex:0 0 14px;margin-top:5px}
+.hs.green .hs-dot{background:#1F9D55}.hs.amber .hs-dot{background:#F2A007}.hs.red .hs-dot{background:#E5484D}.hs.next .hs-dot{background:#2B7BE4}
+.hs.red{border-color:#F7C5C6;background:#FFF6F6}.hs.amber{border-color:#FBE2A8;background:#FFFBEF}
+.hs-body{min-width:0}
+.hs-body p{margin:3px 0 4px;font-size:14.5px}
+.hs-rag{font-size:13px;font-weight:700;color:var(--muted)}
+.hs-acts{display:flex;gap:14px;flex-wrap:wrap;font-size:14px}
+.health-box{margin:0 0 6px}
+.hstrip{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:10px 0 0}
+.hstrip:empty{display:none}
+.hstrip-lab{font-size:13px;font-weight:700;color:var(--muted)}
+.hchip{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:13px;font-weight:700;border:1px solid var(--pith);background:#fff;border-radius:999px;padding:4px 10px;cursor:pointer;color:var(--ink)}
+.hchip i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.hchip.green i{background:#1F9D55}.hchip.amber i{background:#F2A007}.hchip.red i{background:#E5484D}
+
+/* ---- from the guide ---- */
+.guide-card{border:2px solid #CDE3F7;background:#F2F8FE;border-radius:14px;padding:12px 16px;margin:0 0 14px;font-size:14.5px}
+.guide-card .gc-kick{display:block;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#2B7BE4;margin-bottom:2px}
+.guide-card strong{font-family:'Bricolage Grotesque',sans-serif;font-size:17px}
+.guide-card p{margin:4px 0 6px}
+
+/* ---- prove it ---- */
+.proofs{margin-top:18px}
+.proof{border:2px solid var(--pith);border-radius:14px;padding:12px 14px;margin:0 0 10px;background:#fff}
+.proof label strong{font-size:15.5px}
+.proof label small{font-weight:400}
+
+/* ---- follow-up questions ---- */
+.ans-acts{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:6px}
+.ans-acts .mic-row{margin:0}
+.fu:empty{display:none}
+.fu{margin:10px 0 4px}
+.heard{border-left:4px solid var(--mint);background:#E9FBF6;border-radius:0 12px 12px 0;padding:10px 14px;margin:0 0 10px}
+.heard ul{margin:6px 0 8px;padding-left:20px}
+.heard-acts{display:flex;gap:8px;flex-wrap:wrap}
+.fq{border:2px solid var(--kq);border-radius:14px;padding:12px 14px;background:#fff}
+.fq label{font-weight:700;margin:4px 0 8px!important}
+.fq-acts{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.small.ok{color:#1F6B45;font-weight:700}
+.private-note{font-size:14px;background:#F4F1FF;border-radius:10px;padding:8px 12px;margin:10px 0 0}

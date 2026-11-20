@@ -8,6 +8,8 @@
   var saveTimer = null, saving = false, again = false, dirty = false;
   var DESIGNS = { fresh: [], word: [], designer: [] }, kind = "word", writeUp = true, voice = true;
   var BANNED = [], BEHAVIOURS = [];
+  // The three journeys (lib/journeys.js), the one they picked, and the health check.
+  var CFG = { journeys: [], guide: {} }, J = null, HEALTH = null;
 
   // ---- helpers -----------------------------------------------------------------
   function get(obj, path) { return path.split(".").reduce(function (o, k) { return o == null ? o : o[k]; }, obj); }
@@ -62,15 +64,30 @@
   }
 
   // ---- steps and progress -------------------------------------------------------
-  var STEPS = [
-    { n: 1, label: "About you", done: function () { var h = cv.header || {}, c = h.contacts || {}; return !!(h.name && (c.email || c.phone)); }, cheer: "Nice one. You're on the page." },
-    { n: 2, label: "Your story", done: function () { return (cv.personalStatement || "").trim().length >= 60; }, cheer: "Brilliant. Your story's on your CV." },
-    { n: 3, label: "Strengths", done: function () { return (cv.behaviours || []).length + (cv.skills || []).filter(function (s) { return s.skill && s.skill.trim(); }).length >= 3; }, cheer: "Great picks. Those are on your CV now." },
-    { n: 4, label: "Experience", done: function () { return (cv.experience || []).some(function (r) { return (r.title || "").trim() || (r.company || "").trim(); }); }, cheer: "Experience added. That all counts." },
-    { n: 5, label: "Education", done: function () { return (cv.education || []).some(function (e) { return (e.qualification || "").trim() || (e.institution || "").trim(); }); }, cheer: "Education sorted." },
-    { n: 6, label: "Interests", done: function () { return lineCount(cv.interests) >= 1; }, cheer: "Now they've got a reason to like you." },
-    { n: 7, label: "Look and download", done: function () { return false; } },
-  ];
+  // Each journey puts the same seven steps in its own order (lib/journeys.js).
+  var STEP_DEFS = {
+    about: { label: "About you", done: function () { var h = cv.header || {}, c = h.contacts || {}; return !!(h.name && (c.email || c.phone)); }, cheer: "Nice one. You're on the page." },
+    story: { label: "Your story", done: function () { return (cv.personalStatement || "").trim().length >= 60; }, cheer: "Brilliant. Your story's on your CV." },
+    strengths: { label: "Strengths", done: function () { return (cv.behaviours || []).length + (cv.skills || []).filter(function (s) { return s.skill && s.skill.trim(); }).length >= 3; }, cheer: "Great picks. Those are on your CV now." },
+    experience: { label: "Experience", done: function () { return (cv.experience || []).some(function (r) { return (r.title || "").trim() || (r.company || "").trim(); }); }, cheer: "Experience added. That all counts." },
+    education: { label: "Education", done: function () { return (cv.education || []).some(function (e) { return (e.qualification || "").trim() || (e.institution || "").trim(); }); }, cheer: "Education sorted." },
+    interests: { label: "Interests", done: function () { return lineCount(cv.interests) >= 1; }, cheer: "Now they've got a reason to like you." },
+    download: { label: "Look and download", done: function () { return false; } },
+  };
+  var STEPS = [];
+  function buildSteps() {
+    var order = (J && J.order) || ["about", "story", "strengths", "experience", "education", "interests", "download"];
+    STEPS = order.map(function (k, i) {
+      var d = STEP_DEFS[k];
+      return { n: i + 1, key: k, label: (J && J.labels && J.labels[k]) || d.label, done: d.done, cheer: d.cheer };
+    });
+    STEPS.forEach(function (st) {
+      var sec = document.querySelector('.step[data-key="' + st.key + '"]'); if (!sec) return;
+      var num = sec.querySelector(".snum"); if (num) num.textContent = String(st.n);
+      var h = sec.querySelector("h2"); if (h && (st.key === "experience" || st.key === "education")) h.lastChild.textContent = " " + (st.key === "education" ? st.label + " and training" : st.label);
+    });
+  }
+  var stepOf = function (key) { for (var i = 0; i < STEPS.length; i++) if (STEPS[i].key === key) return STEPS[i].n; return 1; };
   var wasDone = {};
   function renderSteps() {
     var nav = $("steps"); nav.textContent = "";
@@ -82,23 +99,24 @@
     });
   }
   function refreshProgress() {
-    var content = STEPS.slice(0, 6), done = content.filter(function (s) { return s.done(); }).length;
+    var content = STEPS.filter(function (s) { return s.key !== "download"; }), done = content.filter(function (s) { return s.done(); }).length;
     var pct = Math.round((done / content.length) * 100);
     $("ring-pct").textContent = pct + "%";
     $("ring-fg").style.strokeDashoffset = String(314.16 * (1 - pct / 100));
     content.forEach(function (s) {
       var now = s.done();
-      if (loaded && now && !wasDone[s.n]) {
+      if (loaded && now && !wasDone[s.key]) {
         toast(done === content.length ? "That's everything. Your CV is ready to download." : s.cheer);
         confetti();
       }
-      wasDone[s.n] = now;
+      wasDone[s.key] = now;
     });
     renderSteps();
   }
   function go(n) {
     step = Math.max(1, Math.min(STEPS.length, n));
-    document.querySelectorAll(".step").forEach(function (s) { s.classList.toggle("on", Number(s.getAttribute("data-step")) === step); });
+    var key = STEPS[step - 1].key;
+    document.querySelectorAll(".step").forEach(function (s) { s.classList.toggle("on", s.getAttribute("data-key") === key); });
     $("prev").style.visibility = step === 1 ? "hidden" : "visible";
     var nx = $("next");
     if (step === STEPS.length) nx.style.visibility = "hidden";
@@ -128,6 +146,7 @@
       .then(function (j) {
         var t = new Date(j.updatedAt);
         status("Saved " + t.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }));
+        if (j.health) { HEALTH = j.health; renderHealthAll(); }
       })
       .catch(function (e) { dirty = true; status("Not saved", true); say(e.message + " We'll try again when you next type.", false); })
       .then(function () { saving = false; if (again) { again = false; save(); } });
@@ -137,7 +156,7 @@
 
   // ---- talk instead of type ----------------------------------------------------------
   // Records a voice answer, turns it into text, and adds it to the box.
-  function mic(ta, label) {
+  function mic(ta, label, after) {
     if (!voice) return el("span", { class: "hidden" });
     var btn = el("button", { type: "button", class: "btn-mic", "aria-label": "Record your answer" });
     var idle = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15a3 3 0 003-3V6a3 3 0 10-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.9V22h2v-3.1A7 7 0 0019 12h-2z"/></svg>' + (label || "Say it instead");
@@ -168,6 +187,7 @@
               ta.value = (cur ? cur + (/[.!?]$/.test(cur) ? " " : ". ") : "") + text.trim();
               ta.dispatchEvent(new Event("input", { bubbles: true }));
               st.textContent = "Got it. Have a read and change anything we misheard.";
+              if (typeof after === "function") after();
             })
             .catch(function (e) { st.className = "mic-status err"; st.textContent = /type/i.test(e.message) ? e.message : e.message + " You can type instead."; })
             .then(function () { btn.disabled = false; });
@@ -186,11 +206,16 @@
   }
 
   // ---- simple fields -----------------------------------------------------------
+  function fillFields() {
+    document.querySelectorAll("[data-path]").forEach(function (input) {
+      var path = input.getAttribute("data-path"), v = get(cv, path);
+      input.value = path === "interests" ? asLines(v) : (v || "");
+    });
+  }
   function bindFields() {
+    fillFields();
     document.querySelectorAll("[data-path]").forEach(function (input) {
       var path = input.getAttribute("data-path");
-      var v = get(cv, path);
-      input.value = path === "interests" ? asLines(v) : (v || "");
       input.addEventListener("input", function () { set(cv, path, input.value); changed(); });
     });
   }
@@ -213,6 +238,8 @@
 
   // ---- personal statement: one question at a time ----------------------------------
   // Built on The Com'mon People CV guide ("be a person, not a press release").
+  // Each journey has its own questions (lib/journeys.js); these are the
+  // originals, used only until the journey's questions arrive.
   var QUESTIONS = [
     { id: "story", title: "Your story so far: how did you get here?",
       think: "Where are you right now, and what led you here? A first CV is a story that's just starting, and that's a strength.",
@@ -246,7 +273,63 @@
       example: "Most weekends you'll find me on the touchline coaching my brother's under-9s." },
   ];
   var qi = 0;
+  var spoken = function (q) { return !q.private; };
   var answered = function (q) { return !!(cv.statementAnswers && String(cv.statementAnswers[q.id] || "").trim()); };
+  // ---- "Here's what I heard" and one follow-up question --------------------------------
+  // After an answer, the AI plays back the facts it picked up and asks one short
+  // question to draw out the detail a recruiter wants. It never answers for them.
+  // Whatever they say to the follow-up is added to their own answer.
+  var asked = {};
+  function followUpPanel(opts) {
+    // opts: { key, question, getAnswer, addToAnswer, context, focusAnswer, btn, box }
+    var panel = opts.box;
+    function run(auto) {
+      var ans = String(opts.getAnswer() || "").trim();
+      if (ans.split(/\s+/).length < 5) { if (!auto) { panel.textContent = ""; panel.appendChild(el("p", { class: "small", text: "Say a bit more first, then we'll ask you a follow-up." })); } return; }
+      if (auto && asked[opts.key] === ans) return;
+      asked[opts.key] = ans;
+      panel.textContent = ""; panel.appendChild(el("p", { class: "small fu-wait", text: "Listening back to what you said…" }));
+      if (opts.btn) opts.btn.disabled = true;
+      postJSON("/api/master/write", { task: "followup", journey: cv.journey, questionId: opts.key, question: opts.question, answer: ans, context: opts.context || "" })
+        .then(function (j) { show(j); })
+        .catch(function (e) { panel.textContent = ""; panel.appendChild(el("p", { class: "small", text: e.message })); })
+        .then(function () { if (opts.btn) opts.btn.disabled = false; });
+    }
+    function show(j) {
+      panel.textContent = "";
+      if ((j.heard || []).length) {
+        var ul = el("ul"); j.heard.forEach(function (h) { ul.appendChild(el("li", { text: h })); });
+        var yes = el("button", { type: "button", class: "chip", text: "That's right" });
+        var no = el("button", { type: "button", class: "chip", text: "Not quite" });
+        var acts = el("div", { class: "heard-acts" }, [yes, no]);
+        yes.addEventListener("click", function () { acts.replaceWith(el("p", { class: "small ok", text: "Great. That's going on your CV." })); });
+        no.addEventListener("click", function () { acts.replaceWith(el("p", { class: "small", text: "Change anything in your answer above, or talk again. It's your words that go on the CV, not ours." })); opts.focusAnswer(); });
+        panel.appendChild(el("div", { class: "heard" }, [el("strong", { text: "Here's what I heard" }), ul, acts]));
+      }
+      if (j.followUp) {
+        var fid = "fu-" + opts.key.replace(/[^\w-]/g, "");
+        var fta = el("textarea", { id: fid, rows: "2", placeholder: voice ? "Type here, or press the microphone and just talk." : "Type your answer here." });
+        var add = el("button", { type: "button", class: "btn btn-primary small-btn", text: "Add to my answer" });
+        var skip = el("button", { type: "button", class: "linkbtn", text: "Skip this one" });
+        add.addEventListener("click", function () {
+          var t = fta.value.trim(); if (!t) { fta.focus(); return; }
+          opts.addToAnswer(t);
+          panel.textContent = ""; panel.appendChild(el("p", { class: "small ok", text: "Added. That's the kind of detail recruiters look for." }));
+          toast("Added to your answer.");
+        });
+        skip.addEventListener("click", function () { panel.textContent = ""; });
+        panel.appendChild(el("div", { class: "fq" }, [el("strong", { text: "One more thing" }), el("label", { for: fid, text: j.followUp }), fta, mic(fta), el("div", { class: "fq-acts" }, [add, skip])]));
+      }
+      if (!(j.heard || []).length && !j.followUp) panel.appendChild(el("p", { class: "small ok", text: "That's a really full answer. Nothing to add." }));
+    }
+    return run;
+  }
+  function addTo(cur, extra) {
+    cur = String(cur || "").trim(); extra = String(extra || "").trim();
+    if (!cur) return extra;
+    return cur + (/[.!?]$/.test(cur) ? " " : ". ") + extra.charAt(0).toUpperCase() + extra.slice(1);
+  }
+
   function renderQuestion() {
     var box = $("qcard"), q = QUESTIONS[qi];
     box.textContent = "";
@@ -293,7 +376,18 @@
     box.appendChild(chips);
     box.appendChild(el("label", { for: id, class: "sr-only", text: q.title }));
     box.appendChild(ta);
-    box.appendChild(mic(ta));
+    var fuBox = el("div", { class: "fu", "aria-live": "polite" }), fuBtn = null, runFu = null;
+    if (writeUp && !q.private) {
+      fuBtn = el("button", { type: "button", class: "btn btn-ghost small-btn fu-btn", text: "What did you hear?" });
+      runFu = followUpPanel({ key: q.id, question: q.title, box: fuBox, btn: fuBtn,
+        getAnswer: function () { return ta.value; },
+        addToAnswer: function (t) { ta.value = addTo(ta.value, t); ta.dispatchEvent(new Event("input", { bubbles: true })); },
+        focusAnswer: function () { ta.focus(); } });
+      fuBtn.addEventListener("click", function () { runFu(false); });
+    }
+    box.appendChild(el("div", { class: "ans-acts" }, [mic(ta, null, runFu ? function () { runFu(true); } : null), fuBtn]));
+    box.appendChild(fuBox);
+    if (q.private) box.appendChild(el("p", { class: "private-note", text: "Just for you. This answer stays in your account. It never goes on your CV and is never sent to the AI." }));
     box.appendChild(el("p", { class: "eg-line", text: "For example: \"" + q.example + "\"" }));
     box.appendChild(el("div", { class: "qnav" }, [prev, next]));
   }
@@ -314,7 +408,7 @@
     box.scrollIntoView({ behavior: "smooth", block: "center" });
   }
   $("build").addEventListener("click", function () {
-    var b = $("build"), parts = QUESTIONS.map(function (q) { return tidySentence(cv.statementAnswers && cv.statementAnswers[q.id]); }).filter(Boolean);
+    var b = $("build"), parts = QUESTIONS.filter(spoken).map(function (q) { return tidySentence(cv.statementAnswers && cv.statementAnswers[q.id]); }).filter(Boolean);
     if (!parts.length) { $("build-msg").textContent = "Answer at least one question first."; return; }
     var text = parts.join(" "), cur = $("f-profile").value.trim();
     if (cur && cur !== text && !sure(b, "Replace my statement?", "Just join my answers together")) { $("build-msg").textContent = "This will replace what's in your statement box. Press again to go ahead."; return; }
@@ -322,12 +416,13 @@
   });
   $("write-stmt").addEventListener("click", function () {
     var b = $("write-stmt"), base = b.innerHTML;
-    if (!QUESTIONS.some(answered) && !$("f-profile").value.trim()) { $("build-msg").textContent = "Answer at least one question first, by typing or talking."; return; }
+    if (!QUESTIONS.filter(spoken).some(answered) && !$("f-profile").value.trim()) { $("build-msg").textContent = "Answer at least one question first, by typing or talking."; return; }
     var cur = $("f-profile").value.trim();
     if (cur && !b.dataset.sure) { b.dataset.base = base; sure(b, "Replace my statement?", base); $("build-msg").textContent = "This will replace what's in your statement box. Press again to go ahead."; return; }
     delete b.dataset.sure;
     b.disabled = true; b.textContent = "Writing it up…"; $("build-msg").textContent = "";
-    postJSON("/api/master/write", { task: "statement", answers: cv.statementAnswers || {}, current: cur, targetRole: (cv.header || {}).targetRole || "", style: cv.writingStyle, styleSample: cv.styleSample || "" })
+    var ans = {}; Object.keys(cv.statementAnswers || {}).forEach(function (k) { if (!QUESTIONS.some(function (q) { return q.id === k && q.private; })) ans[k] = cv.statementAnswers[k]; });
+    postJSON("/api/master/write", { task: "statement", journey: cv.journey, answers: ans, current: cur, targetRole: (cv.header || {}).targetRole || "", style: cv.writingStyle, styleSample: cv.styleSample || "" })
       .then(function (j) { putStatement(j.statement, "Here you go. Read it out loud: if anything doesn't sound like you, change it. It's your CV."); toast("Written up. Have a read."); })
       .catch(function (e) { $("build-msg").textContent = e.message; })
       .then(function () { b.disabled = false; b.innerHTML = base; });
@@ -366,19 +461,64 @@
           cv.behaviours = [];
           groups.forEach(function (gg) { gg.items.forEach(function (ii) { if (picked.has(ii.id)) cv.behaviours.push(ii.id); }); });
           label.classList.remove("pop"); void label.offsetWidth; if (input.checked) label.classList.add("pop");
-          count(); changed();
+          count(); changed(); renderProofs();
         });
         grid.appendChild(label);
       });
       box.appendChild(el("div", { class: "beh-group" }, [el("h4", { text: g.title }), grid]));
     });
     count();
+    renderProofs();
+  }
+
+  // "Now prove it": their own example behind each strength they ticked. It goes
+  // on the CV in place of the ready-written line.
+  var TITLES = {};
+  function renderProofs() {
+    BEHAVIOURS.forEach(function (g) { g.items.forEach(function (it) { TITLES[it.id] = it; }); });
+    var ids = (cv.behaviours || []).filter(function (id) { return TITLES[id]; });
+    $("proofs").classList.toggle("hidden", !ids.length);
+    var box = $("proof-list"), had = {};
+    box.querySelectorAll(".proof").forEach(function (r) { had[r.getAttribute("data-id")] = r; });
+    if (!cv.behaviourProof || typeof cv.behaviourProof !== "object") cv.behaviourProof = {};
+    box.textContent = "";
+    ids.forEach(function (id) {
+      if (had[id]) { box.appendChild(had[id]); return; }
+      var it = TITLES[id], fid = "proof-" + id;
+      var ta = el("textarea", { id: fid, rows: "2", placeholder: "When did you do that, and what happened? e.g. \"I spotted a mistake on a customer's bill before it went out\"" });
+      ta.value = cv.behaviourProof[id] || "";
+      ta.addEventListener("input", function () { cv.behaviourProof[id] = ta.value; changed(); });
+      var out = el("span", { class: "small", "aria-live": "polite" });
+      var tidyBtn = el("button", { type: "button", class: "btn btn-spark small-btn", text: "Tidy it into one line" });
+      tidyBtn.addEventListener("click", function () {
+        var words = ta.value.trim();
+        if (words.split(/\s+/).length < 4) { out.textContent = "Tell us a bit more first: when did you do that, and what happened?"; return; }
+        tidyBtn.disabled = true; out.textContent = "Writing it up…";
+        postJSON("/api/master/write", { task: "proof", strength: it.title, words: words, style: cv.writingStyle, styleSample: cv.styleSample || "" })
+          .then(function (j) { ta.value = j.proof; cv.behaviourProof[id] = j.proof; changed(); out.textContent = "Done. Check it says what you meant."; })
+          .catch(function (e) { out.textContent = e.message; })
+          .then(function () { tidyBtn.disabled = false; });
+      });
+      if (!writeUp) tidyBtn.classList.add("hidden");
+      var row = el("div", { class: "proof", "data-id": id }, [
+        el("label", { for: fid }, [el("strong", { text: it.title }), el("small", { text: " You ticked: \u201c" + it.tick + "\u201d" })]),
+        ta,
+        el("div", { class: "about-acts" }, [mic(ta, "Tell us"), tidyBtn, out]),
+      ]);
+      box.appendChild(row);
+    });
   }
 
   // ---- repeating lists ---------------------------------------------------------
   var LISTS = {
     experience: {
-      label: function (r, i) { return r.title || r.company ? [r.title, r.company].filter(Boolean).join(", ") : "Job or experience " + (i + 1); },
+      label: function (r, i) { return r.kind === "break" ? (r.title || "Career break") + (r.dates ? ", " + r.dates : "") : r.title || r.company ? [r.title, r.company].filter(Boolean).join(", ") : "Job or experience " + (i + 1); },
+      breakFields: [
+        ["title", "What to call it", "text", "e.g. Career break, or Time out to raise my family"], ["dates", "When", "text", "e.g. 2021 to 2025"],
+        ["about", "What filled that time? Only share what you're happy to", "about", "Raising a family, caring, volunteering, a course, helping a friend's business…"],
+        ["responsibilities", "What you did in that time", "lines", "One thing per line"],
+        ["achievements", "Anything you're proud of from that time", "lines", "One per line. Leave it blank if you like"],
+      ],
       blank: function () { return { title: "", company: "", location: "", dates: "", about: "", responsibilities: "", achievements: "", reasonForLeaving: "" }; },
       fields: [
         ["title", "Job title or role", "text", "e.g. Café assistant, or Volunteer"], ["company", "Where", "text", "e.g. The Corner Café"],
@@ -429,7 +569,7 @@
         el("button", { type: "button", class: "icon-btn del", text: "Remove" }),
       ]);
       var grid = el("div", { class: "mcv-grid" });
-      spec.fields.forEach(function (f) {
+      (row.kind === "break" && spec.breakFields ? spec.breakFields : spec.fields).forEach(function (f) {
         var id = name + "-" + i + "-" + f[0];
         var multi = f[2] === "lines" || f[2] === "about";
         var input = multi ? el("textarea", { id: id, rows: f[2] === "about" ? "3" : "4" }) : el("input", { type: "text", id: id });
@@ -445,7 +585,18 @@
           var wb = el("button", { type: "button", class: "btn btn-spark small-btn", html: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l1.8 5.4L19 9l-5.2 1.6L12 16l-1.8-5.4L5 9l5.2-1.6zM19 14l.9 2.6L22.5 17l-2.6.9L19 20.5l-.9-2.6-2.6-.9 2.6-.4z"/></svg>Turn this into CV points' });
           wb.addEventListener("click", function () { writeUpJob(row, i, wb, out); });
           if (!writeUp) wb.classList.add("hidden");
-          grid.appendChild(el("div", { class: "about-box" }, [el("label", { for: id, text: f[1] }), input, mic(input), el("div", { class: "about-acts" }, [wb, out])]));
+          var fuBox = el("div", { class: "fu", "aria-live": "polite" }), fuBtn = null, runFu = null;
+          if (writeUp) {
+            fuBtn = el("button", { type: "button", class: "btn btn-ghost small-btn fu-btn", text: "Ask me a follow-up" });
+            runFu = followUpPanel({ key: "job-" + i + "-" + (row.title || ""), box: fuBox, btn: fuBtn,
+              question: row.kind === "break" ? "Tell us about your time away, and what filled it" : "Tell us about your time as " + (row.title || "this role") + (row.company ? " at " + row.company : "") + ": what did you do, and what came of it?",
+              context: row.kind === "break" ? "This is about a career break. Ask only about what they did or learned, never about why." : "",
+              getAnswer: function () { return input.value; },
+              addToAnswer: function (t) { input.value = addTo(input.value, t); input.dispatchEvent(new Event("input", { bubbles: true })); },
+              focusAnswer: function () { input.focus(); } });
+            fuBtn.addEventListener("click", function () { runFu(false); });
+          }
+          grid.appendChild(el("div", { class: "about-box" }, [el("label", { for: id, text: f[1] }), input, mic(input, null, runFu ? function () { runFu(true); } : null), el("div", { class: "about-acts" }, [wb, fuBtn, out]), fuBox]));
           return;
         }
         grid.appendChild(el("div", { class: multi ? "full" : "" }, [el("label", { for: id, text: f[1] }), input]));
@@ -467,6 +618,12 @@
     });
     if (focusIndex != null) { var first = box.querySelectorAll(".item")[focusIndex]; if (first) first.querySelector("input,textarea").focus(); }
   }
+  $("add-break").addEventListener("click", function () {
+    var row = LISTS.experience.blank(); row.kind = "break"; row.title = "Career break";
+    cv.experience.unshift(row);
+    renderList("experience", 0); changed();
+    toast("Career break added at the top. Use the arrows to move it to the right place.");
+  });
   document.querySelectorAll("[data-add]").forEach(function (b) {
     b.addEventListener("click", function () {
       var name = b.getAttribute("data-add");
@@ -480,7 +637,8 @@
   var INTEREST_IDEAS = ["Coaching a kids' sports team", "Volunteering at a food bank", "Playing football on Sundays", "Gaming with friends online", "Cooking for family and friends", "Running, the gym or swimming", "Playing or making music", "Going to gigs and festivals", "Looking after my dog", "Fixing or making things", "Reading crime novels", "Drawing, painting or photography", "Growing veg on the allotment", "Fundraising for a local charity", "Making videos or content", "Learning a language"];
   function renderInterestIdeas() {
     var box = $("interest-ideas"), ta = $("f-interests");
-    INTEREST_IDEAS.forEach(function (t) {
+    box.textContent = "";
+    ((J && J.interests) || INTEREST_IDEAS).forEach(function (t) {
       var c = el("button", { type: "button", class: "chip", text: "+ " + t });
       c.addEventListener("click", function () {
         var lines = ta.value.split("\n").filter(function (l) { return l.trim(); });
@@ -582,7 +740,7 @@
   function closePreview() { $("preview").classList.remove("open"); document.body.style.overflow = ""; }
   $("pv-close").addEventListener("click", closePreview);
   $("preview").addEventListener("click", function (e) { if (e.target === $("preview")) closePreview(); });
-  $("pv-more").addEventListener("click", function () { closePreview(); go(7); });
+  $("pv-more").addEventListener("click", function () { closePreview(); go(stepOf("download")); });
 
   // ---- "I've read it and it's true" box -------------------------------------------
   // Same rule as CV Rewrite: the download buttons stay greyed out until it's
@@ -600,7 +758,7 @@
   function resetConfirm() { var c = $("confirmTrue"); if (c && c.checked) { c.checked = false; syncConfirm(); } }
   function nudgeConfirm() {
     if ($("preview").classList.contains("open")) closePreview();
-    go(7);
+    go(stepOf("download"));
     var row = document.querySelector(".confirm-row");
     if (row) { row.classList.remove("nudge"); void row.offsetWidth; row.classList.add("nudge"); if (row.scrollIntoView) row.scrollIntoView({ block: "center", behavior: "smooth" }); }
     say(CONFIRM_NEEDED, false); toast(CONFIRM_NEEDED);
@@ -648,6 +806,185 @@
       .catch(function (e) { say(e.message, false); });
   });
 
+  // ---- the health check: the seven stops in The CV That Gets Read --------------------
+  var RAG_WORD = { green: "Sorted", amber: "Could be better", red: "Needs work", next: "Next step" };
+  function renderHealth(box, health, opts) {
+    opts = opts || {};
+    box.textContent = "";
+    if (!health) return;
+    health.stops.forEach(function (st) {
+      var fix = null;
+      if (opts.fix !== false && st.rag !== "green") {
+        fix = el("button", { type: "button", class: "linkbtn", text: st.rag === "next" ? "Tailor it for a job" : "Fix this" });
+        fix.addEventListener("click", function () { if (st.rag === "next") { $("tailor").click(); return; } go(stepOf(st.step)); });
+      }
+      box.appendChild(el("div", { class: "hs " + st.rag }, [
+        el("span", { class: "hs-dot", "aria-hidden": "true" }),
+        el("div", { class: "hs-body" }, [
+          el("strong", { text: st.n + ". " + st.title }), el("span", { class: "hs-rag", text: " " + RAG_WORD[st.rag] }),
+          el("p", { text: st.note }),
+          el("div", { class: "hs-acts" }, [fix, el("a", { href: st.url, target: "_blank", rel: "noopener", text: "Read Stop " + st.n + " in the guide" })]),
+        ]),
+      ]));
+    });
+  }
+  function healthStrip() {
+    var bar = $("hstrip"); if (!bar || !HEALTH) return;
+    bar.textContent = "";
+    // Nothing to check yet: an all-red strip on an empty CV would just be off-putting.
+    if (!filled() && !cv.healthStart) return;
+    bar.appendChild(el("span", { class: "hstrip-lab", text: "Health check:" }));
+    HEALTH.stops.forEach(function (st) {
+      if (st.rag === "next") return;
+      var b = el("button", { type: "button", class: "hchip " + st.rag, title: st.note }, [el("i"), document.createTextNode(st.title)]);
+      b.addEventListener("click", function () { go(stepOf(st.step)); });
+      bar.appendChild(b);
+    });
+  }
+  function renderHealthAll() {
+    if (!HEALTH) return;
+    renderHealth($("health-live"), HEALTH);
+    var scored = HEALTH.stops.length - 1, sum = $("health-sum");
+    var line = HEALTH.greens + " of " + scored + " stops are green. ";
+    if (cv.healthStart) line += "When you uploaded your CV it was " + cv.healthStart.greens + ". ";
+    line += HEALTH.greens === scored ? "That's every one. Lovely work." : "Work through the red and amber ones: each takes you to the right step.";
+    sum.textContent = line + " ";
+    sum.appendChild(el("a", { href: "https://the-common-people.com/guide-cv.html", target: "_blank", rel: "noopener", text: "Based on The CV That Gets Read." }));
+    healthStrip();
+  }
+
+  // ---- the journeys: Create your 1st CV, Update your CV, Back to work -------------------
+  var findJourney = function (id) { return CFG.journeys.filter(function (j) { return j.id === id; })[0] || null; };
+  function hero(h) {
+    $("hero-kicker").textContent = h ? h.kicker : "Your master CV";
+    $("hero-title").textContent = h ? h.title : "Let's build your CV.";
+    $("hero-lede").textContent = h ? h.lede : "Pick the one that sounds like you. Talk or type your answers, and watch your CV build itself as you go. It saves as you work, and only you can see it.";
+  }
+  // Does the builder have anything real in it yet?
+  function filled() {
+    var some = function (arr, keys) { return (arr || []).some(function (r) { return keys.some(function (k) { return String(r[k] || "").trim(); }); }); };
+    return !!(String(cv.personalStatement || "").trim() || some(cv.experience, ["title", "company", "about"]) || some(cv.education, ["qualification", "institution"]) ||
+      some(cv.skills, ["skill"]) || (cv.behaviours || []).length || lineCount(cv.interests) || Object.keys(cv.statementAnswers || {}).length);
+  }
+  function guideCards() {
+    STEPS.forEach(function (st) {
+      var sec = document.querySelector('.step[data-key="' + st.key + '"]'), g = CFG.guide && CFG.guide[st.key];
+      if (!sec || !g) return;
+      var old = sec.querySelector(".guide-card"); if (old) old.remove();
+      var card = el("aside", { class: "guide-card" }, [
+        el("span", { class: "gc-kick", text: "From the guide · " + g.stop }),
+        el("strong", { text: g.title }), el("p", { text: g.line }),
+        el("a", { href: g.url, target: "_blank", rel: "noopener", text: "Read the full stop in The CV That Gets Read" }),
+      ]);
+      var h = sec.querySelector("h2"); h.parentNode.insertBefore(card, h.nextSibling);
+    });
+  }
+  function applyJourney() {
+    J = findJourney(cv.journey);
+    hero(J && J.hero);
+    $("jname").textContent = J ? J.name : "";
+    document.querySelectorAll("[data-tip]").forEach(function (t) { t.textContent = (J && J.tips && J.tips[t.getAttribute("data-tip")]) || ""; });
+    var et = document.querySelector('p[data-tip="experience"]'); if (et) et.classList.toggle("first-cv", !!(J && (J.counts || J.breaks)));
+    $("add-break").classList.toggle("hidden", !(J && J.id !== "first"));
+    if (J && J.questions && J.questions.length) { QUESTIONS = J.questions; qi = 0; }
+    buildSteps(); guideCards(); renderInterestIdeas();
+    if (loaded) renderQuestion();
+    $("up-title").textContent = J && J.upload ? J.upload.title : "Upload a CV you've got";
+    $("up-text").textContent = J && J.upload ? J.upload.text : "";
+    $("st-upload").classList.toggle("lead", !!(J && J.upload && J.upload.lead));
+    $("st-fresh").className = "btn " + (J && J.upload && J.upload.lead ? "btn-ghost" : "btn-primary");
+  }
+  function showChooser() {
+    hero(null);
+    ["builder", "starter", "ring-wrap", "pv-fab"].forEach(function (id) { $(id).classList.add("hidden"); });
+    var grid = $("ch-grid"); grid.textContent = "";
+    CFG.journeys.forEach(function (jj, i) {
+      var c = el("button", { type: "button", class: "ch-card c" + (i + 1) + (cv.journey === jj.id ? " sel" : "") }, [
+        el("span", { class: "ch-kick", text: jj.who }), el("strong", { text: jj.name }), el("span", { class: "ch-text", text: jj.card }),
+        el("span", { class: "ch-go", text: cv.journey === jj.id ? "Carry on →" : "This is me →" }),
+      ]);
+      c.addEventListener("click", function () { pickJourney(jj.id); });
+      grid.appendChild(c);
+    });
+    $("chooser").classList.remove("hidden");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+  function pickJourney(id) {
+    var changedJourney = cv.journey !== id;
+    cv.journey = id;
+    if (changedJourney) queueSave();
+    $("chooser").classList.add("hidden");
+    applyJourney();
+    openBuilder();
+    go(1);
+    if (!filled()) showStarter();
+    if (changedJourney && loaded) toast("Got it: " + J.name + ".");
+  }
+  function openBuilder() {
+    ["builder", "ring-wrap", "pv-fab"].forEach(function (id) { $(id).classList.remove("hidden"); });
+    refreshProgress(); queuePreview(true);
+  }
+  $("jchange").addEventListener("click", showChooser);
+
+  // ---- start from a CV you've got --------------------------------------------------
+  var pendingImport = null;
+  function showStarter() {
+    $("st-choose").classList.remove("hidden"); $("st-result").classList.add("hidden");
+    $("starter").classList.remove("hidden");
+    $("up-msg").textContent = "";
+    $("starter").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  $("jupload").addEventListener("click", showStarter);
+  $("st-fresh").addEventListener("click", function () { $("starter").classList.add("hidden"); go(1); });
+  $("up-file").addEventListener("change", function () {
+    var f = $("up-file").files[0];
+    $("up-name").textContent = f ? f.name : "Choose my CV";
+    $("up-go").disabled = !f;
+  });
+  $("up-go").addEventListener("click", function () {
+    var f = $("up-file").files[0], b = $("up-go"); if (!f) return;
+    if (!/\.(docx|pdf)$/i.test(f.name)) { $("up-msg").textContent = "Please choose a Word file (.docx) or a PDF."; return; }
+    b.disabled = true; b.textContent = "Reading your CV…"; $("up-msg").textContent = "This usually takes under a minute.";
+    var fd = new FormData(); fd.append("cvFile", f); fd.append("journey", cv.journey || "");
+    fetch("/api/master/import", { method: "POST", body: fd, credentials: "same-origin" })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || "We couldn't read that CV. Please try again."); return j; }); })
+      .then(function (j) {
+        pendingImport = j;
+        renderHealth($("health-import"), j.health, { fix: false });
+        var scored = j.health.stops.length - 1;
+        $("st-sum").textContent = j.health.greens + " of " + scored + " stops are green already. " + (j.health.reds ? "The ones in red are the place to start." : "A few tweaks and it'll really work for you.");
+        $("st-replace").hidden = !filled();
+        $("st-choose").classList.add("hidden"); $("st-result").classList.remove("hidden");
+        $("starter").scrollIntoView({ behavior: "smooth", block: "start" });
+      })
+      .catch(function (e) { $("up-msg").textContent = e.message; })
+      .then(function () { b.disabled = false; b.textContent = "Read my CV"; });
+  });
+  $("st-cancel").addEventListener("click", function () { pendingImport = null; $("st-result").classList.add("hidden"); $("st-choose").classList.remove("hidden"); });
+  $("st-use").addEventListener("click", function () {
+    if (!pendingImport) return;
+    var im = pendingImport.cv, h = cv.header || (cv.header = {}), ih = im.header || {};
+    cv.header.contacts = cv.header.contacts || {};
+    // Keep anything they've already typed at the top; fill in the gaps.
+    if (!h.name && ih.name) h.name = ih.name;
+    ["email", "phone", "location"].forEach(function (k) { if (!h.contacts[k] && ih.contacts && ih.contacts[k]) h.contacts[k] = ih.contacts[k]; });
+    if (!h.linkedin && ih.linkedin) h.linkedin = ih.linkedin;
+    if (im.personalStatement) cv.personalStatement = im.personalStatement;
+    ["experience", "skills", "education"].forEach(function (n) {
+      if ((im[n] || []).length) cv[n] = im[n].map(function (r) { var o = {}; Object.keys(r).forEach(function (k) { o[k] = Array.isArray(r[k]) ? r[k].join("\n") : r[k]; }); return o; });
+    });
+    if ((im.interests || []).length) cv.interests = im.interests.slice();
+    cv.healthStart = { greens: pendingImport.health.greens, at: new Date().toISOString().slice(0, 10) };
+    HEALTH = pendingImport.health; pendingImport = null;
+    fillFields(); checkStatement();
+    ["experience", "skills", "education"].forEach(function (n) { if (!cv[n].length) cv[n].push(LISTS[n].blank()); renderList(n); });
+    $("starter").classList.add("hidden");
+    changed(); renderHealthAll();
+    var firstBad = HEALTH.stops.filter(function (st) { return st.rag === "red"; })[0] || HEALTH.stops.filter(function (st) { return st.rag === "amber"; })[0];
+    go(firstBad ? stepOf(firstBad.step) : 1);
+    toast("Your CV is in the builder. Start with the ones in red."); confetti();
+  });
+
   // ---- start -------------------------------------------------------------------
   fetch("/api/master", { credentials: "same-origin", cache: "no-store" })
     .then(function (r) {
@@ -661,28 +998,38 @@
       // Every section opens with a blank entry ready to fill in.
       ["experience", "skills", "education"].forEach(function (n) { if (!cv[n].length) cv[n].push(LISTS[n].blank()); });
       BANNED = j.banned || []; BEHAVIOURS = j.behaviours || []; writeUp = j.writeUp !== false; voice = j.voice !== false;
+      CFG = j.journeys || CFG; HEALTH = j.health || null;
+      if (!cv.behaviourProof || typeof cv.behaviourProof !== "object") cv.behaviourProof = {};
+      // Older entries kept their points as arrays; the boxes edit them as lines.
+      cv.experience.forEach(function (r) { ["responsibilities", "achievements"].forEach(function (k) { if (Array.isArray(r[k])) r[k] = r[k].join("\n"); }); });
       DESIGNS.fresh = j.freshTemplates || []; DESIGNS.word = j.designs || []; DESIGNS.designer = j.designerTemplates || [];
       if (!allDesigns().some(function (d) { return d.id === cv.design; })) cv.design = (DESIGNS.fresh[0] || {}).id || "modern-minimal";
       if (!voice) document.querySelectorAll(".voice-only").forEach(function (x) { x.classList.add("hidden"); });
       if (!writeUp) { $("write-stmt").classList.add("hidden"); document.querySelector(".ai-note").classList.add("hidden"); }
+      J = findJourney(cv.journey);
+      if (J && J.questions) QUESTIONS = J.questions;
+      buildSteps();
       bindFields();
       renderStyles();
       renderQuestion(); checkStatement();
       renderBehaviours(BEHAVIOURS);
       ["experience", "skills", "education"].forEach(function (n) { renderList(n); });
-      renderInterestIdeas();
       renderDesigns();
-      STEPS.forEach(function (s) { wasDone[s.n] = s.done(); });
+      STEPS.forEach(function (s) { wasDone[s.key] = s.done(); });
       $("loading").classList.add("hidden");
-      $("builder").classList.remove("hidden");
-      $("ring-wrap").classList.remove("hidden");
-      $("pv-fab").classList.remove("hidden");
-      refreshProgress();
-      var m = /step-(\d)/.exec(location.hash);
-      go(m ? Number(m[1]) : 1);
+      var hs = el("div", { class: "hstrip", id: "hstrip" }); $("jbar").parentNode.insertBefore(hs, $("steps"));
       status(j.saved ? "All saved" : "Saves as you go");
       loaded = true;
-      queuePreview(true);
+      var asked4 = (/[?&]journey=(first|update|back)\b/.exec(location.search) || [])[1];
+      if (asked4) pickJourney(asked4);
+      else if (!cv.journey) showChooser();
+      else {
+        applyJourney(); openBuilder();
+        var m = /step-(\d)/.exec(location.hash);
+        if (!filled()) showStarter();
+        go(m ? Number(m[1]) : 1);
+      }
+      renderHealthAll();
       if (/[?&]deleted=1/.test(location.search)) say("Your CV has been deleted. You can start a new one whenever you like.", true);
     })
     .catch(function () { $("loading").textContent = "We couldn't load your CV just now. Please refresh the page."; });

@@ -798,6 +798,23 @@ const aiHasKey = () => require("./lib/anthropic").hasKey();
 const masterCv = require("./lib/masterCv");
 const fresh = require("./lib/freshCv");
 const masterWriter = require("./lib/masterWriter");
+const journeys = require("./lib/journeys");
+const healthCheck = require("./lib/healthCheck");
+const masterImport = require("./lib/masterImport");
+// AI calls from the builder hide the person's own name, email, phone and links
+// as well as anything in the text being sent (lib/identityShield.js).
+async function masterShield(req, texts, fn) {
+  let h = {};
+  try { const m = await loadMaster(req); h = (m && m.cv.header) || {}; } catch (_) { /* shield what we can */ }
+  const c = h.contacts || {};
+  return identityShield.run(() => ({
+    texts: (texts || []).filter(Boolean),
+    names: [h.name].filter(Boolean),
+    emails: [c.email, req.user && req.user.email].filter(Boolean),
+    phones: [c.phone].filter(Boolean),
+    links: [h.linkedin, h.portfolio, h.introVideo].filter(Boolean),
+  }), fn);
+}
 // A Fresh design downloaded as Word uses the nearest editable Word design.
 const FRESH_WORD = { "f-sunrise": "warm-operational", "f-green": "two-column-sidebar", "f-bold": "bold-header-block", "f-sky": "graduate-entry" };
 const freshClean = (cv) => sanitizeForOutput(masterCv.forFresh(cv));
@@ -828,7 +845,9 @@ app.get("/api/master", async (req, res) => {
       freshTemplates: fresh.FRESH_TEMPLATES.map((d) => ({ id: d.id, name: d.name, category: d.category, description: d.description })),
       writeUp: aiHasKey(),
       voice: !!process.env.OPENAI_API_KEY,
-      banned: cliches.BANNED_PHRASES });
+      banned: cliches.BANNED_PHRASES,
+      journeys: journeys.forPage(),
+      health: healthCheck.check(cv) });
   } catch (e) { masterFail(res, e, "load"); }
 });
 
@@ -844,7 +863,7 @@ app.post("/api/master", async (req, res) => {
       const { error: e2 } = await req.sb.from("master_cvs").insert({ user_id: req.user.id, data: cv, updated_at: now });
       if (e2) throw new Error(e2.message);
     }
-    res.json({ ok: true, updatedAt: now, progress: masterCv.progress(cv) });
+    res.json({ ok: true, updatedAt: now, progress: masterCv.progress(cv), health: healthCheck.check(cv) });
   } catch (e) { masterFail(res, e, "save"); }
 });
 
@@ -949,12 +968,26 @@ app.post("/api/master/write", async (req, res) => {
   const b = req.body || {};
   try {
     const style = String(b.style || ""), styleSample = String(b.styleSample || "").slice(0, 3000);
+    const journey = journeys.isJourney(b.journey) ? b.journey : "";
+    const run = (texts, work) => new Promise((resolve, reject) => { masterShield(req, texts, () => work().then(resolve, reject)); });
     if (b.task === "statement") {
-      const out = await masterWriter.statement({ answers: b.answers || {}, current: String(b.current || "").slice(0, 2500), targetRole: String(b.targetRole || "").slice(0, 120), style, styleSample });
+      // Private answers (such as the hours someone needs) never leave the account.
+      const answers = { ...(b.answers || {}) };
+      for (const k of journeys.privateKeys(journey)) delete answers[k];
+      const out = await run([b.current], () => masterWriter.statement({ answers, current: String(b.current || "").slice(0, 2500), targetRole: String(b.targetRole || "").slice(0, 120), style, styleSample, journey }));
       return res.json({ ok: true, ...out });
     }
     if (b.task === "job") {
-      const out = await masterWriter.job({ job: b.job || {}, style, styleSample });
+      const out = await run([], () => masterWriter.job({ job: b.job || {}, style, styleSample }));
+      return res.json({ ok: true, ...out });
+    }
+    if (b.task === "proof") {
+      const out = await run([], () => masterWriter.proof({ strength: String(b.strength || ""), words: String(b.words || ""), style, styleSample }));
+      return res.json({ ok: true, ...out });
+    }
+    if (b.task === "followup") {
+      if (journeys.privateKeys(journey).includes(String(b.questionId || ""))) return res.json({ ok: true, heard: [], followUp: "" });
+      const out = await run([], () => masterWriter.followUp({ question: String(b.question || ""), answer: String(b.answer || ""), journey, context: String(b.context || "").slice(0, 300) }));
       return res.json({ ok: true, ...out });
     }
     res.status(400).json({ error: "Unknown request." });
@@ -962,6 +995,32 @@ app.post("/api/master/write", async (req, res) => {
     if (e.status && e.status < 500) return res.status(e.status).json({ error: e.message });
     console.error("[master] write:", e.message);
     res.status(502).json({ error: e.status === 502 ? e.message : "We couldn't write that up just now. Please try again in a moment." });
+  }
+});
+
+// "Upload my CV": an existing CV read into the builder's sections, plus its
+// health check. Nothing is saved here: the page shows it and the person
+// chooses to use it. The file is deleted as soon as its text is read.
+app.post("/api/master/import", (req, res, next) => { if (needAccount(req, res)) next(); }, upload.single("cvFile"), async (req, res) => {
+  const f = req.file;
+  const drop = () => { if (f) try { fs.unlinkSync(f.path); } catch (_) {} };
+  if (!f) return res.status(400).json({ error: "Please choose your CV file first." });
+  if (!/\.(docx|pdf|txt)$/i.test(f.originalname || "") || f.size > 8 * 1024 * 1024) { drop(); return res.status(400).json({ error: "Please upload your CV as a Word file (.docx) or a PDF, under 8MB." }); }
+  if (!aiHasKey()) { drop(); return res.status(503).json({ error: "Reading CVs isn't available just now. You can start from scratch instead." }); }
+  if (!writeAllowed(req.user.id)) { drop(); return res.status(429).json({ error: "You've done a lot today. Please try again tomorrow." }); }
+  try {
+    const text = await extract.fromFile(f.path, f.mimetype, f.originalname);
+    const header = masterImport.headerFrom(text);
+    const cv = await new Promise((resolve, reject) => {
+      identityShield.run(() => ({ texts: [text], names: [header.name].filter(Boolean), emails: [header.contacts.email, req.user.email].filter(Boolean), phones: [header.contacts.phone].filter(Boolean), links: [header.linkedin].filter(Boolean) }),
+        () => masterImport.read(text).then(resolve, reject));
+    });
+    res.json({ ok: true, cv, health: healthCheck.check(cv, { journey: journeys.isJourney(req.body.journey) ? req.body.journey : "" }) });
+  } catch (e) {
+    drop();
+    if (e.status && e.status < 500) return res.status(e.status).json({ error: e.message });
+    console.error("[master] import:", e.message);
+    res.status(502).json({ error: e.status === 502 ? e.message : "We couldn't read that CV just now. Please try again, or start from scratch." });
   }
 });
 
