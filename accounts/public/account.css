@@ -77,3 +77,5 @@ a.tool:hover{border-color:var(--leaf);box-shadow:0 4px 14px rgba(31,107,69,.12)}
 footer{text-align:center;font-size:13.5px;color:var(--muted);padding:0 20px 40px}
 @media (max-width:560px){.card{padding:20px}.tabs{width:100%}.tabs button{flex:1;padding:8px 10px}}
 .sep{border:0;border-top:1px solid var(--pith);margin:24px 0}
+
+.short-version ul{margin:6px 0 0;padding-left:18px}.short-version li{margin:0 0 4px;font-size:14.5px}

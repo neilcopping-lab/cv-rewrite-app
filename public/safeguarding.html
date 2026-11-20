@@ -1,0 +1,205 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keeping you safe | Comquat</title>
+<link rel="icon" type="image/png" href="/img/comquat-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&family=Anton&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css">
+<style>
+.legal{max-width:760px;margin:0 auto;padding:40px 24px 64px}
+.legal h1{font-size:clamp(30px,5vw,46px);margin:.2em 0}
+.legal h2{font-size:22px;margin:1.6em 0 .4em}
+.legal p,.legal li{font-size:16px;line-height:1.7}
+.legal ul{margin:.4em 0 .4em 1.1em}
+.legal .date{font-family:var(--font-label);text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--cream-muted)}
+.legal a{color:var(--teal);text-decoration:underline}
+.legal .fill{background:#3a2417;padding:1px 6px}
+</style>
+<style id="cp-2026-theme">
+:root{--paper:#fff;--tint:#EAF2F5;--ink:#1C2733;--line:#E3E7EA;--muted:#5E6B77}
+body{background:#fff!important;color:#1C2733!important;font-family:'Hanken Grotesk','Helvetica Neue',Arial,sans-serif!important}
+a{color:#D2691E}
+header.site{background:rgba(255,255,255,.94)!important;border-bottom:1px solid #E3E7EA!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.nav .links a{color:#5E6B77!important}.nav .links a:hover,.nav .links a.active{color:#D2691E!important}
+section{border-bottom:1px solid #E3E7EA!important;background:#fff!important}
+section:nth-of-type(even){background:#EAF2F5!important}
+.hero::after{opacity:.08}
+h1,h2,h3{color:#1C2733!important}
+.lead,.founder p,.whatlist strong,.faq h3{color:#1C2733!important}
+.muted,.tile p,.bafig .cap,.design-card .meta p{color:#5E6B77!important}
+.eyebrow{color:#5AA9C2!important}
+.cp-logo img{display:none!important}
+.cp-logo .blk{color:#14110E!important;-webkit-text-stroke:2.6px #FBF7EC;paint-order:stroke fill;border:2.5px solid #14110E!important;box-shadow:0 3px 0 rgba(20,17,14,.5)!important}
+.btn{background:#D2691E!important;color:#fff!important;border-color:#D2691E!important;border-radius:999px!important}
+.btn.ghost{background:transparent!important;color:#1C2733!important;text-decoration:none!important;border:2px solid #E3E7EA!important;border-radius:999px!important}
+.btn.accent{background:#D2691E!important;color:#fff!important}
+.price-flag{background:#D2691E!important;color:#fff!important;border-radius:999px}
+.cp-book{background:#D2691E!important;color:#fff!important;border-radius:999px}
+.tile,.q,.notice,.design-card,.previewbox,.fbcard{background:#fff!important;border:1px solid #E3E7EA!important;color:#1C2733!important}
+.tile h3{color:#1C2733!important}.tile .n{color:#D2691E!important}.tile .ic{color:#D2691E!important}
+.q .qtext,label,.design-card .meta h4{color:#1C2733!important}.q .tag{color:#D2691E!important}
+.steps .s{background:#fff!important;border:1px solid #E3E7EA!important;color:#5E6B77!important}
+.steps .s.active{background:#D2691E!important;color:#fff!important;border-color:#D2691E!important}
+.steps .s.done{border-color:#D2691E!important;color:#D2691E!important}
+textarea,input[type=text],input[type=email],input[type=url]{background:#fff!important;color:#1C2733!important;border:1.5px solid #E3E7EA!important;border-radius:10px!important}
+.chip{color:#5E6B77!important;border:1px solid #E3E7EA!important;background:#fff!important}.chip.on{background:#D2691E!important;color:#fff!important;border-color:#D2691E!important}
+.flag{background:#FBEDE4!important;color:#1C2733!important;border-left:4px solid #D2691E!important}
+.bafig.before .lbl{color:#5E6B77!important}.bafig.after .lbl{color:#D2691E!important}
+.founder .sig{color:#D2691E!important}.founder .roundel{background:#D2691E!important}
+.footer{background:#161F29!important;color:#CBD3DB!important}.footer h4{color:#E0B03C!important}.footer a{color:#AAB4BE!important}
+.progress .bar>i{background:#D2691E!important}.progress .msg{color:#D2691E!important}
+</style>
+<style id="comquat-brand">.cq-brand{display:inline-flex;align-items:center;gap:12px;text-decoration:none!important;line-height:1}.cq-brand img{height:34px;width:auto;display:block}.cq-brand .cq-feat{font-family:'DM Sans','Hanken Grotesk',system-ui,sans-serif;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:6px 12px;border-radius:999px;white-space:nowrap}.cq-brand .cq-feat.cv{background:#17191C;color:#FFF3E2}.cq-brand .cq-feat.ip{background:#1F6B45;color:#FFF3E2}.cq-by{display:block;font-size:11px;color:#5B5F66;margin-top:4px;letter-spacing:.02em}</style>
+<style id="comquat-theme">
+/* Comquat CV Rewrite theme (Nov 2026). Kumquat orange is the CV Rewrite colour.
+   Tokens from the Comquat Brand design system: kumquat #FF8A1F, kumquat-deep #E2650B,
+   kumquat-text #B44E00, leaf #1F6B45, ink #17191C, peel #FFF3E2, pith #E9DCC8, muted #5B5F66.
+   Ink text on kumquat (7.5:1). Orange text on white uses kumquat-text (5.3:1). */
+:root{--font-display:'Bricolage Grotesque','DM Sans',system-ui,sans-serif;--font-label:'DM Sans',system-ui,sans-serif;--font-body:'DM Sans',system-ui,sans-serif;
+  --gold:#B44E00;--gold-deep:#E2650B;--teal:#1F6B45;--orange:#FF8A1F;--accent:#FF8A1F;--ink:#17191C;--line:#E9DCC8;--muted:#5B5F66;--tint:#FFF3E2;--cream:#17191C}
+body{color:#17191C!important;font-family:'DM Sans',system-ui,sans-serif!important}
+a{color:#B44E00}
+header.site{border-bottom:1px solid #E9DCC8!important}
+.nav .links a{color:#5B5F66!important;font-family:'DM Sans',system-ui,sans-serif}
+.nav .links a:hover,.nav .links a.active{color:#B44E00!important}
+section{border-bottom:1px solid #E9DCC8!important}
+section:nth-of-type(even){background:#FFF3E2!important}
+h1,h2,h3{font-family:'Bricolage Grotesque','DM Sans',system-ui,sans-serif!important;font-weight:800!important;text-transform:none!important;letter-spacing:-.015em!important;color:#17191C!important}
+h1{line-height:1.02}
+.faq h3{font-family:'DM Sans',system-ui,sans-serif!important;font-weight:700!important;letter-spacing:0!important}
+.lead,.founder p,.whatlist strong,.faq h3{color:#17191C!important}
+.muted,.tile p,.bafig .cap,.design-card .meta p{color:#5B5F66!important}
+.eyebrow{color:#B44E00!important;font-family:'DM Sans',system-ui,sans-serif;font-weight:700}
+.btn,.btn.accent{background:#FF8A1F!important;color:#17191C!important;border-color:#FF8A1F!important;font-family:'DM Sans',system-ui,sans-serif!important;font-weight:700!important;text-transform:none!important;letter-spacing:0!important}
+.btn:hover{background:#E2650B!important;border-color:#E2650B!important}
+.btn.ghost{background:transparent!important;color:#17191C!important;border:2px solid #E9DCC8!important}
+.btn.ghost:hover{border-color:#FF8A1F!important}
+.price-flag,.cp-book{background:#FF8A1F!important;color:#17191C!important}
+.tile,.q,.notice,.design-card,.previewbox,.fbcard{border:1px solid #E9DCC8!important;color:#17191C!important}
+.tile h3{color:#17191C!important}.tile .n,.tile .ic,.q .tag{color:#B44E00!important}
+.tile .n{font-family:'Bricolage Grotesque','DM Sans',sans-serif!important;font-weight:800}
+.q .qtext,label,.design-card .meta h4{color:#17191C!important}
+.steps .s{border:1px solid #E9DCC8!important;color:#5B5F66!important}
+.steps .s.active{background:#FF8A1F!important;color:#17191C!important;border-color:#FF8A1F!important}
+.steps .s.done{border-color:#FF8A1F!important;color:#B44E00!important}
+textarea,input[type=text],input[type=email],input[type=url]{color:#17191C!important;border:1.5px solid #E9DCC8!important}
+textarea:focus,input:focus,select:focus{outline:3px solid #FF8A1F;outline-offset:1px;border-color:#FF8A1F!important}
+.chip{color:#5B5F66!important;border:1px solid #E9DCC8!important}.chip.on{background:#FF8A1F!important;color:#17191C!important;border-color:#FF8A1F!important}
+.flag{background:#FFF3E2!important;color:#17191C!important;border-left:4px solid #FF8A1F!important}
+.bafig.before .lbl{color:#5B5F66!important}.bafig.after .lbl{color:#B44E00!important}
+.bafig .lbl,.founder .sig{font-family:'Bricolage Grotesque','DM Sans',sans-serif!important;font-weight:800;text-transform:none!important}
+.founder .sig{color:#B44E00!important}.founder .roundel{background:#FF8A1F!important}
+.footer{background:#17191C!important;color:#E9DCC8!important}.footer h4{color:#FF8A1F!important;font-family:'DM Sans',system-ui,sans-serif}.footer a{color:#E9DCC8!important;font-family:'DM Sans',system-ui,sans-serif}
+.footer .muted{color:#BDB4A6!important}
+.progress .bar>i{background:#FF8A1F!important}.progress .msg{color:#B44E00!important}
+select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
+.pdf-badge{background:#FF8A1F!important;color:#17191C!important}
+.cq-foot{display:inline-block}.cq-foot img{display:block;height:30px;width:auto}
+/* skills match report */
+.mr{border:1px solid #E9DCC8;border-radius:16px;background:#fff;padding:18px 20px;margin:14px 0}
+.mr-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.mr-kicker{font-family:'Bricolage Grotesque','DM Sans',sans-serif;font-weight:800;font-size:22px;color:#17191C;line-height:1.1}
+.mr-sum{font-size:15px;color:#17191C;margin-top:6px}
+.mr-score{flex:none;text-align:center;background:#FF8A1F;color:#17191C;border-radius:999px;padding:10px 16px;line-height:1}
+.mr-score b{display:block;font-family:'Bricolage Grotesque','DM Sans',sans-serif;font-weight:800;font-size:26px}.mr-score span{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.mr-bar{height:10px;background:#FFF3E2;border-radius:999px;overflow:hidden;margin:14px 0 8px}.mr-bar i{display:block;height:100%;background:#FF8A1F;border-radius:999px}
+.mr-private{font-size:13px;color:#5B5F66;margin:0 0 6px}
+.mr details summary{cursor:pointer;font-weight:700;color:#B44E00;padding:6px 0}
+.mr-row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #F1E6D6}
+.mr-pill{flex:none;width:112px;text-align:center;font-size:12px;font-weight:700;border-radius:999px;padding:4px 8px;margin-top:1px}
+.mr-pill.strong{background:#1F6B45;color:#FFF3E2}.mr-pill.partial{background:#FFE2C2;color:#7A3500}.mr-pill.gap{background:#F1ECE4;color:#4A4D52;border:1px dashed #A9A398}
+.mr-ev{font-size:14px;color:#5B5F66;margin-top:2px}
+.mr-note{font-size:14px;color:#17191C;background:#FFF3E2;border-radius:10px;padding:10px 12px;margin:10px 0 0}
+@media(max-width:560px){.mr-head{flex-direction:column}.mr-row{flex-direction:column;gap:4px}.mr-pill{width:auto}}
+.legal .date{color:#5B5F66!important}.legal a{color:#B44E00!important}.cp-book{padding:7px 16px!important;line-height:1.2!important;font-weight:700!important;text-decoration:none!important}
+</style>
+<style id="cp-stack-nav">
+/* Logo on its own row, menu running beneath it. Same links and titles as the-common-people.com homepage. */
+.nav{display:grid!important;grid-template-columns:minmax(0,1fr);row-gap:14px;justify-content:stretch!important;position:relative}
+.nav .cq-brand{justify-self:start}
+.nav .links{display:flex!important;align-items:center;gap:8px 16px!important;flex-wrap:nowrap;font-size:13.5px!important;letter-spacing:.04em!important}
+.nav .links a{white-space:nowrap}
+.nav .links a.cp-book{margin-left:auto;letter-spacing:.02em;color:#17191C!important}
+@media (max-width:1599px){.nav .links{flex-wrap:wrap}.nav .links a.cp-book{position:absolute;top:20px;right:24px;margin:0}}
+@media (min-width:761px) and (max-width:1023px){.nav .links{gap:8px 12px!important;font-size:12.5px!important;letter-spacing:.03em!important}}
+@media (max-width:760px){
+  .nav .links{flex-wrap:nowrap!important;overflow-x:auto;gap:18px!important;padding-bottom:4px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .nav .links::-webkit-scrollbar{display:none}
+  .nav .links a.cp-book{position:absolute;top:18px;right:20px;margin:0;font-size:12px!important;padding:7px 12px!important}
+}
+@media (max-width:480px){.nav .cq-brand .cq-feat{display:none}}
+</style>
+<link rel="stylesheet" href="/account/fresh.css?v=20261118c">
+<style>.safe-now{border-left:5px solid #12A88A;background:#E9FBF6;border-radius:0 16px 16px 0;padding:6px 20px 12px;margin:0 0 10px}.safe-now h2{margin-top:.6em}.safe-now li{margin:0 0 6px}</style>
+</head><body class="fx fx-cv fx-legal">
+
+<header class="site"><nav class="nav">
+  <a class="cq-brand" href="/" aria-label="Comquat CV Rewrite, from The Com'mon People"><img src="/img/comquat-logo.svg" alt="Comquat" width="150" height="34"><span class="cq-feat cv">CV Rewrite</span></a>
+  <div class="links">
+    <a href="https://the-common-people.com/guides.html">Guides</a>
+    <a href="https://the-common-people.com/dispatches.html">Dispatches</a>
+    <a href="https://the-common-people.com/loudspeaker.html">Loudspeaker</a>
+    <a href="https://the-common-people.com/apprenticeships.html">Apprenticeships</a>
+    <a href="https://the-common-people.com/commons-family.html">The Commons</a>
+    <a href="https://the-common-people.com/about.html">About</a>
+    <a href="https://the-common-people.com/prep-report.html">Interview Prep</a>
+    <a href="/">CV Rewrite</a>
+    <a data-account-link hidden href="/account/">Sign in</a>
+    <a class="cp-book" href="https://cal.com/the-common-people.com/interviewcoaching" target="_blank" rel="noopener">Book a coaching call</a>
+  </div>
+</nav></header>
+
+<section class="fx-hero fx-hero-sm"><div class="fx-hero-in">
+  <p class="fx-kicker">Safeguarding &middot; Comquat</p>
+  <h1>Keeping you safe</h1>
+  <p class="fx-lede">Need help, or worried about something? Start here.</p>
+</div></section>
+<main><div class="legal">
+
+  <div class="safe-now">
+    <h2 id="help">Need help right now?</h2>
+    <ul>
+      <li><strong>If you or someone else is in danger, call 999.</strong></li>
+      <li><strong>Childline:</strong> free and confidential for young people, any time. Call <a href="tel:08001111">0800 1111</a> or go to <a href="https://www.childline.org.uk" target="_blank" rel="noopener">childline.org.uk</a>.</li>
+      <li><strong>Samaritans:</strong> free, any time, for anyone who needs to talk. Call <a href="tel:116123">116 123</a>.</li>
+    </ul>
+  </div>
+
+  <h2 id="report">Report a concern</h2>
+  <p>If something on Comquat has worried you, or you're worried about a young person who uses it, tell us. Email <a href="mailto:neil.copping@thecommonpeople.co.uk?subject=Safeguarding%20concern">neil.copping@thecommonpeople.co.uk</a> with &ldquo;Safeguarding concern&rdquo; in the subject line.</p>
+  <p>Our safeguarding lead is <strong>Neil Copping</strong>, Comquat&rsquo;s founder. He reads every concern himself and will reply within one working day. If a young person is at risk of harm, we&rsquo;ll pass it to the people who can help, such as the police or the local council&rsquo;s children&rsquo;s services. We&rsquo;ll tell you if we need to do that, unless telling you would put someone at more risk.</p>
+  <p>This email is checked during working hours. If it can&rsquo;t wait, use the numbers above.</p>
+
+  <h2>Using Comquat if you&rsquo;re under 18</h2>
+  <p>Comquat is for anyone aged 13 or over. Plenty of people use it to build their very first CV, and that&rsquo;s exactly what it&rsquo;s for. Here&rsquo;s how we keep it safe:</p>
+  <ul>
+    <li><strong>Nobody can message you through Comquat.</strong> There&rsquo;s no chat, no comments and no public profile.</li>
+    <li><strong>Your account is private.</strong> Only you can see your CVs and answers. We only look if you ask us to help, or to fix a problem.</li>
+    <li><strong>Emails are off unless you tick them.</strong> We never sell your details or show you adverts.</li>
+    <li><strong>We take your name and contact details out</strong> before anything goes to the AI, and its follow-up questions never ask about your health, your family or anything private.</li>
+    <li><strong>Practice videos stay on your device.</strong> If you practise your 90 seconds on camera, nothing is uploaded.</li>
+    <li><strong>You can delete everything</strong> from your account page, whenever you like.</li>
+  </ul>
+  <p>It&rsquo;s a good idea to tell a parent, carer, teacher or tutor that you&rsquo;re using Comquat, and to show them your CV before you send it anywhere.</p>
+
+  <h2>Sending your CV and video safely</h2>
+  <ul>
+    <li>Only send your CV or video link through an employer&rsquo;s own application, or to an email address on their website.</li>
+    <li>If someone you don&rsquo;t know messages you about a job and asks for photos, videos or personal details, don&rsquo;t send them. Tell an adult you trust, or tell us.</li>
+    <li>Upload your video as <strong>Unlisted</strong>, not Public, and keep your school uniform, street signs and house number out of shot.</li>
+    <li>Leave your full address and date of birth off your CV. Your town is enough.</li>
+  </ul>
+
+  <h2>Coaching calls</h2>
+  <p>If you&rsquo;re under 18 and book a one-to-one coaching call, please let a parent or carer know first. They&rsquo;re welcome to sit in on the call with you.</p>
+
+  <h2>Our promise</h2>
+  <p>Comquat is run by Comquat Ventures UK Ltd. We follow the Information Commissioner&rsquo;s Office&rsquo;s Children&rsquo;s code, which sets out how online services should look after young people&rsquo;s information. You can read how we handle your data in our <a href="/privacy.html">privacy notice</a>, and our <a href="/terms.html">terms</a>.</p>
+</div></main>
+
+<footer class="footer" style="padding:30px 0"><div class="wrap">
+  <p class="muted" style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-size:13px">© 2026 Comquat, from The Com'mon People. Built on mutual aid. <a href="/privacy.html" style="text-transform:none;letter-spacing:normal">Privacy</a> · <a href="/terms.html" style="text-transform:none;letter-spacing:normal">Terms</a> · <a href="/safeguarding.html" style="text-transform:none;letter-spacing:normal">Keeping you safe</a></p>
+</div></footer>
+<script src="/account/nav.js?v=20261115" defer></script>
+</body></html>
