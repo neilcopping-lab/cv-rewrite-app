@@ -79,3 +79,37 @@ footer{text-align:center;font-size:13.5px;color:var(--muted);padding:0 20px 40px
 .sep{border:0;border-top:1px solid var(--pith);margin:24px 0}
 
 .short-version ul{margin:6px 0 0;padding-left:18px}.short-version li{margin:0 0 4px;font-size:14.5px}
+
+/* My job search */
+.me-top{display:flex;gap:20px;align-items:flex-start;margin:0 0 14px}
+.me-photo{flex:0 0 96px;width:96px;height:96px;border-radius:50%;overflow:hidden;background:var(--peel);border:2px solid var(--pith)}
+.me-photo img{width:100%;height:100%;object-fit:cover;display:block}
+.photo-none{display:block;width:100%;height:100%;background:radial-gradient(circle at 50% 38%,var(--pith) 0 18%,transparent 19%),radial-gradient(ellipse at 50% 100%,var(--pith) 0 38%,transparent 39%)}
+.me-who{flex:1;min-width:0}
+.search-pill{display:inline-block;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:4px 12px;margin:2px 0 10px;background:#E6F2EA;color:var(--leaf)}
+.search-pill.paused{background:#FFF0DD;color:var(--kqt)}
+.photo-acts{margin:0 0 6px}
+.small-btn{padding:7px 14px;font-size:14px}
+.file-btn{margin:0;cursor:pointer}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.choices{margin:16px 0 0;padding:16px;border:1.5px solid var(--pith);border-radius:12px;background:var(--peel)}
+.choice{margin:12px 0 0}.choice .small{margin:6px 0 0}
+.keep-rule{margin:16px 0 0}
+h3.sub{font-family:'Bricolage Grotesque','DM Sans',sans-serif;font-weight:800;font-size:18px;margin:0 0 8px}
+.role-chips{list-style:none;margin:0 0 10px;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.role-chips li{display:inline-flex;align-items:center;gap:6px;background:var(--peel);border:1.5px solid var(--pith);border-radius:999px;padding:5px 6px 5px 14px;font-weight:600;font-size:14.5px}
+.role-chips button{border:0;background:none;font:inherit;font-size:16px;line-height:1;cursor:pointer;color:var(--muted);padding:2px 6px;border-radius:50%}
+.role-chips .none{background:none;border:0;padding:0;color:var(--muted);font-weight:400}
+#form-role input{flex:1;min-width:180px;margin:0}
+.suggest{margin:20px 0 0}
+.btn-spark{background:linear-gradient(90deg,#FF8A1F,#E8487A);color:#fff}
+.role-ideas{list-style:none;margin:14px 0 0;padding:0}
+.role-ideas li{border-top:1px solid var(--pith);padding:12px 0;display:flex;gap:12px;justify-content:space-between;align-items:flex-start}
+.role-ideas strong{display:block;font-size:16px}
+.role-ideas .kind{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--kqt);margin:0 0 2px}
+.role-ideas p{margin:2px 0 0;font-size:14.5px}
+.role-ideas .check-line{color:var(--muted);font-size:13.5px}
+.ai-warn{border-left:4px solid var(--kq);background:#FFF8EE;padding:12px 14px;border-radius:0 10px 10px 0;font-size:14.5px;margin:14px 0 0}
+#share-text{display:block;width:100%;margin:10px 0 12px;padding:12px 14px;font:inherit;border:1.5px solid var(--pith);border-radius:10px;resize:vertical}
+.one-tap h1{font-size:30px}
+@media (max-width:560px){.me-top{flex-direction:column;align-items:center;text-align:center}.photo-acts{justify-content:center}}

@@ -992,6 +992,13 @@ app.post("/api/master/write", async (req, res) => {
       const out = await run([], () => masterWriter.videoPlan({ cv: m.cv, company: String(b.company || "").slice(0, 120), role: String(b.role || "").slice(0, 120) }));
       return res.json({ ok: true, plan: out });
     }
+    if (b.task === "roles") {
+      // Jobs the saved master CV could suit, for the account page.
+      const m = await loadMaster(req);
+      if (!m) return res.status(400).json({ error: "Build your CV first, then we can suggest jobs it could suit." });
+      const out = await run([], () => masterWriter.roles({ cv: m.cv }));
+      return res.json({ ok: true, roles: out });
+    }
     if (b.task === "followup") {
       if (journeys.privateKeys(journey).includes(String(b.questionId || ""))) return res.json({ ok: true, heard: [], followUp: "" });
       const out = await run([], () => masterWriter.followUp({ question: String(b.question || ""), answer: String(b.answer || ""), journey, context: String(b.context || "").slice(0, 300) }));

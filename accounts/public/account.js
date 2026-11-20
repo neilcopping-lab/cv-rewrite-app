@@ -119,8 +119,171 @@
           var box = subsForm.querySelector('input[name="' + t + '"]');
           if (box) box.checked = Boolean(j.subscriptions[t]);
         });
+        if (j.jobSearch && j.profileExtras) initSearch(j.jobSearch, j.profileExtras);
       })
       .catch(function () { say("We couldn't load your account just now. Please refresh the page.", false); });
+
+
+    // ---- My job search: status, photo, the jobs I'm after, suggestions, check-in
+    function initSearch(js, extras) {
+      var card = document.getElementById("search-card");
+      card.classList.remove("hidden");
+      var roles = (extras.roles || []).slice();
+      function showStatus(status, changedAt) {
+        var pill = document.getElementById("search-pill");
+        var paused = status === "paused";
+        pill.textContent = paused ? "Paused" : "Looking";
+        pill.className = "search-pill" + (paused ? " paused" : "");
+        document.getElementById("search-looking").classList.toggle("hidden", paused);
+        document.getElementById("search-paused").classList.toggle("hidden", !paused);
+        document.getElementById("got-job-choices").classList.add("hidden");
+        document.getElementById("paused-line").textContent = paused
+          ? "Paused" + (changedAt ? " since " + new Date(changedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "") +
+            ". Everything's kept for when you need it, and the check-ins have stopped."
+          : "";
+      }
+      showStatus(js.status, js.changedAt);
+      document.getElementById("got-job").addEventListener("click", function () {
+        document.getElementById("got-job-choices").classList.remove("hidden");
+      });
+      function setStatus(status, btn) {
+        btn.disabled = true;
+        post("/api/account/search", { status: status })
+          .then(function (r) { showStatus(r.status, new Date().toISOString()); say(r.message, true); })
+          .catch(function (err) { say(err.message, false); })
+          .then(function () { btn.disabled = false; });
+      }
+      document.getElementById("do-pause").addEventListener("click", function () { setStatus("paused", this); });
+      document.getElementById("looking-again").addEventListener("click", function () { setStatus("looking", this); });
+
+      // Photo: shrunk to a 600px square JPEG here, which also drops any
+      // location tags the phone put in. The server checks and strips again.
+      var img = document.getElementById("photo-img"), none = document.getElementById("photo-none"), del = document.getElementById("photo-del");
+      function showPhoto(has) {
+        img.classList.toggle("hidden", !has); none.classList.toggle("hidden", has); del.classList.toggle("hidden", !has);
+        document.querySelector(".file-btn").firstChild.textContent = has ? "Change photo" : "Add a photo";
+        if (has) img.src = "/api/account/photo?t=" + Date.now();
+        else img.removeAttribute("src");
+      }
+      showPhoto(extras.hasPhoto);
+      document.getElementById("photo-file").addEventListener("change", function () {
+        var f = this.files && this.files[0];
+        this.value = "";
+        if (!f) return;
+        if (f.size > 20 * 1024 * 1024) { say("That photo is too big. Please pick one under 20 MB.", false); return; }
+        var url = URL.createObjectURL(f), pic = new Image();
+        pic.onload = function () {
+          var side = Math.min(pic.naturalWidth, pic.naturalHeight), size = Math.min(600, side);
+          var c = document.createElement("canvas"); c.width = size; c.height = size;
+          c.getContext("2d").drawImage(pic, (pic.naturalWidth - side) / 2, (pic.naturalHeight - side) / 2, side, side, 0, 0, size, size);
+          URL.revokeObjectURL(url);
+          c.toBlob(function (blob) {
+            if (!blob) { say("We couldn't read that photo. Please try another.", false); return; }
+            say("Saving your photo…", true);
+            fetch("/api/account/photo", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "image/jpeg" }, body: blob })
+              .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || "We couldn't save your photo."); return j; }); })
+              .then(function (j) { showPhoto(true); say(j.message, true); })
+              .catch(function (err) { say(err.message, false); });
+          }, "image/jpeg", 0.85);
+        };
+        pic.onerror = function () { URL.revokeObjectURL(url); say("We couldn't read that photo. Please try a JPEG or PNG.", false); };
+        pic.src = url;
+      });
+      del.addEventListener("click", function () {
+        if (!del.dataset.sure) { del.dataset.sure = "1"; del.textContent = "Delete it for good?"; setTimeout(function () { if (del.isConnected) { delete del.dataset.sure; del.textContent = "Delete photo"; } }, 5000); return; }
+        delete del.dataset.sure; del.textContent = "Delete photo";
+        post("/api/account/photo/delete", {}).then(function (j) { showPhoto(false); say(j.message, true); }).catch(function (err) { say(err.message, false); });
+      });
+
+      // The jobs I'm after
+      var chips = document.getElementById("role-chips");
+      function saveRoles() {
+        return post("/api/account/roles", { roles: roles }).then(function (r) { roles = r.roles; drawRoles(); });
+      }
+      function drawRoles() {
+        chips.textContent = "";
+        if (!roles.length) { var n = el("li", "none", "None yet. Add one below, or get some ideas from your CV."); chips.appendChild(n); }
+        roles.forEach(function (r, i) {
+          var li = el("li", null, r);
+          var x = el("button", null, "×"); x.type = "button"; x.setAttribute("aria-label", "Remove " + r);
+          x.addEventListener("click", function () { roles.splice(i, 1); saveRoles().catch(function (err) { say(err.message, false); }); });
+          li.appendChild(x); chips.appendChild(li);
+        });
+        document.querySelectorAll("#role-ideas .add").forEach(function (b) { var on = roles.indexOf(b.dataset.role) > -1; b.disabled = on; b.textContent = on ? "Added" : "Add"; });
+      }
+      drawRoles();
+      onSubmit("form-role", function () {
+        var box = document.getElementById("role-new"), v = box.value.trim();
+        if (!v) throw new Error("Type a job title first.");
+        if (roles.length >= 8) throw new Error("That's eight already. Remove one to add another.");
+        if (roles.indexOf(v) === -1) roles.push(v);
+        box.value = "";
+        return saveRoles();
+      });
+      var KIND = { now: "Fits now", sideways: "Sideways move", "step up": "Step up" };
+      document.getElementById("suggest-roles").addEventListener("click", function () {
+        var b = this, m = document.getElementById("suggest-msg"), list = document.getElementById("role-ideas");
+        b.disabled = true; m.textContent = "Reading your CV…"; list.textContent = "";
+        post("/api/master/write", { task: "roles" })
+          .then(function (r) {
+            m.textContent = "";
+            r.roles.forEach(function (x) {
+              var li = el("li"), txt = el("div");
+              txt.appendChild(el("span", "kind", KIND[x.kind] || "Idea"));
+              txt.appendChild(el("strong", null, x.role));
+              txt.appendChild(el("p", null, x.why));
+              if (x.check) txt.appendChild(el("p", "check-line", "Check first: " + x.check));
+              var add = el("button", "btn btn-ghost small-btn add", "Add"); add.type = "button"; add.dataset.role = x.role;
+              add.addEventListener("click", function () {
+                if (roles.length >= 8) { say("That's eight already. Remove one to add another.", false); return; }
+                if (roles.indexOf(x.role) === -1) roles.push(x.role);
+                saveRoles().catch(function (err) { say(err.message, false); });
+              });
+              li.appendChild(txt); li.appendChild(add); list.appendChild(li);
+            });
+            document.getElementById("roles-warn").classList.remove("hidden");
+            drawRoles();
+          })
+          .catch(function (err) { m.textContent = /build your cv|bit more/i.test(err.message) ? err.message + " " : err.message; if (/build your cv|bit more/i.test(err.message)) { var a = el("a", null, "Open the CV Builder"); a.href = "/master.html"; m.appendChild(a); } })
+          .then(function () { b.disabled = false; });
+      });
+
+      // Monthly check-in (its own tick box and consent record)
+      var cb = document.getElementById("checkin-box");
+      cb.checked = Boolean(js.checkin);
+      if (js.checkinWording) document.getElementById("checkin-wording").textContent = js.checkinWording.replace(/^Monthly check-in: /, "").replace(/^w/, "W");
+      cb.addEventListener("change", function () {
+        cb.disabled = true;
+        post("/api/account/checkin", { on: cb.checked })
+          .then(function (r) { say(r.message, true); })
+          .catch(function (err) { cb.checked = !cb.checked; say(err.message, false); })
+          .then(function () { cb.disabled = false; });
+      });
+    }
+
+    // ---- Share Comquat: the person's own words, sent their own way.
+    (function () {
+      var LINK = "https://cv.the-common-people.com/account/?mode=signup";
+      var ta = document.getElementById("share-text");
+      if (!ta) return;
+      var full = function () { return ta.value.trim() + " " + LINK; };
+      function refresh() {
+        document.getElementById("share-wa").href = "https://wa.me/?text=" + encodeURIComponent(full());
+        document.getElementById("share-mail").href = "mailto:?subject=" + encodeURIComponent("Free CV and interview help") + "&body=" + encodeURIComponent(full());
+      }
+      ta.addEventListener("input", refresh); refresh();
+      var nat = document.getElementById("share-native");
+      if (navigator.share) {
+        nat.classList.remove("hidden");
+        nat.addEventListener("click", function () { navigator.share({ title: "Comquat", text: ta.value.trim(), url: LINK }).catch(function () {}); });
+      }
+      document.getElementById("share-copy").addEventListener("click", function () {
+        var b = this;
+        (navigator.clipboard ? navigator.clipboard.writeText(full()) : Promise.reject())
+          .then(function () { b.textContent = "Copied"; setTimeout(function () { b.textContent = "Copy link"; }, 2500); })
+          .catch(function () { ta.select(); say("Press Ctrl+C (or long-press and Copy) to copy your message and link.", true); });
+      });
+    })();
 
     // ---- My documents
     var docsList = document.getElementById("docs-list");

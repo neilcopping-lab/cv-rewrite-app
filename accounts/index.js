@@ -8,8 +8,11 @@
 //     on .the-common-people.com, so one sign-in covers every Comquat app.
 //   * Every database read and write runs as the signed-in person, so Supabase's
 //     row level security means they can only ever reach their own rows.
-//   * The secret key is used for one thing only: deleting an account (and the
-//     saved documents in it).
+//   * The secret key is used only by the server, for: deleting an account (and
+//     the saved documents in it), the 12 month closing rule, the monthly
+//     check-in, the one-tap buttons in emails, and the job search status,
+//     photo and saved job roles, always for the signed-in person or the
+//     person a genuine one-tap link was made for.
 //   * Nothing in this module sends anything to an AI service.
 //
 // Settings (Render -> Environment):
@@ -26,6 +29,8 @@ const { createClient } = require("@supabase/supabase-js");
 const resendTopics = require("./resendTopics");
 const documents = require("./documents");
 const inactive = require("./inactive");
+const jobsearch = require("./jobsearch");
+const photo = require("./photo");
 const { zip } = require("./zip");
 
 const TOPICS = ["loudspeaker", "guides", "dispatches", "apprenticeships"];
@@ -109,7 +114,9 @@ function startInactiveAccountJob(opts = {}) {
   if (!enabled()) return null;
   const admin = adminClient();
   if (!admin) return null;
-  return inactive.start({ admin, closeAccount: (u) => closeAccount(admin, u), ...opts });
+  const closing = inactive.start({ admin, closeAccount: (u) => closeAccount(admin, u), ...opts });
+  const checkins = jobsearch.start({ admin });
+  return { stop: () => { closing && closing.stop(); checkins && checkins.stop(); } };
 }
 
 const hasSessionCookie = (req) => /(?:^|;\s*)sb-[^=]+-auth-token/.test(req.headers.cookie || "");
@@ -241,6 +248,9 @@ function mountAccounts(app, opts = {}) {
       memberSince: profile && profile.created_at,
       subscriptions: Object.fromEntries(TOPICS.map((t) => [t, Boolean(subs && subs[t])])),
       wording: WORDING,
+      // null until the job search database change has been made
+      jobSearch: await jobsearch.stateFor(adminClient(), req.user.id).catch(() => null),
+      profileExtras: await photo.stateFor(adminClient(), req.user.id).catch(() => null),
     });
   });
 
@@ -367,12 +377,15 @@ function mountAccounts(app, opts = {}) {
       })),
     };
     res.set("Cache-Control", "no-store");
-    if (!docs.length) {
+    const pic = await photo.fileFor(adminClient(), req.user.id).catch(() => null);
+    if (pic) out.about += " Your profile photo is in the zip as profile-photo.jpg.";
+    if (!docs.length && !pic) {
       res.set("Content-Disposition", 'attachment; filename="my-comquat-data.json"');
       return res.json(out);
     }
-    // With saved documents, send one zip: the data file plus every document.
+    // With saved documents or a photo, send one zip: the data file plus every document.
     const files = [{ name: "my-comquat-data.json", data: JSON.stringify(out, null, 2) }];
+    if (pic) files.push({ name: "profile-photo.jpg", data: pic });
     const used = new Set();
     for (const d of docs) {
       const row = await documents.getOne(req, d.id);
@@ -448,6 +461,11 @@ function mountAccounts(app, opts = {}) {
     await req.sb.auth.signOut().catch(() => {});
     res.json({ ok: true });
   });
+
+  // ---- My job search, one-tap email buttons, photo, saved job roles ------------
+  const linkLimit = limiter(30, 15 * 60 * 1000);
+  jobsearch.mount(app, api, { adminClient, enabled, needUser, writeLimit, requireJson, linkLimit });
+  photo.mount(api, { adminClient, needUser, writeLimit, requireJson });
 
   app.use("/api/account", express.json({ limit: "50kb" }), api);
 
