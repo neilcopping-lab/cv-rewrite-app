@@ -92,9 +92,18 @@
   var wasDone = {};
   function renderSteps() {
     var nav = $("steps"); nav.textContent = "";
+    var cnt = document.getElementById("stepCount");
+    if (!cnt) { cnt = document.createElement("p"); cnt.id = "stepCount"; cnt.className = "step-count"; cnt.setAttribute("aria-live", "polite"); nav.parentNode.insertBefore(cnt, nav); }
+    var curStep = STEPS[step - 1]; cnt.textContent = curStep ? "Step " + step + " of " + STEPS.length + ": " + curStep.label : "";
     STEPS.forEach(function (s) {
       var b = el("button", { type: "button", class: "stp" + (s.done() ? " done" : "") }, [el("span", { class: "n" }, [el("span", { text: String(s.n) })]), document.createTextNode(s.label)]);
       if (s.n === step) b.setAttribute("aria-current", "step");
+      // Health check folded into the step tabs: a coloured dot for the worst stop on that step.
+      if (HEALTH && HEALTH.stops && (filled() || cv.healthStart)) {
+        var order = { red: 3, amber: 2, green: 1 }, worst = null;
+        HEALTH.stops.forEach(function (st) { if (st.step === s.key && order[st.rag] && (!worst || order[st.rag] > order[worst.rag])) worst = st; });
+        if (worst) { b.appendChild(el("i", { class: "hdot " + worst.rag, "aria-hidden": "true" })); b.title = worst.title + ": " + worst.note; b.setAttribute("aria-label", s.label + ", health check " + ((typeof RAG_WORD !== "undefined" && RAG_WORD[worst.rag]) || worst.rag)); }
+      }
       b.addEventListener("click", function () { go(s.n); });
       nav.appendChild(b);
     });
@@ -850,6 +859,7 @@
   function healthStrip() {
     var bar = $("hstrip"); if (!bar || !HEALTH) return;
     bar.textContent = "";
+    return; // folded into the step tabs (UX review, Nov 2026)
     // Nothing to check yet: an all-red strip on an empty CV would just be off-putting.
     if (!filled() && !cv.healthStart) return;
     bar.appendChild(el("span", { class: "hstrip-lab", text: "Health check:" }));

@@ -353,3 +353,8 @@ details.ideas li{margin:0 0 4px}
 
 .ai-warn{font-size:14.5px;line-height:1.5;border-left:4px solid #FF8A1F;background:#FFF8EE;color:#17191C;padding:12px 14px;border-radius:0 10px 10px 0;margin:14px 0}
 .ai-warn-top{margin:10px 0 14px}
+/* Health check dots on the step tabs, and a step counter on phones (UX review, Nov 2026) */
+.stp .hdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:6px;flex:none}
+.stp .hdot.red{background:#D93B3B}.stp .hdot.amber{background:#F2A900}.stp .hdot.green{background:#2E9E5B}
+.step-count{display:none;margin:12px 0 0;font-weight:700;font-size:15px}
+@media (max-width:600px){.step-count{display:block}}

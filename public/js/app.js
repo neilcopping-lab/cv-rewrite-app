@@ -155,6 +155,7 @@ $("#go1").onclick = async () => {
     if (ex.advertText) $("#advertText").value = ex.advertText;
     const g = await api("/api/gaps", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
     renderGaps(g); prog.done(); showStep(2);
+    try { if (window.va) window.va("event", "CV Rewrite started", {}); } catch (e) {}
   } catch (e) { prog.fail(mapErr(e.message)); }
 };
 
@@ -660,6 +661,7 @@ async function downloadFile(type) {
       busy(s, false, "⚠ " + (j.error || ("Error " + r.status))); return;
     }
     const blob = await r.blob();
+    try { if (window.va) window.va("event", "CV Rewrite downloaded", { type: type }); } catch (e) {}
     const cd = r.headers.get("Content-Disposition") || "";
     const m = cd.match(/filename="([^"]+)"/);
     const name = m ? m[1] : "cv." + (type === "docx" ? "docx" : "pdf");
