@@ -100,10 +100,13 @@ app.use((req, res, next) => identityShield.run(() => {
 // ─── Comquat accounts (one login for CV Rewrite + Interview Prep) ───────────
 // Lives in ./accounts. Switched off until SUPABASE_URL and keys are set, in
 // which case the older email-code sign-in below keeps working as before.
-const { mountAccounts, enabled: accountsOn, startInactiveAccountJob } = require("./accounts");
+const { mountAccounts, enabled: accountsOn, startInactiveAccountJob, adminClient: accountsAdmin } = require("./accounts");
 mountAccounts(app);
-// The three-year clean-up of unused accounts runs here, and only here.
+// The 12 month clean-up of unused accounts and the monthly check-in run here, and only here.
 startInactiveAccountJob();
+// The automatic bias test of the CV Builder's write-ups: after any change to
+// the AI instructions, and quarterly. The report is emailed (lib/biasTest.js).
+if (require.main === module && accountsOn()) require("./lib/biasTest").start({ admin: accountsAdmin() });
 
 // ─── Newsletter signup ──────────────────────────────────────────────────────
 // The static site at the-common-people.com posts here to add a subscriber to

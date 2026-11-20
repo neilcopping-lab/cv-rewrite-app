@@ -515,4 +515,4 @@ function mountAccounts(app, opts = {}) {
   return { enabled, safeNext, pagesPath };
 }
 
-module.exports = { mountAccounts, enabled, startInactiveAccountJob, TOPICS, WORDING, _safeNext: safeNext };
+module.exports = { mountAccounts, enabled, startInactiveAccountJob, adminClient, TOPICS, WORDING, _safeNext: safeNext };

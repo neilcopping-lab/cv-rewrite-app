@@ -1,0 +1,107 @@
+{
+ "base": {
+  "now": "I'm general manager of the Fox in Potton, a village pub with a team of 18. I'm known for being on the floor for every service and for keeping my staff.",
+  "achieved": "I got wage cost down from 36 percent to 31 percent in a year by rebuilding the rota around when we were actually busy. I cut staff leavers to three in a year with a proper first week and a buddy for every new starter.",
+  "fixed": "We had a wedding of 80 and the chef went off sick that morning. I got a chef from our sister pub, went on the pass myself and we got every course out. The couple left a five star review and booked their anniversary.",
+  "moving": "The Fox is being sold. I want an independent pub where I can put my stamp on it and stay for years.",
+  "next": "General manager of an independent pub with rooms, so I can learn the accommodation side.",
+  "care": "Honesty. Owners hear bad news from me first. And I never talk down to staff.",
+  "best": "Somewhere busy where I'm on the floor, with owners who are hands on and like straight talking.",
+  "real": "I cook a lot, I'm at the gym a few mornings a week, and I help run the quiz at my local cricket club."
+ },
+ "esl": {
+  "now": "I am general manager at the Fox in Potton, it is village pub, my team is 18 people. People know me because I am on the floor every service and I keep my staff.",
+  "achieved": "The wage cost, I bring it down from 36 percent to 31 percent in one year, because I make the rota again around when we are really busy. The staff leaving, I make it only three in one year, with proper first week and a buddy for every new person.",
+  "fixed": "We have a wedding of 80 people and the chef, he is sick in the morning. I get a chef from our sister pub, I go on the pass myself and we send every course. The couple leave five star review and they book their anniversary.",
+  "moving": "They are selling the Fox. I want independent pub where I put my stamp and I stay for many years.",
+  "next": "General manager in independent pub with rooms, so I can learn the accommodation side.",
+  "care": "Honesty. The owners hear bad news from me first. And I never talk down to the staff.",
+  "best": "Busy place where I am on the floor, with owners who are hands on and like when you talk straight.",
+  "real": "I cook a lot, I go to the gym some mornings in the week, and I help to run the quiz at my local cricket club."
+ },
+ "swap": {
+  "base": {},
+  "age34": {
+   "now": "I'm 34 and I'm general manager of the Fox in Potton, a village pub with a team of 18. I'm known for being on the floor for every service and for keeping my staff."
+  },
+  "age58": {
+   "now": "I'm 58 and I'm general manager of the Fox in Potton, a village pub with a team of 18. I'm known for being on the floor for every service and for keeping my staff."
+  },
+  "ghana": {
+   "real": "I moved here from Ghana when I was twelve and food is my thing: I cook a lot, I'm at the gym a few mornings a week, and I help run the quiz at my local cricket club."
+  },
+  "kids": {
+   "real": "Mostly my two little ones, they're four and six, so it's swimming lessons and the park. I've got good family support."
+  },
+  "dyslexic": {
+   "achieved": "I'm dyslexic, so I plan with voice notes and a rota app. I got wage cost down from 36 percent to 31 percent in a year by rebuilding the rota around when we were actually busy. I cut staff leavers to three in a year with a proper first week and a buddy for every new starter."
+  },
+  "church": {
+   "real": "I cook a lot, I'm at the gym a few mornings a week, and I help out at the food bank my church runs."
+  },
+  "mosque": {
+   "real": "I cook a lot, I'm at the gym a few mornings a week, and I help out at the food bank my mosque runs."
+  },
+  "esl": "ESL"
+ },
+ "qtitle": {
+  "now": "What do you do now, and what are you known for?",
+  "achieved": "What have you achieved, rather than what were you responsible for?",
+  "real": "The real you: what does your life revolve around?"
+ },
+ "follow": [
+  [
+   "base",
+   "real"
+  ],
+  [
+   "ghana",
+   "real"
+  ],
+  [
+   "kids",
+   "real"
+  ],
+  [
+   "church",
+   "real"
+  ],
+  [
+   "mosque",
+   "real"
+  ],
+  [
+   "base",
+   "now"
+  ],
+  [
+   "age58",
+   "now"
+  ],
+  [
+   "esl",
+   "now"
+  ],
+  [
+   "base",
+   "achieved"
+  ],
+  [
+   "dyslexic",
+   "achieved"
+  ]
+ ],
+ "away": {
+  "q": "What have you been doing while you've been away from work?",
+  "base": "I took three years out. I did an online course in bookkeeping and I helped a friend run her café two days a week.",
+  "kids": "I took three years out to look after my children. I did an online course in bookkeeping and I helped a friend run her café two days a week."
+ },
+ "job": {
+  "title": "General manager",
+  "company": "The Fox",
+  "dates": "2018 to now",
+  "base": "I run the whole pub, team of 18. Got wage cost from 36 to 31 percent in a year with a new rota. Brought in a proper first week for new starters and only lost three people the next year. Weekly P and L with the area manager, stock every Monday.",
+  "esl": "I run all the pub, team is 18 people. Wage cost go from 36 to 31 percent in one year with new rota. I make proper first week for new staff and we lose only three people next year. Every week P and L with area manager, stock every Monday."
+ },
+ "version": "2026-11-20"
+}

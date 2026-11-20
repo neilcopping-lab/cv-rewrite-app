@@ -15,7 +15,7 @@ const P = (t) => `<p style="font-size:16px;line-height:1.55;margin:0 0 16px">${t
 const BTN = (href, label, colour) =>
   `<a href="${href}" style="display:inline-block;background:${colour || "#1F6B45"};color:#FFF3E2;text-decoration:none;font-weight:bold;font-size:16px;padding:13px 24px;border-radius:6px">${esc(label)}</a>`;
 
-async function sendViaResend(to, msg, headers) {
+async function sendViaResend(to, msg, headers, attachments) {
   const key = process.env.RESEND_API_KEY;
   if (!key) throw new Error("no RESEND_API_KEY");
   const res = await fetch("https://api.resend.com/emails", {
@@ -25,6 +25,7 @@ async function sendViaResend(to, msg, headers) {
       from: process.env.ACCOUNT_EMAIL_FROM || process.env.RESEND_FROM || "Comquat <cv@the-common-people.com>",
       to: [to], subject: msg.subject, html: msg.html, text: msg.text,
       ...(headers ? { headers } : {}),
+      ...(attachments && attachments.length ? { attachments: attachments.map((a) => ({ filename: a.filename, content: Buffer.from(a.content).toString("base64") })) } : {}),
     }),
   });
   if (!res.ok) throw new Error(`Resend ${res.status} ${(await res.text().catch(() => "")).slice(0, 200)}`);
