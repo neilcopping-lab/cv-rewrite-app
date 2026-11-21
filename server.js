@@ -438,6 +438,8 @@ app.post(
       if (req.body.links) { try { st.links = JSON.parse(req.body.links); } catch (_) {} }
       // Optional writing style + a sample of the candidate's own writing to mirror.
       if (req.body.writingStyle) st.writingStyle = req.body.writingStyle;
+      // A job card from Your job hunt this CV is for.
+      if (typeof req.body.jobId === "string" && /^[0-9a-f-]{36}$/i.test(req.body.jobId)) st.jobId = req.body.jobId;
       if (typeof req.body.styleSample === "string") st.styleSample = req.body.styleSample.slice(0, 4000);
       // CV
       if (req.files?.cvFile?.[0]) {
@@ -489,13 +491,37 @@ app.post(
 );
 
 // ─── Step 2, the skills-gap engine (two passes) ────────────────────────────
+const { fitVerdict } = require("./lib/fit");
+
+// Save this job to the person's job hunt, so the CV and advert carry into
+// Interview Prep. Signed-in people only; quietly skipped if it can't be done.
+async function saveJobCard(req, st) {
+  if (!req.user || !req.sb || !st.advertText) return;
+  try {
+    let cvText = "";
+    try { cvText = masterCv.toText(st.cv) || ""; } catch (_) {}
+    const role = (st.cv && st.cv.header && st.cv.header.targetRole && !/\[[A-Z_ ]+\]/.test(st.cv.header.targetRole)) ? st.cv.header.targetRole : "";
+    const row = { advert: String(st.advertText).slice(0, 30000), cv_text: cvText.slice(0, 40000), updated_at: new Date().toISOString() };
+    if (role) row.title = role.slice(0, 200);
+    if (st.fit) { row.fit = st.fit.level; row.fit_note = st.fit.note.slice(0, 2000); }
+    if (st.jobId) {
+      const { data } = await req.sb.from("job_hunt").update(row).eq("id", st.jobId).eq("user_id", req.user.id).select("id").maybeSingle();
+      if (data) return;
+    }
+    const { data } = await req.sb.from("job_hunt").insert({ ...row, title: row.title || "A job I'm applying for", user_id: req.user.id }).select("id").single();
+    if (data) st.jobId = data.id;
+  } catch (e) { console.error("[jobhunt] save:", e.message); }
+}
+
 app.post("/api/gaps", async (req, res) => {
   try {
     const st = S(req);
     if (!st.cvText || !st.advertText) return res.status(400).json({ error: "Add your CV and the advert first." });
     st.gaps = await gapEngine.detectGaps({ cvText: st.cvText, advertText: st.advertText });
     st.questions = await gapEngine.buildQuestions({ cvText: st.cvText, advertText: st.advertText, gaps: st.gaps });
+    st.fit = fitVerdict(st.gaps.requirements || []);
     res.json({
+      fit: st.fit,
       ok: true,
       requirements: st.gaps.requirements || [],
       gapQuestions: st.questions.gapQuestions || [],
@@ -609,6 +635,7 @@ async function resolveWork(st, { resolutions, acceptLeaveOutArr }) {
   scrubCv(cv); // strip mechanical AI clichés
   const prog = checks.run(cv);
   st.cv = cv;
+  saveJobCard(req, st);
   st.checkReport = { fabrication: fab, programmatic: prog, review };
   st.cvVersion = (st.cvVersion || 0) + 1;
   st.paidVersion = null;

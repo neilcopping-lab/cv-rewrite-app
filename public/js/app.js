@@ -148,6 +148,7 @@ $("#go1").onclick = async () => {
     fd.append("links", JSON.stringify(links));
     // Writing style + optional voice sample.
     if ($("#writingStyle")) fd.append("writingStyle", $("#writingStyle").value);
+    if (STATE.jobId) fd.append("jobId", STATE.jobId);
     if ($("#styleSample") && $("#styleSample").value.trim()) fd.append("styleSample", $("#styleSample").value.trim());
     const ex = await api("/api/extract", { method: "POST", body: fd });
     // Show the extracted text in the boxes so you can see it worked and edit it.
@@ -160,6 +161,15 @@ $("#go1").onclick = async () => {
 };
 
 function renderGaps(g) {
+  // Is it worth applying? Shown first, kindly, and never a dead end.
+  const fb = $("#fitBox");
+  if (fb) {
+    if (g.fit) {
+      const col = { green: "#1F6B45", amber: "#B25E00", red: "#B42318" }[g.fit.level];
+      fb.innerHTML = `<div style="border-left:6px solid ${col};background:#fff;border-radius:10px;padding:14px 16px;margin:0 0 16px"><p style="margin:0;font-size:20px;font-weight:700;color:${col}">${escHtml(g.fit.label)}</p><p style="margin:6px 0 0">${escHtml(g.fit.note)}</p><p class="small" style="margin:6px 0 0">Two good applications beat fifty. You can carry on and rewrite your CV whatever this says.</p></div>`;
+      fb.classList.remove("hidden");
+    } else fb.classList.add("hidden");
+  }
   if (g.note) { const n = $("#gapNote"); n.classList.remove("hidden"); n.textContent = g.note; }
   const reqs = g.requirements || [];
   const covered = reqs.filter((r) => r.status === "covered").length;
@@ -670,6 +680,19 @@ async function downloadFile(type) {
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     busy(s, false, r.headers.get("X-Comquat-Saved") ? 'Downloaded. A copy is saved in <a href="/account/me.html">My documents</a> on your account.' : "Downloaded.");
     await refreshAccount();
+  // Coming from a card in Your job hunt: bring the advert (and the last CV for
+  // this job) across, so nothing is pasted twice.
+  if (/^[0-9a-f-]{36}$/i.test(p.get("job") || "")) {
+    try {
+      const r = await fetch(`/api/account/jobs/${p.get("job")}`, { credentials: "same-origin", cache: "no-store" });
+      const d = r.ok ? await r.json() : null;
+      if (d && d.job) {
+        STATE.jobId = d.job.id;
+        if (d.job.advert && $("#advertText") && !$("#advertText").value.trim()) $("#advertText").value = d.job.advert;
+        if (d.job.cv_text && $("#cvText") && !$("#cvText").value.trim()) $("#cvText").value = d.job.cv_text;
+      }
+    } catch (e) {}
+  }
     maybeAskFeedback();
   } catch (e) { busy(s, false, "⚠ " + e.message); }
 }
