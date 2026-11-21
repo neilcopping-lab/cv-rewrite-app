@@ -79,7 +79,7 @@ section:nth-of-type(even){background:var(--navy-deep)}
 .vcard{flex:0 0 auto;width:158px;margin-right:16px;padding:12px;border-radius:12px;text-align:center}
 .vcard img{width:100%;height:auto;border-radius:3px;box-shadow:0 5px 16px rgba(0,0,0,.4);background:#fff;display:block}
 .vcard .nm{display:block;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05em;font-weight:600;font-size:13px;line-height:1.15;margin-top:10px}
-.vcard .tag{display:block;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05em;font-size:10px;opacity:.85;margin-top:3px}
+.vcard .tag{display:block;font-family:var(--font-label);text-transform:uppercase;letter-spacing:.05em;font-size:12px;opacity:1;margin-top:3px}
 @media(prefers-reduced-motion:reduce){.vtrack{animation:none}.vcar{overflow-x:auto}}
 
 /* before / after CV images (small, clearly labelled) */

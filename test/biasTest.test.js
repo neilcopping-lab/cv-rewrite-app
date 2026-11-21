@@ -43,12 +43,12 @@ test("a full run with the test AI emails the report with every write-up attached
   assert.strictEqual(att.writeUps.length, 37);
 });
 
-test("schedule: first run, then after a change to the instructions, then quarterly", () => {
+test("schedule: first run, then after a change to the instructions, then monthly", () => {
   const t = Date.now(), hash = bias.promptHash();
   assert.strictEqual(bias.dueReason({}, t), "the first automatic run");
   assert.strictEqual(bias.dueReason({ lastDone: { at: t, hash } }, t), null);
   assert.strictEqual(bias.dueReason({ lastDone: { at: t, hash: "older" } }, t), "the AI instructions changed");
-  assert.strictEqual(bias.dueReason({ lastDone: { at: t - 92 * DAY, hash } }, t), "the quarterly check");
+  assert.strictEqual(bias.dueReason({ lastDone: { at: t - 31 * DAY, hash } }, t), "the monthly check");
   assert.strictEqual(bias.dueReason({ running: { at: t - 3600e3 } }, t), null, "not while one is running");
   assert.strictEqual(bias.dueReason({ lastFail: { at: t - 3600e3 } }, t), null, "waits after a failure");
 });
