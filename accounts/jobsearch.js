@@ -32,12 +32,14 @@ const ACCOUNT_URL = () => `${BASE()}/account/me.html`;
 const SHARE_URL = "https://cv.the-common-people.com/account/?mode=signup";
 
 const CHECKIN_WORDING = "Monthly check-in: while I'm looking for work, send me a short email once a month asking how it's going, with one tap to say I've found a job.";
+const WEEKLY_WORDING = "Monday email: while I'm looking for work, send me a short email each Monday with the two jobs I've picked for the week and any follow-ups that are due.";
 
 // ---- signed one-tap links -----------------------------------------------------
 const ACTIONS = {
   still: "Still looking",
   gotjob: "I've got a job",
   stopcheckin: "Stop the monthly check-in",
+  stopweekly: "Stop the Monday email",
   keep: "Keep my account open",
 };
 const b64 = (buf) => Buffer.from(buf).toString("base64url");
@@ -174,6 +176,15 @@ async function setCheckin(admin, userId, on, source) {
   }
   return was !== on;
 }
+async function setWeekly(admin, userId, on, source) {
+  const { data: before, error: be } = await admin.from("subscriptions").select("weekly_two").eq("user_id", userId).maybeSingle();
+  if (be) throw new Error(be.message);
+  const was = Boolean(before && before.weekly_two);
+  const { error } = await admin.from("subscriptions").upsert({ user_id: userId, weekly_two: on }, { onConflict: "user_id" });
+  if (error) throw new Error(error.message);
+  if (was !== on) await admin.from("consent_log").insert({ user_id: userId, topic: "weekly_two", granted: on, source, wording: WEEKLY_WORDING });
+  return was !== on;
+}
 async function setStatus(admin, userId, status) {
   const { error } = await admin.from("profiles").update({ search_status: status, search_changed_at: new Date().toISOString() }).eq("id", userId);
   if (error) throw new Error(error.message);
@@ -192,8 +203,10 @@ async function perform(admin, userId, action) {
     await setStatus(admin, userId, "paused");
   } else if (action === "stopcheckin") {
     await setCheckin(admin, userId, false, "email");
+  } else if (action === "stopweekly") {
+    await setWeekly(admin, userId, false, "email");
   }
-  if (action !== "stopcheckin") await markUsed(admin, userId);
+  if (action !== "stopcheckin" && action !== "stopweekly") await markUsed(admin, userId);
   return { ok: true };
 }
 
@@ -205,6 +218,8 @@ const PAGES = {
     done: "Congratulations! Your account is paused and the check-ins have stopped. When you're looking again, sign in and press I'm looking again.", },
   stopcheckin: { ask: "Stop the monthly check-in?", sub: "You won't get the monthly check-in email any more. Your account and everything in it stay as they are.", button: "Yes, stop these emails",
     done: "Done. No more check-ins. You can switch them back on from your account page whenever you like.", },
+  stopweekly: { ask: "Stop the Monday email?", sub: "You won't get the Monday email about your two jobs for the week any more. Your job hunt and everything else in your account stay as they are.", button: "Yes, stop these emails",
+    done: "Done. No more Monday emails. You can switch them back on from your account page whenever you like.", },
   keep: { ask: "Keep your account open?", sub: "Your account and everything in it will stay, and the 12 month clock starts again from today.", button: "Yes, keep my account",
     done: "Done. Your account stays open, and nothing will close for at least another 12 months.", },
 };
@@ -229,6 +244,7 @@ const oopsPage = (why) => page("Link not working", `<h1>That link isn't working<
   : "It looks incomplete. Try copying the whole link from the email, or sign in to make the change there."}</p><p><a class="btn btn-ghost" href="${ACCOUNT_URL()}">Go to my account</a></p>`);
 
 // ---- routes ---------------------------------------------------------------------
+const UNSUB = new Set(["stopcheckin", "stopweekly"]);
 // helpers: { adminClient, enabled, needUser, writeLimit, requireJson, linkLimit }
 function mount(app, api, h) {
   const form = express.urlencoded({ extended: false, limit: "4kb" });
@@ -257,15 +273,15 @@ function mount(app, api, h) {
   // link opened in a browser.
   app.get("/account/unsub", h.linkLimit, (req, res) => {
     const v = verify(req.query.t);
-    if (v.error || v.action !== "stopcheckin") return send(res, 400, oopsPage(v.error || "broken"));
-    send(res, 200, askPage(String(req.query.t), "stopcheckin"));
+    if (v.error || !UNSUB.has(v.action)) return send(res, 400, oopsPage(v.error || "broken"));
+    send(res, 200, askPage(String(req.query.t), v.action));
   });
   app.post("/account/unsub", h.linkLimit, form, async (req, res) => {
     const v = verify(req.query.t || (req.body && req.body.t));
-    if (v.error || v.action !== "stopcheckin") return res.status(400).send("Link not valid");
+    if (v.error || !UNSUB.has(v.action)) return res.status(400).send("Link not valid");
     const admin = h.enabled() && h.adminClient();
     if (!admin) return res.status(503).send("Try again later");
-    try { await perform(admin, v.userId, "stopcheckin"); res.status(200).send("Unsubscribed"); }
+    try { await perform(admin, v.userId, v.action); res.status(200).send("Unsubscribed"); }
     catch (e) { console.error("[unsub]", e.message); res.status(500).send("Try again later"); }
   });
 
@@ -284,6 +300,18 @@ function mount(app, api, h) {
         : "Welcome back. Your account is active again." });
     } catch (e) {
       console.error("[search]", e.message);
+      res.status(500).json({ error: "We couldn't save that just now. Please try again." });
+    }
+  });
+  api.post("/weekly", h.writeLimit, h.requireJson, h.needUser, async (req, res) => {
+    const admin = h.adminClient();
+    if (!admin) return res.status(503).json({ error: "This isn't switched on yet." });
+    try {
+      const on = Boolean(req.body.on);
+      await setWeekly(admin, req.user.id, on, "account");
+      res.json({ ok: true, on, message: on ? "Done. Your first Monday email comes next Monday, while you're looking." : "Done. No more Monday emails." });
+    } catch (e) {
+      console.error("[weekly]", e.message);
       res.status(500).json({ error: "We couldn't save that just now. Please try again." });
     }
   });
@@ -310,7 +338,13 @@ async function stateFor(admin, userId) {
     admin.from("subscriptions").select("checkin").eq("user_id", userId).maybeSingle(),
   ]);
   if (p.error || s.error) return null;
+  // The Monday email needs its own database change. Until it's made, the
+  // tick box stays hidden and the check-in carries on as normal.
+  const w = await admin.from("subscriptions").select("weekly_two").eq("user_id", userId).maybeSingle();
+  const weekly = w.error ? null : Boolean(w.data && w.data.weekly_two);
   return {
+    weekly,
+    weeklyWording: WEEKLY_WORDING,
     status: (p.data && p.data.search_status) || "looking",
     changedAt: (p.data && p.data.search_changed_at) || null,
     checkin: Boolean(s.data && s.data.checkin),
@@ -319,4 +353,4 @@ async function stateFor(admin, userId) {
   };
 }
 
-module.exports = { sign, verify, checkinEmail, runCheckins, start, mount, stateFor, perform, linkFor, unsubFor, CHECKIN_WORDING, CHECKIN_EVERY, ACTIONS };
+module.exports = { sign, verify, checkinEmail, runCheckins, start, mount, stateFor, perform, setWeekly, linkFor, unsubFor, ACCOUNT_URL, CHECKIN_WORDING, WEEKLY_WORDING, CHECKIN_EVERY, ACTIONS };

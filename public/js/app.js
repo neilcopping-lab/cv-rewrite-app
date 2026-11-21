@@ -198,6 +198,7 @@ function renderGaps(g) {
       </div>`;
     }).join("");
   $$("[data-rec]").forEach((b) => (b.onclick = () => recordAnswer(b.dataset.rec)));
+  storyPickers("#questions [data-answer]");
 }
 
 // ── STEP 2 ──
@@ -287,6 +288,7 @@ function renderDraft(j) {
        </details>`
     : "";
   renderMatchReport(j.matchReport);
+  storySaveOffer();
   if (missing.length) {
     const rb = $("#resolveBtn"); if (rb) rb.onclick = resolveMissing;
     const la = $("#leaveAllBtn"); if (la) la.onclick = leaveAllAndContinue;
@@ -750,6 +752,7 @@ async function loadCoverQuestions() {
         <textarea data-cq="${escHtml(q.id)}" rows="2" placeholder="Optional - in your own words" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font-body);font-size:14px;resize:vertical"></textarea>
       </div>`).join("");
     _coverQsLoaded = true;
+    storyPickers("#coverQs [data-cq]");
   } catch (_) {}
 }
 function collectCoverAnswers() {
@@ -918,3 +921,83 @@ async function recordAnswer(id) {
     })
     .catch(() => {});
 })();
+
+// ── Story bank ──
+// Signed-in people can drop a story they saved (in their account, the CV
+// Builder or Interview Prep) into any question, and save their answers back.
+// If the bank isn't set up yet, or they're not signed in, none of this shows.
+let _storyLoad = null;
+function loadStories(fresh) {
+  if (fresh) _storyLoad = null;
+  if (!_storyLoad) {
+    _storyLoad = fetch("/api/account/stories", { credentials: "same-origin", cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => (j && Array.isArray(j.stories) ? j.stories : null))
+      .catch(() => null);
+  }
+  return _storyLoad;
+}
+function storyText(st) {
+  return [st.situation, st.action, st.result].map((x) => String(x || "").trim()).filter(Boolean).join(" ");
+}
+async function storyPickers(sel) {
+  const stories = await loadStories();
+  if (!stories || !stories.length) return;
+  $$(sel).forEach((ta) => {
+    if (ta.dataset.storyPicker) return;
+    ta.dataset.storyPicker = "1";
+    const pick = document.createElement("select");
+    pick.setAttribute("aria-label", "Use a story from my bank");
+    pick.style.cssText = "display:block;margin:6px 0;max-width:100%;font-size:13px;padding:6px 8px";
+    pick.innerHTML = `<option value="">Use a story from my bank…</option>` +
+      stories.map((st, i) => `<option value="${i}">${escHtml(st.title || "Untitled story")}</option>`).join("");
+    pick.onchange = () => {
+      const st = stories[Number(pick.value)];
+      if (st) {
+        const add = storyText(st);
+        ta.value = ta.value.trim() ? ta.value.trim() + "\n\n" + add : add;
+        ta.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      pick.value = "";
+    };
+    ta.insertAdjacentElement("afterend", pick);
+  });
+}
+async function storySaveOffer() {
+  const old = $("#storySave"); if (old) old.remove();
+  const answers = (STATE.answers || []).filter((a) => a.answer && a.answer.length >= 20);
+  if (!answers.length) return;
+  const stories = await loadStories();
+  if (!stories) return; // not signed in, or the bank isn't switched on yet
+  const have = new Set(stories.map((st) => storyText(st)));
+  const fresh = answers.filter((a) => !have.has(a.answer.trim()));
+  if (!fresh.length) return;
+  const host = $("#missingBox"); if (!host) return;
+  const box = document.createElement("div");
+  box.id = "storySave";
+  box.className = "notice";
+  box.style.margin = "12px 0";
+  box.innerHTML = `<strong>Keep your answers for next time.</strong> You wrote ${fresh.length} answer${fresh.length > 1 ? "s" : ""} about your experience. Save ${fresh.length > 1 ? "them" : "it"} to your story bank and you can use ${fresh.length > 1 ? "them" : "it"} in your next CV, cover letter or interview.
+    <p style="margin:8px 0 0"><button class="btn ghost" id="storySaveBtn" style="padding:8px 12px">Save to my story bank</button> <span class="muted" id="storySaveMsg"></span></p>`;
+  host.insertAdjacentElement("afterend", box);
+  $("#storySaveBtn").onclick = async () => {
+    const btn = $("#storySaveBtn"), msg = $("#storySaveMsg");
+    btn.disabled = true; msg.textContent = "Saving…";
+    let ok = 0, err = "";
+    for (const a of fresh) {
+      if (a.saved) { ok++; continue; }
+      try {
+        const r = await fetch("/api/account/stories", {
+          method: "POST", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: String(a.question || "My story").replace(/\s+/g, " ").slice(0, 200), action: a.answer, source: "cv_rewrite" }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok && j.ok) { a.saved = true; ok++; } else { err = j.error || "Couldn't save that one."; break; }
+      } catch (_) { err = "Couldn't reach your account. Try again in a moment."; break; }
+    }
+    loadStories(true);
+    if (ok === fresh.length) { msg.textContent = `Saved. You'll find ${ok > 1 ? "them" : "it"} under Your story bank in your account.`; btn.remove(); }
+    else { msg.textContent = (ok ? `Saved ${ok}. ` : "") + err; btn.disabled = false; }
+  };
+}

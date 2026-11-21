@@ -30,6 +30,7 @@ const resendTopics = require("./resendTopics");
 const documents = require("./documents");
 const inactive = require("./inactive");
 const jobsearch = require("./jobsearch");
+const weekly = require("./weekly");
 const photo = require("./photo");
 const { zip } = require("./zip");
 
@@ -116,7 +117,8 @@ function startInactiveAccountJob(opts = {}) {
   if (!admin) return null;
   const closing = inactive.start({ admin, closeAccount: (u) => closeAccount(admin, u), ...opts });
   const checkins = jobsearch.start({ admin });
-  return { stop: () => { closing && closing.stop(); checkins && checkins.stop(); } };
+  const mondays = weekly.start({ admin });
+  return { stop: () => { closing && closing.stop(); checkins && checkins.stop(); mondays && mondays.stop(); } };
 }
 
 const hasSessionCookie = (req) => /(?:^|;\s*)sb-[^=]+-auth-token/.test(req.headers.cookie || "");

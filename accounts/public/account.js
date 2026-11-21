@@ -259,6 +259,22 @@
           .catch(function (err) { cb.checked = !cb.checked; say(err.message, false); })
           .then(function () { cb.disabled = false; });
       });
+
+      // Monday email (its own tick box and consent record). Hidden until the
+      // database change is made.
+      if (js.weekly !== null && js.weekly !== undefined) {
+        var wb = document.getElementById("weekly-box");
+        document.getElementById("weekly-wrap").classList.remove("hidden");
+        wb.checked = Boolean(js.weekly);
+        if (js.weeklyWording) document.getElementById("weekly-wording").textContent = js.weeklyWording.replace(/^Monday email: /, "").replace(/^w/, "W");
+        wb.addEventListener("change", function () {
+          wb.disabled = true;
+          post("/api/account/weekly", { on: wb.checked })
+            .then(function (r) { say(r.message, true); })
+            .catch(function (err) { wb.checked = !wb.checked; say(err.message, false); })
+            .then(function () { wb.disabled = false; });
+        });
+      }
     }
 
     // ---- Share Comquat: the person's own words, sent their own way.
