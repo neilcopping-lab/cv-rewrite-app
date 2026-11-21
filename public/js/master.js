@@ -1942,7 +1942,19 @@
   // ---- start -------------------------------------------------------------------
   fetch("/api/master", { credentials: "same-origin", cache: "no-store" })
     .then(function (r) {
-      if (r.status === 401) { $("loading").classList.add("hidden"); $("signed-out").classList.remove("hidden"); return null; }
+      if (r.status === 401) {
+        $("loading").classList.add("hidden"); $("signed-out").classList.remove("hidden");
+        // The pitch video page: say so, and come straight back here after signing in.
+        if (/[?&]studio=video\b/.test(location.search)) {
+          $("hero-kicker").textContent = "Comquat pitch video"; $("hero-title").textContent = "Your pitch video.";
+          $("hero-lede").textContent = "Plan it, practise it, record it, style it and share it, one step at a time. Your video stays on your device.";
+          var card = $("signed-out");
+          card.querySelector("h2").textContent = "Sign in to make your pitch video";
+          card.querySelector("p").textContent = "It comes free with a Comquat account, so your notes save as you go. Your video itself always stays on your device.";
+          card.querySelectorAll("a").forEach(function (a) { a.href = a.href.replace(/next=[^&]*/, "next=%2Fvideo"); });
+        }
+        return null;
+      }
       return r.json().then(function (j) { if (!r.ok) throw new Error(j.error); return j; });
     })
     .then(function (j) {
