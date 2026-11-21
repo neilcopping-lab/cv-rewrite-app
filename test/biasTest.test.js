@@ -38,7 +38,7 @@ test("a full run with the test AI emails the report with every write-up attached
   const out = await bias.run(null, "started by hand", { send: async (to, msg, headers, attachments) => sent.push({ to, msg, attachments }) });
   assert.ok(out.ok, out.error);
   assert.strictEqual(sent.length, 1);
-  assert.strictEqual(sent[0].to, "neil.copping@aol.co.uk");
+  assert.strictEqual(sent[0].to, "neil.c.copping@outlook.com");
   const att = JSON.parse(sent[0].attachments[0].content.toString());
   assert.strictEqual(att.writeUps.length, 37);
 });
