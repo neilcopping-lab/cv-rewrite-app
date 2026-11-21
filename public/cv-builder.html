@@ -5,7 +5,7 @@
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/png" href="/img/comquat-icon.png">
 <link rel="apple-touch-icon" href="/img/comquat-icon.png">
-<meta property="og:image" content="https://cv.the-common-people.com/img/comquat-cv-builder-hero.jpg">
+<meta property="og:image" content="https://cv.the-common-people.com/img/comquat-cv-builder-hero.jpg?v=2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=DM+Sans:wght@400;500;700&family=Anton&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -136,22 +136,30 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 <link rel="stylesheet" href="/account/fresh.css?v=20261118c">
 <script defer data-site-id="88bb72ef-58ce-4e73-a307-471e35e35b1b" data-api="https://savri.io" src="https://savri.io/script.js"></script>
 <style id="comquat-builder">
-/* CV Builder landing (Nov 2026). The CV Builder keeps its orange-to-pink. */
-body.fx.fx-builder{--hero:linear-gradient(120deg,#FF8A1F 0%,#F25C54 55%,#E8467C 100%);--badge:linear-gradient(135deg,#FF8A1F,#E8467C);--app:#E8467C}
-body.fx.fx-builder section.hero:after{background:#FFB547!important;opacity:.3!important}
-body.fx.fx-builder section.hero .price-flag{color:#B8285A!important}
-.cq-brand .cq-feat.cb{background:linear-gradient(120deg,#FF8A1F,#E8467C);color:#fff}
+/* CV Builder landing (Nov 2026). Purple to pink, the same as the CV Builder itself and its My account card. */
+body.fx.fx-builder{--hero:linear-gradient(120deg,#7C3AED 0%,#B23FC4 50%,#E8467C 100%);--badge:linear-gradient(135deg,#7C3AED,#E8467C);--app:#7C3AED}
+body.fx.fx-builder section.hero:after{background:#FF9BC4!important;opacity:.3!important}
+body.fx.fx-builder section.hero .price-flag{color:#5B21B6!important}
+body.fx.fx-builder main>section:not(.hero) .eyebrow{color:#5B21B6!important}
+body.fx.fx-builder .whatlist strong{color:#5B21B6!important}
+body.fx.fx-builder .tile .ic{color:#B23FC4!important}
+body.fx.fx-builder main a:not(.btn){color:#5B21B6}
+body.fx.fx-builder .btn.ghost:hover{border-color:#B23FC4!important}
+body.fx.fx-builder .faq h3{color:#17191C!important}
+.cq-brand .cq-feat.cb{background:linear-gradient(120deg,#7C3AED,#E8467C);color:#fff}
+/* journey cards: the same coloured stripes as the builder's "Which one's you?" */
 .jgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:22px}
-.jcard{border-radius:20px;padding:22px 22px 24px;color:#fff;box-shadow:0 14px 30px -18px rgba(23,25,28,.55)}
-.jcard h3{color:#fff!important;font-size:24px;margin:0 0 8px}
-.jcard p{margin:0;color:#FFF4EA;font-size:15.5px;line-height:1.5}
-.jcard .jn{display:inline-block;font-family:'DM Sans',sans-serif;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;background:rgba(255,255,255,.22);border-radius:999px;padding:5px 11px;margin-bottom:14px}
-.jcard.j1{background:linear-gradient(140deg,#FF8A1F,#F25C54)}
-.jcard.j2{background:linear-gradient(140deg,#F25C54,#E8467C)}
-.jcard.j3{background:linear-gradient(140deg,#E8467C,#B8285A)}
+.jcard{position:relative;overflow:hidden;background:#fff;border:2px solid #E9DCC8;border-radius:22px;padding:28px 22px 24px;box-shadow:0 10px 30px rgba(23,25,28,.06)}
+.jcard:before{content:"";position:absolute;left:0;right:0;top:0;height:8px}
+.jcard.j1:before{background:linear-gradient(90deg,#FF8A1F,#F25C54)}
+.jcard.j2:before{background:linear-gradient(90deg,#7C3AED,#E8467C)}
+.jcard.j3:before{background:linear-gradient(90deg,#12A88A,#2B7BE4)}
+.jcard h3{font-size:24px;margin:0 0 8px}
+.jcard p{margin:0;color:#3F444B;font-size:15.5px;line-height:1.5}
+.jcard .jn{display:inline-block;font-family:'DM Sans',sans-serif;font-weight:700;font-size:12px;letter-spacing:.12em;text-transform:uppercase;background:#F3ECFF;color:#5B21B6;border-radius:999px;padding:5px 11px;margin-bottom:14px}
 .safe{border-radius:20px;background:#fff;border:1px solid #E9DCC8;padding:22px 24px;margin-top:22px;box-shadow:0 10px 26px rgba(23,25,28,.06)}
 .safe ul{margin:6px 0 0 1.1em;padding:0;line-height:1.65;font-size:15.5px}
-.ai-note{margin-top:16px;padding:14px 16px;border-radius:14px;background:#FFF3E2;border-left:4px solid #E8467C;font-size:15px;color:#17191C}
+.ai-note{margin-top:16px;padding:14px 16px;border-radius:14px;background:#F7F2FF;border-left:4px solid #7C3AED;font-size:15px;color:#17191C}
 @media(max-width:900px){.jgrid{grid-template-columns:1fr}}
 </style>
 </head><body class="fx fx-landing fx-builder">
@@ -182,7 +190,7 @@ body.fx.fx-builder section.hero .price-flag{color:#B8285A!important}
   <p><a class="btn accent" href="/master.html">Start building my CV</a> <a class="btn ghost" href="https://the-common-people.com/guide-cv.html">Read the free CV guide &rarr;</a></p>
   <p class="fine">Stop whenever you like. Your CV is waiting in My account when you come back.</p>
 </div>
-  <img class="cq-hero-img" src="/img/comquat-cv-builder-hero.jpg" alt="Comquat CV Builder: a phone recording a spoken answer next to a CV that's half built, with kumquats, on an orange-to-pink background. Talk it. Build it." width="1600" height="900">
+  <img class="cq-hero-img" src="/img/comquat-cv-builder-hero.jpg?v=2" alt="Comquat CV Builder: a phone recording a spoken answer next to a CV that's half built, with kumquats, on a purple-to-pink background. Talk it. Build it." width="1600" height="900">
 </div></section>
 
 <section><div class="wrap">
