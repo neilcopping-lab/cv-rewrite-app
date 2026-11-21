@@ -46,6 +46,13 @@ async function sync(email, firstName, subs) {
   // via an email link, that choice stands.
   await call("POST", "/contacts", { email: String(email).toLowerCase(), first_name: firstName || undefined });
   await call("PATCH", `/contacts/${addr}/topics`, topics);
+  // The monthly Loudspeaker goes to The Loudspeaker segment, so keep that in
+  // step with the Loudspeaker box too.
+  if (typeof subs.loudspeaker === "boolean") {
+    const seg = process.env.RESEND_AUDIENCE_ID || "c01541fc-f17e-4ef2-a3f1-f5d068f98df1";
+    if (subs.loudspeaker) await call("POST", `/audiences/${seg}/contacts`, { email: String(email).toLowerCase(), first_name: firstName || undefined, unsubscribed: false });
+    else await call("DELETE", `/audiences/${seg}/contacts/${addr}`);
+  }
   return { ok: true, topics: topics.length };
 }
 

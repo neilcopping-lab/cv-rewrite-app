@@ -115,6 +115,8 @@ startInactiveAccountJob();
 // The automatic bias test of the CV Builder's write-ups: after any change to
 // the AI instructions, and quarterly. The report is emailed (lib/biasTest.js).
 if (require.main === module && accountsOn()) require("./lib/biasTest").start({ admin: accountsAdmin() });
+// The Loudspeaker goes out by itself on the last Friday of each month (see lib/loudspeaker.js).
+if (require.main === module) require("./lib/loudspeaker").start();
 
 // ─── Newsletter signup ──────────────────────────────────────────────────────
 // The static site at the-common-people.com posts here to add a subscriber to
