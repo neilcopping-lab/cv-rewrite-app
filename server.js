@@ -80,6 +80,9 @@ app.use(
   })
 );
 app.use(express.static(path.join(__dirname, "public")));
+// Google's MediaPipe person cut-out (Apache 2.0), served from our own site for the
+// video background options. It runs in the person's browser: no video comes back here.
+app.use("/vendor/selfie", express.static(path.join(__dirname, "node_modules/@mediapipe/selfie_segmentation"), { maxAge: "30d", index: false }));
 
 // ─── Identity shield ─────────────────────────────────────────────────────────
 // Every AI call made while handling this request has the person's name, email,

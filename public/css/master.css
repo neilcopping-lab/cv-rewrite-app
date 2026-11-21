@@ -415,3 +415,10 @@ details.ideas li{margin:0 0 4px}
 .v-burn{margin-top:8px}
 .v-burn .v-bar{height:10px;border-radius:999px;background:var(--pith);overflow:hidden;position:relative;margin:6px 0}
 .v-burn .v-fill{height:100%;background:#FF9632;width:0}
+.v-themes{display:flex;flex-wrap:wrap;gap:8px}
+.v-theme{display:inline-flex;align-items:center;gap:8px;font:inherit;font-size:14.5px;font-weight:700;color:var(--ink);background:#fff;border:2px solid var(--pith);border-radius:999px;padding:6px 12px 6px 8px;cursor:pointer}
+.v-theme[aria-checked="true"]{border-color:#1F6B45;box-shadow:0 0 0 3px rgba(31,107,69,.15)}
+.v-theme:disabled{opacity:.5;cursor:not-allowed}
+.v-dots{display:inline-flex}
+.v-dots i{width:16px;height:16px;border-radius:50%;border:2px solid #fff;margin-left:-5px;box-shadow:0 0 0 1px rgba(23,25,28,.15)}
+.v-dots i:first-child{margin-left:0}

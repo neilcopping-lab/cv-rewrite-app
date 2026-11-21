@@ -989,7 +989,45 @@
   var dr = { raf: 0, endAt: 0, manual: -1, idx: -1, idxAt: 0, canvasStream: null };
   var canStyle = !!(window.HTMLCanvasElement && HTMLCanvasElement.prototype.captureStream);
   var logoLight = new Image(); logoLight.src = "/img/comquat-logo-reversed.svg";
+  // Colourways from the Comquat palette: ink, leaf green, cream and kumquat orange,
+  // plus the CV builder's bright purple and pink. The person picks one.
+  var THEMES = (function () {
+  var I = "#17191C", G = "#1F6B45", C = "#FFF3E2", O = "#FF9632", Wh = "#FFFFFF", P = "#7C3AED", K = "#E8467C", PL = "#F3ECFF";
+  return {
+    kumquat: { name: "Kumquat", dots: [I, G, O],
+      card: { bg: "rgba(23,25,28,.9)", text: C, sub: "rgba(255,243,226,.88)", label: O, accent: G, tick: G, mark: C },
+      s: { hook: [I, Wh], name: [I, O], role: [C, G], tag: [I, O], skill: [I, C], proof: [C, G], b1: [C, G], b2: [I, C] },
+      bar: O, end: { pro: I, social: G, text: C, role: O, roleTag: [I, O], made: "rgba(255,243,226,.8)", logo: "light" },
+      hi: O, back: ["#24794F", "#174F34", "rgba(255,150,50,.55)", "rgba(255,243,226,.22)"] },
+    leaf: { name: "Leaf", dots: [G, C, O],
+      card: { bg: "rgba(31,107,69,.94)", text: C, sub: "rgba(255,243,226,.9)", label: O, accent: O, tick: O, mark: I },
+      s: { hook: [I, C], name: [C, G], role: [I, O], tag: [I, O], skill: [C, G], proof: [I, C], b1: [C, G], b2: [I, O] },
+      bar: C, end: { pro: G, social: G, text: C, role: O, roleTag: [I, O], made: "rgba(255,243,226,.8)", logo: "light" },
+      hi: O, back: ["#24794F", "#174F34", "rgba(255,243,226,.25)", "rgba(255,150,50,.35)"] },
+    peel: { name: "Peel", dots: [C, G, O],
+      card: { bg: "rgba(255,243,226,.95)", text: I, sub: "rgba(23,25,28,.75)", label: G, accent: O, tick: G, mark: C },
+      s: { hook: [I, C], name: [I, C], role: [C, G], tag: [C, G], skill: [I, C], proof: [I, O], b1: [I, C], b2: [C, G] },
+      bar: C, end: { pro: C, social: C, text: I, role: G, roleTag: [C, G], made: "rgba(23,25,28,.7)", logo: "dark" },
+      hi: O, back: ["#FFF3E2", "#F1DDBF", "rgba(255,150,50,.35)", "rgba(31,107,69,.18)"] },
+    zest: { name: "Zest", dots: [O, I, G],
+      card: { bg: "rgba(255,150,50,.95)", text: I, sub: "rgba(23,25,28,.8)", label: G, accent: G, tick: G, mark: C },
+      s: { hook: [I, O], name: [C, G], role: [I, O], tag: [C, G], skill: [I, O], proof: [C, I], b1: [I, O], b2: [C, G] },
+      bar: O, end: { pro: I, social: I, text: O, role: C, roleTag: [I, O], made: "rgba(255,243,226,.8)", logo: "light" },
+      hi: O, back: ["#FF9C40", "#E7741C", "rgba(255,243,226,.4)", "rgba(31,107,69,.3)"] },
+    bright: { name: "Bright", dots: [P, K, PL],
+      card: { bg: "rgba(124,58,237,.93)", text: Wh, sub: "rgba(255,255,255,.88)", label: PL, accent: K, tick: K, mark: Wh },
+      s: { hook: [I, Wh], name: [Wh, P], role: [Wh, K], tag: [Wh, K], skill: [P, PL], proof: [Wh, P], b1: [Wh, P], b2: [P, PL] },
+      bar: K, end: { pro: P, social: P, text: Wh, role: PL, roleTag: [Wh, K], made: "rgba(255,255,255,.8)", logo: "light" },
+      hi: K, back: ["#7C3AED", "#5B21B6", "rgba(232,70,124,.5)", "rgba(243,236,255,.25)"] },
+  };
+  })();
+  var TH = function () { return THEMES[vt().theme] || THEMES.kumquat; };
+  var logoDark = new Image(); logoDark.src = "/img/comquat-logo.svg";
+  // On a light Comquat backdrop the corner logo goes dark; over a real room it stays light.
+  var cornerLogo = function () { return vBg === "brand" && TH().end.logo === "dark" ? logoDark : logoLight; };
     var recording = function () { return !!(camRec && camRec.state === "recording"); };
+  var vBg = "none";
+  var canvasOn = function () { return vStyle !== "plain" || vBg !== "none"; };
 
   // The words on screen, saved with the 90 seconds notes.
   var VT = { name: "vt-name", role: "vt-role", hook: "vt-hook", s1skill: "vt-s1skill", s1proof: "vt-s1proof", s2skill: "vt-s2skill", s2proof: "vt-s2proof", bring: "vt-bring" };
@@ -1004,7 +1042,7 @@
   function fillText() {
     Object.keys(VT).forEach(function (k) { $(VT[k]).value = vtVal(k); });
     $("vt-brand").checked = vt().brand !== false;
-    showSuits();
+    showSuits(); renderThemes();
   }
   Object.keys(VT).forEach(function (k) {
     $(VT[k]).addEventListener("input", function () { vt()[k] = $(VT[k]).value; queueSave(); });
@@ -1052,6 +1090,7 @@
   function setStyle(s) {
     if (recording()) return;
     if (s !== "plain" && !canStyle) { $("v-cam-msg").textContent = "This browser can't add words to a video. Try Chrome, Edge or Safari, or record it as Just me."; s = "plain"; }
+    if (recording()) return;
     vStyle = s;
     document.querySelectorAll(".v-style").forEach(function (b) { b.setAttribute("aria-checked", b.getAttribute("data-style") === s ? "true" : "false"); });
     $("v-text").classList.toggle("hidden", s === "plain");
@@ -1064,7 +1103,7 @@
   }
   document.querySelectorAll(".v-style").forEach(function (b) { b.addEventListener("click", function () { setStyle(b.getAttribute("data-style")); }); });
   function liveView() {
-    var styled = vStyle !== "plain" && !!camStream;
+    var styled = canvasOn() && !!camStream;
     $("v-live").classList.toggle("hidden", !camStream);
     $("v-live").classList.toggle("v-src", styled);
     $("v-canvas").classList.toggle("hidden", !styled);
@@ -1073,7 +1112,7 @@
     var lastPrompt = 0;
     if (camStream) (function loop() {
       dr.raf = requestAnimationFrame(loop);
-      if (vStyle !== "plain") paint();
+      if (canvasOn()) paint();
       if (Date.now() - lastPrompt > 200) { lastPrompt = Date.now(); prompter(); }
     })();
   }
@@ -1146,11 +1185,93 @@
     var c = $("v-canvas"), x = c.getContext("2d"), W = c.width, H = c.height, v = $("v-live");
     x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.shadowColor = "transparent"; x.textBaseline = "alphabetic";
     x.fillStyle = BR.ink; x.fillRect(0, 0, W, H);
-    if (v.videoWidth) { var s = Math.max(W / v.videoWidth, H / v.videoHeight), dw = v.videoWidth * s, dh = v.videoHeight * s; x.drawImage(v, (W - dw) / 2, (H - dh) / 2, dw, dh); }
+    if (v.videoWidth) drawCamera(x, W, H, v);
+    if (vStyle === "plain") return;
     var at = where(), brand = vt().brand !== false;
     if (vStyle === "social") paintSocial(x, W, H, at, brand); else paintPro(x, W, H, at, brand);
     if (dr.endAt) endCard(x, W, H, (Date.now() - dr.endAt) / 1000, brand);
   }
+
+  // ---- the background: blur it, or the Comquat backdrop ----
+  // Google's MediaPipe finds where the person is in each frame, in the browser.
+  var seg = { obj: null, loading: false, busy: false, mask: null, failed: false };
+  function segLoad() {
+    if (seg.obj || seg.loading || seg.failed) return;
+    seg.loading = true; $("v-bg-msg").textContent = "Getting the background tool ready…";
+    var sc = document.createElement("script"); sc.src = "/vendor/selfie/selfie_segmentation.js"; sc.async = true;
+    sc.onload = function () {
+      try {
+        var o = new window.SelfieSegmentation({ locateFile: function (f) { return "/vendor/selfie/" + f; } });
+        o.setOptions({ modelSelection: 1, selfieMode: false });
+        o.onResults(function (r) { seg.mask = r.segmentationMask; if (seg.loading) { seg.loading = false; $("v-bg-msg").textContent = ""; } });
+        seg.obj = o;
+      } catch (e) { segFail(); }
+    };
+    sc.onerror = segFail;
+    document.head.appendChild(sc);
+  }
+  function segFail() { seg.failed = true; seg.loading = false; $("v-bg-msg").textContent = "Your browser couldn't run the background tool, so your video will show your background as it is."; }
+  function segTick(v) {
+    if (!seg.obj || seg.busy || v.readyState < 2) return;
+    seg.busy = true;
+    seg.obj.send({ image: v }).then(function () { seg.busy = false; }, function () { seg.busy = false; segFail(); });
+  }
+  var bgCanvas = {};
+  var cvs = function (k, w, h) { var c = bgCanvas[k] || (bgCanvas[k] = document.createElement("canvas")); if (c.width !== w || c.height !== h) { c.width = w; c.height = h; } return c; };
+  function backdrop(W, H) {
+    var bk = TH().back, key = "brand" + W + "x" + H + bk[0];
+    if (bgCanvas[key]) return bgCanvas[key];
+    var c = cvs(key, W, H), x = c.getContext("2d"), g = x.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, bk[0]); g.addColorStop(1, bk[1]); x.fillStyle = g; x.fillRect(0, 0, W, H);
+    var dot = function (cx, cy, r, col) { var rg = x.createRadialGradient(cx, cy, 0, cx, cy, r); rg.addColorStop(0, col); rg.addColorStop(1, "rgba(0,0,0,0)"); x.fillStyle = rg; x.fillRect(0, 0, W, H); };
+    dot(W * 0.85, H * 0.15, Math.max(W, H) * 0.45, bk[2]);
+    dot(W * 0.1, H * 0.9, Math.max(W, H) * 0.4, bk[3]);
+    return c;
+  }
+  function drawCamera(x, W, H, v) {
+    var s = Math.max(W / v.videoWidth, H / v.videoHeight), dw = v.videoWidth * s, dh = v.videoHeight * s, dx = (W - dw) / 2, dy = (H - dh) / 2;
+    if (vBg === "none" || seg.failed) { x.drawImage(v, dx, dy, dw, dh); return; }
+    segLoad(); segTick(v);
+    if (!seg.mask) { x.drawImage(v, dx, dy, dw, dh); return; }
+    // The person, cut out using the mask.
+    var pc = cvs("person", W, H), p = pc.getContext("2d");
+    p.globalCompositeOperation = "copy"; p.drawImage(seg.mask, dx, dy, dw, dh);
+    p.globalCompositeOperation = "source-in"; p.drawImage(v, dx, dy, dw, dh);
+    p.globalCompositeOperation = "source-over";
+    // What goes behind them.
+    if (vBg === "brand") x.drawImage(backdrop(W, H), 0, 0);
+    else {
+      // A soft blur that works in every browser: shrink it right down, then scale it back up.
+      var a = cvs("blurA", Math.max(8, Math.round(W / 28)), Math.max(8, Math.round(H / 28))), b = cvs("blurB", Math.round(W / 7), Math.round(H / 7));
+      var ax = a.getContext("2d"), bx = b.getContext("2d");
+      ax.imageSmoothingEnabled = bx.imageSmoothingEnabled = x.imageSmoothingEnabled = true;
+      ax.drawImage(v, dx / 28, dy / 28, dw / 28, dh / 28);
+      bx.drawImage(a, 0, 0, b.width, b.height);
+      x.drawImage(b, 0, 0, W, H);
+    }
+    x.drawImage(pc, 0, 0);
+  }
+  function renderThemes() {
+    var box = $("v-themes"); box.textContent = "";
+    var cur = THEMES[vt().theme] ? vt().theme : "kumquat";
+    Object.keys(THEMES).forEach(function (k) {
+      var th = THEMES[k];
+      var b = el("button", { type: "button", role: "radio", class: "v-theme", "aria-checked": String(k === cur), "data-theme": k },
+        [el("span", { class: "v-dots", "aria-hidden": "true" }, th.dots.map(function (c) { var d = el("i"); d.style.background = c; return d; })), el("span", { text: th.name })]);
+      b.addEventListener("click", function () { if (recording()) return; vt().theme = k; queueSave(); renderThemes(); });
+      box.appendChild(b);
+    });
+  }
+  document.querySelectorAll(".v-seg [data-bg]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (recording()) return;
+      vBg = b.getAttribute("data-bg");
+      document.querySelectorAll(".v-seg [data-bg]").forEach(function (x) { x.setAttribute("aria-checked", x === b ? "true" : "false"); });
+      if (vBg !== "none" && !canStyle) { $("v-bg-msg").textContent = "This browser can't change your background. Try Chrome, Edge or Safari."; return; }
+      if (vBg !== "none") segLoad(); else $("v-bg-msg").textContent = seg.failed ? $("v-bg-msg").textContent : "";
+      liveView();
+    });
+  });
 
   // Professional: a calm lower third in ink and green, the logo small in the corner.
   function proCard(x, W, H, a, label, big, small, lines) {
@@ -1166,22 +1287,23 @@
     var h = pad * 2 + (label ? 30 : 0) + bigL.length * 50 + smallL.length * 34 + (lines || []).length * 42;
     var Y = H - 56 - h;
     x.save(); x.globalAlpha = easeOut(a);
-    x.fillStyle = "rgba(23,25,28,.9)"; rrect(x, X, Y, w + pad * 2 + 10, h, 14); x.fill();
-    x.fillStyle = BR.green; rrect(x, X, Y, 10, h, 5); x.fill();
+    var cd = TH().card;
+    x.fillStyle = cd.bg; rrect(x, X, Y, w + pad * 2 + 10, h, 14); x.fill();
+    x.fillStyle = cd.accent; rrect(x, X, Y, 10, h, 5); x.fill();
     var cy = Y + pad, L = X + 10 + pad;
-    if (label) { x.font = "700 19px " + BODY; x.fillStyle = BR.orange; x.fillText(label, L, cy + 16); cy += 30; }
-    x.font = "800 44px " + HEAD; x.fillStyle = BR.cream; bigL.forEach(function (l) { x.fillText(l, L, cy + 40); cy += 50; });
-    x.font = "500 27px " + BODY; x.fillStyle = "rgba(255,243,226,.88)"; smallL.forEach(function (l) { x.fillText(l, L, cy + 27); cy += 34; });
+    if (label) { x.font = "700 19px " + BODY; x.fillStyle = cd.label; x.fillText(label, L, cy + 16); cy += 30; }
+    x.font = "800 44px " + HEAD; x.fillStyle = cd.text; bigL.forEach(function (l) { x.fillText(l, L, cy + 40); cy += 50; });
+    x.font = "500 27px " + BODY; x.fillStyle = cd.sub; smallL.forEach(function (l) { x.fillText(l, L, cy + 27); cy += 34; });
     (lines || []).forEach(function (l, k) {
       var la = clamp(a * 3 - k * 0.5); x.globalAlpha = easeOut(a) * la;
-      x.fillStyle = BR.green; x.beginPath(); x.arc(L + 12, cy + 20, 12, 0, 7); x.fill();
-      x.strokeStyle = BR.cream; x.lineWidth = 3; x.beginPath(); x.moveTo(L + 6, cy + 20); x.lineTo(L + 10, cy + 25); x.lineTo(L + 18, cy + 15); x.stroke();
-      x.font = "700 28px " + BODY; x.fillStyle = BR.cream; x.fillText(l, L + 40, cy + 30); cy += 42;
+      x.fillStyle = cd.tick; x.beginPath(); x.arc(L + 12, cy + 20, 12, 0, 7); x.fill();
+      x.strokeStyle = cd.mark; x.lineWidth = 3; x.beginPath(); x.moveTo(L + 6, cy + 20); x.lineTo(L + 10, cy + 25); x.lineTo(L + 18, cy + 15); x.stroke();
+      x.font = "700 28px " + BODY; x.fillStyle = cd.text; x.fillText(l, L + 40, cy + 30); cy += 42;
     });
     x.restore();
   }
   function paintPro(x, W, H, at, brand) {
-    if (brand && !dr.endAt) { x.save(); x.globalAlpha = 0.9; x.shadowColor = "rgba(0,0,0,.45)"; x.shadowBlur = 8; drawLogo(x, logoLight, W - 36, 30, 30, "right"); x.restore(); }
+    if (brand && !dr.endAt) { x.save(); x.globalAlpha = 0.9; x.shadowColor = "rgba(0,0,0,.45)"; x.shadowBlur = 8; drawLogo(x, cornerLogo(), W - 36, 30, 30, "right"); x.restore(); }
     if (dr.endAt) return;
     var t = at.t, len = at.len, part = curParts()[at.i].id;
     if (part === "intro") proCard(x, W, H, vis(t, 0.6, Math.min(8, len - 0.5)), "", vtVal("name") || "(your name)", vtVal("role"));
@@ -1213,31 +1335,31 @@
     x.fillStyle = gr; x.fillRect(0, H * 0.45, W, H * 0.55);
     if (!dr.endAt) {
       var f = at.preview ? (Date.now() % 16000) / 16000 : Math.min(1, at.sec / aimSec());
-      x.fillStyle = "rgba(255,243,226,.35)"; x.fillRect(0, 0, W, 10); x.fillStyle = BR.orange; x.fillRect(0, 0, W * f, 10);
-      if (brand) { x.save(); x.shadowColor = "rgba(0,0,0,.5)"; x.shadowBlur = 10; drawLogo(x, logoLight, 30, 34, 34, "left"); x.restore(); }
+      x.fillStyle = "rgba(255,243,226,.35)"; x.fillRect(0, 0, W, 10); x.fillStyle = TH().bar; x.fillRect(0, 0, W * f, 10);
+      if (brand) { x.save(); x.shadowColor = "rgba(0,0,0,.5)"; x.shadowBlur = 10; drawLogo(x, cornerLogo(), 30, 34, 34, "left"); x.restore(); }
     }
     if (dr.endAt) return;
-    var t = at.t, len = at.len, part = curParts()[at.i].id, hook = vtVal("hook"), Y = H * 0.64;
+    var t = at.t, len = at.len, part = curParts()[at.i].id, hook = vtVal("hook"), Y = H * 0.64, S = TH().s;
     if (part === "intro") {
-      if (hook) sticker(x, hook, "800 50px " + HEAD, 50, BR.ink, "#FFFFFF", W / 2, H * 0.3, -2, vis(t, 0.2, 4.2) * 1.0, W * 0.8);
+      if (hook) sticker(x, hook, "800 50px " + HEAD, 50, S.hook[0], S.hook[1], W / 2, H * 0.3, -2, vis(t, 0.2, 4.2) * 1.0, W * 0.8);
       var n0 = hook ? 4.6 : 0.6;
       var a = vis(t, n0, Math.min(n0 + 9, len - 0.4));
-      var h1 = sticker(x, "I'm " + (vtVal("name") || "(your name)").split(" ")[0], "800 58px " + HEAD, 58, BR.ink, BR.orange, CX, Y, -3, a, MW);
-      sticker(x, vtVal("role"), "700 34px " + BODY, 34, BR.cream, BR.green, CX + 10, Y + h1 / 2 + 44, 2, vis(t, n0 + 0.35, Math.min(n0 + 9, len - 0.4)), MW);
+      var h1 = sticker(x, "I'm " + (vtVal("name") || "(your name)").split(" ")[0], "800 58px " + HEAD, 58, S.name[0], S.name[1], CX, Y, -3, a, MW);
+      sticker(x, vtVal("role"), "700 34px " + BODY, 34, S.role[0], S.role[1], CX + 10, Y + h1 / 2 + 44, 2, vis(t, n0 + 0.35, Math.min(n0 + 9, len - 0.4)), MW);
     }
     var story = part === "story1" ? ["s1skill", "s1proof"] : part === "story2" ? ["s2skill", "s2proof"] : null;
     if (story && vtVal(story[0])) {
       var b = vis(t, 1.2, len - 1.2), tilt = part === "story1" ? -2 : 2;
-      sticker(x, "SKILL", "800 24px " + BODY, 24, BR.ink, BR.orange, CX - 120, Y - 92, tilt * 2, b, MW);
-      var h2 = sticker(x, vtVal(story[0]), "800 54px " + HEAD, 54, BR.ink, BR.cream, CX, Y - 10, tilt, vis(t, 1.4, len - 1.2), MW);
-      sticker(x, vtVal(story[1]), "700 30px " + BODY, 30, BR.cream, BR.green, CX + 6, Y + h2 / 2 + 46, -tilt, vis(t, 2.2, len - 1.2), MW);
+      sticker(x, "SKILL", "800 24px " + BODY, 24, S.tag[0], S.tag[1], CX - 120, Y - 92, tilt * 2, b, MW);
+      var h2 = sticker(x, vtVal(story[0]), "800 54px " + HEAD, 54, S.skill[0], S.skill[1], CX, Y - 10, tilt, vis(t, 1.4, len - 1.2), MW);
+      sticker(x, vtVal(story[1]), "700 30px " + BODY, 30, S.proof[0], S.proof[1], CX + 6, Y + h2 / 2 + 46, -tilt, vis(t, 2.2, len - 1.2), MW);
     }
     if (part === "close" && bringLines().length) {
       var top = Y - 150;
-      sticker(x, "WHAT I'D BRING", "800 26px " + BODY, 26, BR.ink, BR.orange, CX, top, -3, vis(t, 0.8, len + 60), MW);
+      sticker(x, "WHAT I'D BRING", "800 26px " + BODY, 26, S.tag[0], S.tag[1], CX, top, -3, vis(t, 0.8, len + 60), MW);
       bringLines().forEach(function (l, k) {
         var st = at.preview ? 1 + k * 0.5 : 1.4 + k * 1.6;
-        sticker(x, "✓ " + l, "800 36px " + HEAD, 36, k % 2 ? BR.ink : BR.cream, k % 2 ? BR.cream : BR.green, CX + (k % 2 ? 14 : -10), top + 80 + k * 92, k % 2 ? 2 : -2, vis(t, st, len + 60), MW);
+        sticker(x, "✓ " + l, "800 36px " + HEAD, 36, (k % 2 ? S.b2 : S.b1)[0], (k % 2 ? S.b2 : S.b1)[1], CX + (k % 2 ? 14 : -10), top + 80 + k * 92, k % 2 ? 2 : -2, vis(t, st, len + 60), MW);
       });
     }
   }
@@ -1246,21 +1368,22 @@
   function endCard(x, W, H, t, brand) {
     var a = easeOut(t / 0.5), social = vStyle === "social";
     x.save(); x.globalAlpha = a;
-    x.fillStyle = social ? BR.green : BR.ink; x.fillRect(0, 0, W, H);
-    x.textAlign = "center"; x.fillStyle = BR.cream;
+    var E = TH().end;
+    x.fillStyle = social ? E.social : E.pro; x.fillRect(0, 0, W, H);
+    x.textAlign = "center"; x.fillStyle = E.text;
     var size = social ? 84 : 66, cy = H * (social ? 0.42 : 0.42);
     x.font = "800 " + size + "px " + HEAD;
     var nm = wrap(x, vtVal("name") || "", W * 0.84);
     nm.forEach(function (l, k) { x.fillText(l, W / 2, cy + k * size * 1.1); });
     cy += nm.length * size * 1.1 + 10;
     if (vtVal("role")) {
-      if (social) sticker(x, vtVal("role"), "700 38px " + BODY, 38, BR.ink, BR.orange, W / 2, cy + 10, -2, clamp(t / 0.6), W * 0.8);
-      else { x.font = "500 32px " + BODY; x.fillStyle = BR.orange; x.textAlign = "center"; x.fillText(vtVal("role"), W / 2, cy); }
+      if (social) sticker(x, vtVal("role"), "700 38px " + BODY, 38, E.roleTag[0], E.roleTag[1], W / 2, cy + 10, -2, clamp(t / 0.6), W * 0.8);
+      else { x.font = "500 32px " + BODY; x.fillStyle = E.role; x.textAlign = "center"; x.fillText(vtVal("role"), W / 2, cy); }
     }
     if (brand) {
-      x.textAlign = "center"; x.font = "500 22px " + BODY; x.fillStyle = "rgba(255,243,226,.8)";
+      x.textAlign = "center"; x.font = "500 22px " + BODY; x.fillStyle = E.made;
       x.fillText("Made with", W / 2, H - (social ? 210 : 92));
-      drawLogo(x, logoLight, W / 2, H - (social ? 196 : 80), social ? 44 : 34, "center");
+      drawLogo(x, E.logo === "dark" ? logoDark : logoLight, W / 2, H - (social ? 196 : 80), social ? 44 : 34, "center");
     }
     x.restore();
   }
@@ -1299,7 +1422,7 @@
     if (!camStream) return;
     camChunks = []; recStyle = vStyle; dr.endAt = 0; dr.manual = -1; dr.idx = -1;
     var stream = camStream;
-    if (recStyle !== "plain") {
+    if (canvasOn()) {
       dr.canvasStream = $("v-canvas").captureStream(30);
       camStream.getAudioTracks().forEach(function (t) { dr.canvasStream.addTrack(t); });
       stream = dr.canvasStream;
@@ -1330,7 +1453,7 @@
       var tk = takes[recStyle] = { url: URL.createObjectURL(new Blob(camChunks, { type: mime })), ext: ext, mime: mime, file: STYLE_FILE[recStyle] + (vLen === "short" ? "-30s" : ""), len: vLen, audio: null };
       // The sound file finishes a moment after the video.
       setTimeout(function () { if (audChunks.length) tk.audio = new Blob(audChunks, { type: (audRec && audRec.mimeType || "audio/webm").split(";")[0] }); }, 400);
-      document.querySelectorAll(".v-style, .v-seg button").forEach(function (b) { b.disabled = false; });
+      document.querySelectorAll(".v-style, .v-seg button, .v-theme").forEach(function (b) { b.disabled = false; });
       $("v-next-row").classList.add("hidden");
       $("v-rec").disabled = false; $("v-rec").textContent = "● Record another take";
       if (recStyle !== vStyle) setStyle(recStyle); else showTake(recStyle);
@@ -1338,7 +1461,7 @@
       $("v-cam-msg").textContent = "Watch it back. Take two is usually the best one." + (recStyle !== "plain" && !takes[recStyle === "pro" ? "social" : "pro"] ? " Fancy the other style too? Pick it above and record again." : "");
     };
     camRec.start(); if (audRec) audRec.start(); timerStart();
-    document.querySelectorAll(".v-style, .v-seg button").forEach(function (b) { b.disabled = true; });
+    document.querySelectorAll(".v-style, .v-seg button, .v-theme").forEach(function (b) { b.disabled = true; });
     $("v-next-row").classList.toggle("hidden", recStyle === "plain");
     $("v-rec").textContent = "■ Stop recording";
     $("v-cam-msg").textContent = "Recording. The timer above shows where you should be.";
@@ -1442,7 +1565,7 @@
       words.forEach(function (w, i) {
         var txt = w.w + (i < words.length - 1 ? " " : ""), on = w.s != null && t >= w.s && t <= w.e + 0.15;
         x.lineWidth = size * 0.18; x.strokeStyle = BR.ink; x.strokeText(txt, X, Y);
-        x.fillStyle = on ? BR.orange : "#FFFFFF"; x.fillText(txt, X, Y);
+        x.fillStyle = on ? TH().hi : "#FFFFFF"; x.fillText(txt, X, Y);
         X += x.measureText(txt).width;
       });
     } else {
