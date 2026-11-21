@@ -244,7 +244,7 @@
             document.getElementById("roles-warn").classList.remove("hidden");
             drawRoles();
           })
-          .catch(function (err) { m.textContent = /build your cv|bit more/i.test(err.message) ? err.message + " " : err.message; if (/build your cv|bit more/i.test(err.message)) { var a = el("a", null, "Open the CV Builder"); a.href = "/master.html"; m.appendChild(a); } })
+          .catch(function (err) { m.textContent = /build your cv|bit more/i.test(err.message) ? err.message + " " : err.message; if (/build your cv|bit more/i.test(err.message)) { var a = el("a", null, "Open the CV Builder"); a.href = "https://cv.the-common-people.com/cv-builder.html"; m.appendChild(a); } })
           .then(function () { b.disabled = false; });
       });
 
