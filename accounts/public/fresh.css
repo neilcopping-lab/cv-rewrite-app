@@ -165,3 +165,14 @@ body.fx.fx-account .fx-hero:after{background:#FF9BC4;opacity:.3}
 body.fx.fx-account main a:not(.btn):not(.tool){color:#5B21B6}
 body.fx.fx-account .notice,body.fx.fx-account .fx-tip{border-left-color:#7C3AED!important}
 body.fx.fx-account input:focus,body.fx.fx-account textarea:focus,body.fx.fx-account select:focus{border-color:#7C3AED!important;box-shadow:0 0 0 4px rgba(124,58,237,.18)!important}
+
+/* CV Rewrite: ink text on the orange banner, as the brand book says (white on the darker orange was 3.4:1). Nov 2026 */
+body.fx.fx-cv .fx-hero,body.fx.fx-cv .fx-hero h1{color:#17191C!important}
+body.fx.fx-cv .fx-hero p,body.fx.fx-cv .fx-hero .lede{color:#17191C!important}
+body.fx.fx-cv .fx-kicker{background:rgba(23,25,28,.12);color:#17191C}
+body.fx.fx-cv .fx-how li{background:rgba(255,255,255,.35);border-color:rgba(23,25,28,.18);color:#17191C}
+body.fx.fx-cv .fx-hero a:not(.btn){color:#17191C!important}
+body.fx.fx-landing:not(.fx-builder) section.hero h1{color:#17191C!important}
+body.fx.fx-landing:not(.fx-builder) section.hero .eyebrow{color:#17191C!important;background:rgba(23,25,28,.12)}
+body.fx.fx-landing:not(.fx-builder) section.hero .lead,body.fx.fx-landing:not(.fx-builder) section.hero .fine,body.fx.fx-landing:not(.fx-builder) section.hero .muted{color:#17191C!important}
+body.fx.fx-landing:not(.fx-builder) section.hero .btn.ghost{background:rgba(255,255,255,.3)!important;color:#17191C!important;border-color:rgba(23,25,28,.35)!important}
