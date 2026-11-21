@@ -8,7 +8,7 @@ const multer = require("multer");
 
 const brand = require("./lib/brand");
 const extract = require("./lib/extractText");
-const { transcribe } = require("./lib/transcribe");
+const { transcribe, transcribeWords } = require("./lib/transcribe");
 const gapEngine = require("./lib/gapEngine");
 const cvGenerator = require("./lib/cvGenerator");
 const sourceOfTruth = require("./lib/sourceOfTruth");
@@ -990,6 +990,29 @@ function writeAllowed(userId) {
   writeCounts.set(key, n);
   return n <= 40;
 }
+// Captions for a practice video. Only the sound of the take arrives here,
+// never the picture. It goes to OpenAI to be turned into timed words and the
+// file is deleted straight after. Nothing is kept.
+const captionUpload = multer({ dest: path.join(__dirname, "tmp"), limits: { fileSize: 20 * 1024 * 1024, files: 1 } });
+app.post("/api/master/captions", (req, res, next) => captionUpload.single("audio")(req, res, (err) => {
+  if (err) return res.status(413).json({ error: "That take is too long for captions. Keep it under three minutes." });
+  next();
+}), async (req, res) => {
+  const drop = () => { if (req.file) try { fs.unlinkSync(req.file.path); } catch (_) {} };
+  if (!needAccount(req, res)) return drop();
+  if (!req.file) return res.status(400).json({ error: "No sound came through. Please try again." });
+  if (!writeAllowed(req.user.id)) { drop(); return res.status(429).json({ error: "You've made a lot of captions today. Try again tomorrow." }); }
+  try {
+    const words = await transcribeWords(req.file.path, req.file.originalname, req.file.mimetype);
+    if (!words.length) return res.status(422).json({ error: "We couldn't hear any words in that take. Check your microphone and try again." });
+    res.json({ ok: true, words });
+  } catch (e) {
+    drop();
+    console.error("[master] captions:", e.message);
+    res.status(502).json({ error: "We couldn't make captions just now. Please try again in a moment." });
+  }
+});
+
 app.post("/api/master/write", async (req, res) => {
   if (!needAccount(req, res)) return;
   if (!req.is("application/json")) return res.status(415).json({ error: "Please send JSON." });

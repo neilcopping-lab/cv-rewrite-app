@@ -884,6 +884,16 @@
 
   // ---- Your 90 seconds: talking notes for an intro video (Field Guide N°02) -------------
   var VIDEO = { parts: [], checks: [] };
+  // The 30-second cut: the opening, one story, the close. For Reels, Shorts and TikTok.
+  var vLen = "full";
+  var SHORT_PARTS = [
+    { id: "intro", title: "Your opening", time: "about 8 seconds", from: 0, to: 8 },
+    { id: "story1", title: "Your strongest story", time: "about 14 seconds", from: 8, to: 22 },
+    { id: "close", title: "What you'd bring", time: "about 8 seconds", from: 22, to: 30 },
+  ];
+  var curParts = function () { return vLen === "short" ? SHORT_PARTS : VIDEO.parts; };
+  var aimSec = function () { return vLen === "short" ? 30 : 90; };
+  var capSec = function () { return vLen === "short" ? 45 : 120; };
   function vPlan() { if (!cv.videoPlan || typeof cv.videoPlan !== "object") cv.videoPlan = {}; return cv.videoPlan; }
   function renderVideo() {
     VIDEO = (CFG && CFG.video) || VIDEO;
@@ -948,12 +958,13 @@
   function tickVideo() {
     var sec = (Date.now() - tStart) / 1000, whole = Math.floor(sec);
     $("v-clock").textContent = Math.floor(whole / 60) + ":" + ("0" + (whole % 60)).slice(-2);
-    $("v-fill").style.width = Math.min(100, (sec / 120) * 100) + "%";
-    var part = VIDEO.parts.filter(function (pt) { return sec >= pt.from && sec < pt.to; })[0];
+    $("v-fill").style.width = Math.min(100, (sec / capSec()) * 100) + "%";
+    var part = curParts().filter(function (pt) { return sec >= pt.from && sec < pt.to; })[0];
     document.querySelectorAll(".v-part").forEach(function (c) { c.classList.toggle("live", !!part && c.getAttribute("data-part") === part.id); });
     var now = $("v-now"), tm = document.querySelector(".v-timer");
-    tm.classList.toggle("over", sec >= 120); tm.classList.toggle("wrap", sec >= 90 && sec < 120);
-    now.textContent = part ? "Now: " + part.title.toLowerCase() + " (" + part.time + ")" : sec < 120 ? "Time to wrap up. You're past 90 seconds." : "Over two minutes. Stop here, and cut a sentence or two before the next go.";
+    var aim = aimSec(), cap = capSec();
+    tm.classList.toggle("over", sec >= cap); tm.classList.toggle("wrap", sec >= aim && sec < cap);
+    now.textContent = part ? "Now: " + part.title.toLowerCase() + " (" + part.time + ")" : sec < cap ? "Time to wrap up. You're past " + aim + " seconds." : (vLen === "short" ? "Over 45 seconds. Stop here, and keep just one story." : "Over two minutes. Stop here, and cut a sentence or two before the next go.");
   }
   function timerStart() { tStart = Date.now(); clearInterval(tTick); tTick = setInterval(tickVideo, 200); $("v-go").textContent = "Stop"; tickVideo(); }
   function timerStop() {
@@ -961,18 +972,20 @@
     clearInterval(tTick); tTick = null; $("v-go").textContent = "Start the timer";
     document.querySelectorAll(".v-part").forEach(function (c) { c.classList.remove("live"); });
     var sec = Math.round((Date.now() - tStart) / 1000);
-    $("v-now").textContent = sec + " seconds. " + (sec < 60 ? "A bit short: there's room for more detail in your stories." : sec <= 120 ? "Nicely inside two minutes. Try it again without looking at your notes." : "That's over two minutes. Cut a sentence or two and try again.");
+    $("v-now").textContent = sec + " seconds. " + (vLen === "short"
+      ? (sec < 20 ? "A bit short: give your story a little more." : sec <= 40 ? "Nicely inside the 30-second cut. Try it again without looking at your notes." : "That's long for a 30-second cut. Keep just one story and try again.")
+      : (sec < 60 ? "A bit short: there's room for more detail in your stories." : sec <= 120 ? "Nicely inside two minutes. Try it again without looking at your notes." : "That's over two minutes. Cut a sentence or two and try again."));
   }
   $("v-go").addEventListener("click", function () { if (tTick) timerStop(); else timerStart(); });
 
   // Practise on camera. Recorded in the browser and kept on the device: nothing is uploaded.
   // The styled versions (Professional, For your socials) draw the camera onto a canvas
   // with the words on top, in Comquat colours, and record the canvas. Still all on the device.
-  var STYLE_FILE = { plain: "my-90-seconds", pro: "my-90-seconds-professional", social: "my-90-seconds-socials" };
-  var STYLE_NAME = { plain: "Just me", pro: "Professional", social: "For your socials" };
+  var STYLE_FILE = { plain: "my-90-seconds", pro: "my-90-seconds-professional", square: "my-90-seconds-linkedin", social: "my-90-seconds-socials" };
+  var STYLE_NAME = { plain: "Just me", pro: "Professional", square: "LinkedIn square", social: "For your socials" };
   var BR = { ink: "#17191C", green: "#1F6B45", cream: "#FFF3E2", orange: "#FF9632" };
   var HEAD = "'Bricolage Grotesque', 'DM Sans', sans-serif", BODY = "'DM Sans', sans-serif";
-  var camStream = null, camRec = null, camChunks = [], vStyle = "plain", recStyle = "plain", takes = {};
+  var camStream = null, camRec = null, camChunks = [], audRec = null, audChunks = [], vStyle = "plain", recStyle = "plain", takes = {};
   var dr = { raf: 0, endAt: 0, manual: -1, idx: -1, idxAt: 0, canvasStream: null };
   var canStyle = !!(window.HTMLCanvasElement && HTMLCanvasElement.prototype.captureStream);
   var logoLight = new Image(); logoLight.src = "/img/comquat-logo-reversed.svg";
@@ -1043,8 +1056,9 @@
     document.querySelectorAll(".v-style").forEach(function (b) { b.setAttribute("aria-checked", b.getAttribute("data-style") === s ? "true" : "false"); });
     $("v-text").classList.toggle("hidden", s === "plain");
     $("v-text").classList.toggle("is-social", s === "social");
-    var c = $("v-canvas"); c.width = s === "social" ? 720 : 1280; c.height = s === "social" ? 1280 : 720;
-    c.classList.toggle("portrait", s === "social");
+    var c = $("v-canvas"); c.width = s === "social" ? 720 : s === "square" ? 960 : 1280; c.height = s === "social" ? 1280 : s === "square" ? 960 : 720;
+    c.classList.toggle("portrait", s === "social"); c.classList.toggle("square", s === "square");
+    $("v-stage").className = "v-stage" + (s === "social" ? " portrait" : s === "square" ? " square" : "");
     if (s !== "plain" && document.fonts && document.fonts.load) { document.fonts.load("800 40px 'Bricolage Grotesque'"); document.fonts.load("700 24px 'DM Sans'"); }
     liveView(); showTake(s); camHint();
   }
@@ -1054,9 +1068,45 @@
     $("v-live").classList.toggle("hidden", !camStream);
     $("v-live").classList.toggle("v-src", styled);
     $("v-canvas").classList.toggle("hidden", !styled);
+    $("v-prompter").classList.toggle("hidden", !camStream || !$("v-prompt-on").checked);
     cancelAnimationFrame(dr.raf); dr.raf = 0;
-    if (styled) (function loop() { dr.raf = requestAnimationFrame(loop); paint(); })();
+    var lastPrompt = 0;
+    if (camStream) (function loop() {
+      dr.raf = requestAnimationFrame(loop);
+      if (vStyle !== "plain") paint();
+      if (Date.now() - lastPrompt > 200) { lastPrompt = Date.now(); prompter(); }
+    })();
   }
+
+  // ---- the teleprompter: notes for the part you're on, over the preview, never recorded ----
+  var promptPart = null;
+  function prompter() {
+    var box = $("v-prompter");
+    if (!$("v-prompt-on").checked || !camStream) { box.classList.add("hidden"); return; }
+    box.classList.remove("hidden");
+    var parts = curParts(), i = 0;
+    if (recording()) { var sec = (Date.now() - tStart) / 1000; parts.forEach(function (p, k) { if (sec >= p.from) i = k; }); if (dr.manual > i) i = dr.manual; }
+    var p = parts[i], id = p.id + "|" + vLen;
+    if (id === promptPart && box.childNodes.length) return;
+    promptPart = id; box.textContent = "";
+    box.appendChild(el("span", { class: "v-p-h", text: (i + 1) + ". " + p.title }));
+    var lines = String(vPlan()[p.id] || "").split("\n").map(function (l) { return l.replace(/\[(FIRST_)?NAME\]/g, ((cv.header || {}).name || "")).trim(); }).filter(Boolean);
+    if (!lines.length) lines = ["(No notes for this part yet. Add them above.)"];
+    lines.forEach(function (l) { box.appendChild(el("p", { text: l })); });
+  }
+  $("v-prompt-on").addEventListener("change", function () { promptPart = null; prompter(); });
+
+  // ---- how long: the full 90 seconds, or the 30-second cut ----
+  document.querySelectorAll(".v-seg [data-len]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (recording()) return;
+      vLen = b.getAttribute("data-len");
+      document.querySelectorAll(".v-seg [data-len]").forEach(function (x) { x.setAttribute("aria-checked", x === b ? "true" : "false"); });
+      document.querySelector(".v-short-note").classList.toggle("hidden", vLen !== "short");
+      promptPart = null; prompter();
+      $("v-now").textContent = vLen === "short" ? "Aim for 30 seconds. 45 is the ceiling." : "Aim for 90 seconds. Two minutes is the ceiling.";
+    });
+  });
 
   // ---- drawing ----
   var clamp = function (n) { return Math.max(0, Math.min(1, n)); };
@@ -1082,7 +1132,7 @@
   // Where we are in the four parts. Recording follows the timer (or Next card);
   // the preview flicks through the parts every four seconds so you can see the words.
   function where() {
-    var parts = VIDEO.parts, now = Date.now();
+    var parts = curParts(), now = Date.now();
     if (!recording()) { var i = Math.floor(now / 4000) % parts.length; return { i: i, t: (now % 4000) / 1000 + (i === 0 ? 0 : 1.2), len: 5.2, sec: (i * 4000 + now % 4000) / 1000 * 4.5, preview: true }; }
     var sec = (now - tStart) / 1000, ti = 0;
     parts.forEach(function (p, k) { if (sec >= p.from) ti = k; });
@@ -1133,7 +1183,7 @@
   function paintPro(x, W, H, at, brand) {
     if (brand && !dr.endAt) { x.save(); x.globalAlpha = 0.9; x.shadowColor = "rgba(0,0,0,.45)"; x.shadowBlur = 8; drawLogo(x, logoLight, W - 36, 30, 30, "right"); x.restore(); }
     if (dr.endAt) return;
-    var t = at.t, len = at.len, part = VIDEO.parts[at.i].id;
+    var t = at.t, len = at.len, part = curParts()[at.i].id;
     if (part === "intro") proCard(x, W, H, vis(t, 0.6, Math.min(8, len - 0.5)), "", vtVal("name") || "(your name)", vtVal("role"));
     if (part === "story1" && vtVal("s1skill")) proCard(x, W, H, vis(t, 1.2, len - 1.2), "SKILL", vtVal("s1skill"), vtVal("s1proof"));
     if (part === "story2" && vtVal("s2skill")) proCard(x, W, H, vis(t, 1.2, len - 1.2), "SKILL", vtVal("s2skill"), vtVal("s2proof"));
@@ -1162,12 +1212,12 @@
     var gr = x.createLinearGradient(0, H * 0.45, 0, H); gr.addColorStop(0, "rgba(23,25,28,0)"); gr.addColorStop(1, "rgba(23,25,28,.45)");
     x.fillStyle = gr; x.fillRect(0, H * 0.45, W, H * 0.55);
     if (!dr.endAt) {
-      var f = at.preview ? (Date.now() % 16000) / 16000 : Math.min(1, at.sec / 90);
+      var f = at.preview ? (Date.now() % 16000) / 16000 : Math.min(1, at.sec / aimSec());
       x.fillStyle = "rgba(255,243,226,.35)"; x.fillRect(0, 0, W, 10); x.fillStyle = BR.orange; x.fillRect(0, 0, W * f, 10);
       if (brand) { x.save(); x.shadowColor = "rgba(0,0,0,.5)"; x.shadowBlur = 10; drawLogo(x, logoLight, 30, 34, 34, "left"); x.restore(); }
     }
     if (dr.endAt) return;
-    var t = at.t, len = at.len, part = VIDEO.parts[at.i].id, hook = vtVal("hook"), Y = H * 0.64;
+    var t = at.t, len = at.len, part = curParts()[at.i].id, hook = vtVal("hook"), Y = H * 0.64;
     if (part === "intro") {
       if (hook) sticker(x, hook, "800 50px " + HEAD, 50, BR.ink, "#FFFFFF", W / 2, H * 0.3, -2, vis(t, 0.2, 4.2) * 1.0, W * 0.8);
       var n0 = hook ? 4.6 : 0.6;
@@ -1220,7 +1270,7 @@
     if (recording()) { dr.endAt = 0; camRec.stop(); }
     if (camStream) camStream.getTracks().forEach(function (t) { t.stop(); });
     camStream = null; cancelAnimationFrame(dr.raf); dr.raf = 0;
-    $("v-live").classList.add("hidden"); $("v-canvas").classList.add("hidden"); $("v-rec").classList.add("hidden"); $("v-cam-off").classList.add("hidden"); $("v-next-row").classList.add("hidden"); $("v-cam-on").classList.remove("hidden");
+    $("v-live").classList.add("hidden"); $("v-canvas").classList.add("hidden"); $("v-prompter").classList.add("hidden"); $("v-rec").classList.add("hidden"); $("v-cam-off").classList.add("hidden"); $("v-next-row").classList.add("hidden"); $("v-cam-on").classList.remove("hidden");
   }
   $("v-cam-off").addEventListener("click", function () { camOff(); $("v-cam-msg").textContent = "Camera off."; });
   window.addEventListener("pagehide", camOff);
@@ -1259,46 +1309,195 @@
     var type = types.filter(function (t) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0];
     camRec = type ? new MediaRecorder(stream, { mimeType: type }) : new MediaRecorder(stream);
     camRec.ondataavailable = function (e) { if (e.data && e.data.size) camChunks.push(e.data); };
+    // The sound on its own as well, so captions can be made without the picture ever leaving the device.
+    audChunks = []; audRec = null;
+    try {
+      var atypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
+      var atype = atypes.filter(function (t) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0];
+      var aStream = new MediaStream(camStream.getAudioTracks());
+      if (aStream.getAudioTracks().length) {
+        audRec = atype ? new MediaRecorder(aStream, { mimeType: atype }) : new MediaRecorder(aStream);
+        audRec.ondataavailable = function (e) { if (e.data && e.data.size) audChunks.push(e.data); };
+      }
+    } catch (e) { audRec = null; }
     camRec.onstop = function () {
       timerStop(); dr.endAt = 0;
+      if (audRec && audRec.state === "recording") audRec.stop();
       if (dr.canvasStream) { dr.canvasStream.getVideoTracks().forEach(function (t) { t.stop(); }); dr.canvasStream = null; }
       var mime = (camRec.mimeType || "video/webm").split(";")[0];
-      var old = takes[recStyle]; if (old) URL.revokeObjectURL(old.url);
-      takes[recStyle] = { url: URL.createObjectURL(new Blob(camChunks, { type: mime })), ext: mime.indexOf("mp4") > -1 ? "mp4" : "webm" };
-      document.querySelectorAll(".v-style").forEach(function (b) { b.disabled = false; });
+      var old = takes[recStyle]; if (old) { URL.revokeObjectURL(old.url); if (old.capUrl) URL.revokeObjectURL(old.capUrl); }
+      var ext = mime.indexOf("mp4") > -1 ? "mp4" : "webm";
+      var tk = takes[recStyle] = { url: URL.createObjectURL(new Blob(camChunks, { type: mime })), ext: ext, mime: mime, file: STYLE_FILE[recStyle] + (vLen === "short" ? "-30s" : ""), len: vLen, audio: null };
+      // The sound file finishes a moment after the video.
+      setTimeout(function () { if (audChunks.length) tk.audio = new Blob(audChunks, { type: (audRec && audRec.mimeType || "audio/webm").split(";")[0] }); }, 400);
+      document.querySelectorAll(".v-style, .v-seg button").forEach(function (b) { b.disabled = false; });
       $("v-next-row").classList.add("hidden");
       $("v-rec").disabled = false; $("v-rec").textContent = "● Record another take";
       if (recStyle !== vStyle) setStyle(recStyle); else showTake(recStyle);
       renderTakes();
       $("v-cam-msg").textContent = "Watch it back. Take two is usually the best one." + (recStyle !== "plain" && !takes[recStyle === "pro" ? "social" : "pro"] ? " Fancy the other style too? Pick it above and record again." : "");
     };
-    camRec.start(); timerStart();
-    document.querySelectorAll(".v-style").forEach(function (b) { b.disabled = true; });
+    camRec.start(); if (audRec) audRec.start(); timerStart();
+    document.querySelectorAll(".v-style, .v-seg button").forEach(function (b) { b.disabled = true; });
     $("v-next-row").classList.toggle("hidden", recStyle === "plain");
     $("v-rec").textContent = "■ Stop recording";
     $("v-cam-msg").textContent = "Recording. The timer above shows where you should be.";
   });
   $("v-next").addEventListener("click", function () {
     if (!recording()) return;
-    var at = where(); dr.manual = Math.min(VIDEO.parts.length - 1, at.i + 1);
+    var at = where(); dr.manual = Math.min(curParts().length - 1, at.i + 1);
   });
   function showTake(style) {
     var tk = takes[style], p = $("v-play"), sv = $("v-save");
     if (!tk) { p.removeAttribute("src"); p.classList.add("hidden"); sv.classList.add("hidden"); $("v-del").classList.add("hidden"); return; }
     p.src = tk.url; p.classList.remove("hidden");
-    sv.href = tk.url; sv.setAttribute("download", STYLE_FILE[style] + "." + tk.ext); sv.classList.remove("hidden");
+    sv.href = tk.url; sv.setAttribute("download", tk.file + "." + tk.ext); sv.classList.remove("hidden");
     $("v-del").classList.remove("hidden");
   }
   function renderTakes() {
     var list = $("v-take-list"); list.textContent = "";
-    ["plain", "pro", "social"].forEach(function (s) {
+    ["plain", "pro", "square", "social"].forEach(function (s) {
       var tk = takes[s]; if (!tk) return;
       var watch = el("button", { type: "button", class: "linkbtn", text: "Watch" });
       watch.addEventListener("click", function () { setStyle(s); $("v-play").scrollIntoView({ behavior: "smooth", block: "center" }); });
-      list.appendChild(el("li", {}, [el("strong", { text: STYLE_NAME[s] }), watch, el("a", { class: "linkbtn", href: tk.url, download: STYLE_FILE[s] + "." + tk.ext, text: "Save to my device" })]));
+      var kids = [el("strong", { text: STYLE_NAME[s] + (tk.len === "short" ? ", 30 seconds" : "") }), watch, el("a", { class: "linkbtn", href: tk.url, download: tk.file + "." + tk.ext, text: "Save to my device" })];
+      if (tk.capUrl) kids.push(el("a", { class: "linkbtn", href: tk.capUrl, download: tk.file + "-captions." + tk.capExt, text: "Save with captions" }));
+      if (voice) {
+        var cb = el("button", { type: "button", class: "linkbtn", text: tk.caps ? "Edit captions" : "Add captions" });
+        cb.addEventListener("click", function () { openCaps(s); });
+        kids.push(cb);
+      }
+      list.appendChild(el("li", {}, kids));
     });
     $("v-takes").classList.toggle("hidden", !list.children.length);
+    if (capFor && !takes[capFor]) { capFor = null; $("v-caps").classList.add("hidden"); }
   }
+
+  // ---- captions: the sound goes to be turned into timed words, then they're drawn onto a copy ----
+  var capFor = null;
+  function openCaps(s) {
+    capFor = s; var tk = takes[s];
+    $("v-caps-for").textContent = STYLE_NAME[s] + (tk.len === "short" ? ", 30 seconds" : "");
+    $("v-caps").classList.remove("hidden"); $("v-caps-msg").textContent = "";
+    $("v-caps-edit").classList.toggle("hidden", !tk.caps);
+    if (tk.caps) { $("v-caps-text").value = tk.caps.map(function (c) { return c.text; }).join("\n"); srtLink(tk); }
+    $("v-caps").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  // Group the words into short captions: three words at a time on socials, more on the others.
+  function chunk(words, style) {
+    var max = style === "social" ? 3 : 7, out = [], cur = null;
+    words.forEach(function (w) {
+      if (!cur || cur.words.length >= max || w.s - cur.e > 0.8 || (cur.words.length && /[.!?]$/.test(cur.words[cur.words.length - 1].w))) { cur = { s: w.s, e: w.e, words: [] }; out.push(cur); }
+      cur.words.push(w); cur.e = w.e;
+    });
+    return out.map(function (c) { return { s: c.s, e: Math.max(c.e, c.s + 0.6), text: c.words.map(function (w) { return w.w; }).join(" "), words: c.words }; });
+  }
+  $("v-caps-make").addEventListener("click", function () {
+    var tk = takes[capFor], b = $("v-caps-make"), msg = $("v-caps-msg");
+    if (!tk) return;
+    if (!tk.audio) { msg.textContent = "We didn't catch the sound for this take. Record it again, then try captions."; return; }
+    b.disabled = true; msg.textContent = "Listening to your take…";
+    var fd = new FormData(); fd.append("audio", tk.audio, "take." + (tk.audio.type.indexOf("mp4") > -1 ? "mp4" : tk.audio.type.indexOf("ogg") > -1 ? "ogg" : "webm"));
+    fetch("/api/master/captions", { method: "POST", body: fd, credentials: "same-origin" })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || "We couldn't make captions just now."); return j; }); })
+      .then(function (j) {
+        tk.caps = chunk(j.words || [], capFor);
+        $("v-caps-text").value = tk.caps.map(function (c) { return c.text; }).join("\n");
+        $("v-caps-edit").classList.remove("hidden"); srtLink(tk); renderTakes();
+        msg.textContent = "Done. Read them through and fix anything we misheard.";
+      })
+      .catch(function (e) { msg.textContent = e.message; })
+      .then(function () { b.disabled = false; });
+  });
+  // Edits keep each line's timing, so one caption per line.
+  function capsFromBox(tk) {
+    var lines = $("v-caps-text").value.split("\n").map(function (l) { return l.replace(/\s+/g, " ").trim(); });
+    return tk.caps.map(function (c, i) {
+      var t = lines[i] == null ? c.text : lines[i];
+      return { s: c.s, e: c.e, text: t, words: t === c.text ? c.words : null };
+    }).filter(function (c) { return c.text; });
+  }
+  var srtTime = function (t) { var ms = Math.round(t * 1000), h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, sec = Math.floor(ms / 1000) % 60; return ("0" + h).slice(-2) + ":" + ("0" + m).slice(-2) + ":" + ("0" + sec).slice(-2) + "," + ("00" + ms % 1000).slice(-3); };
+  function srtLink(tk) {
+    var caps = capsFromBox(tk), a = $("v-caps-srt");
+    var srt = caps.map(function (c, i) { return (i + 1) + "\n" + srtTime(c.s) + " --> " + srtTime(c.e) + "\n" + c.text + "\n"; }).join("\n");
+    if (tk.srtUrl) URL.revokeObjectURL(tk.srtUrl);
+    tk.srtUrl = URL.createObjectURL(new Blob([srt], { type: "application/x-subrip" }));
+    a.href = tk.srtUrl; a.setAttribute("download", tk.file + "-captions.srt");
+  }
+  $("v-caps-text").addEventListener("input", function () { var tk = takes[capFor]; if (tk && tk.caps) srtLink(tk); });
+
+  // Draw one caption. Socials: big bold words, the one being said in orange.
+  // The others: a clean subtitle strip, at the top where the skill cards aren't.
+  function drawCaption(x, W, H, c, t, style) {
+    if (!c) return;
+    x.save(); x.textAlign = "center"; x.textBaseline = "middle";
+    if (style === "social") {
+      var size = 54; x.font = "800 " + size + "px " + HEAD; x.lineJoin = "round";
+      var words = c.words || c.text.split(" ").map(function (w) { return { w: w }; });
+      var full = words.map(function (w) { return w.w; }).join(" ");
+      while (x.measureText(full).width > W * 0.86 && size > 30) { size -= 4; x.font = "800 " + size + "px " + HEAD; }
+      var X = W / 2 - x.measureText(full).width / 2, Y = H * 0.8;
+      x.textAlign = "left";
+      words.forEach(function (w, i) {
+        var txt = w.w + (i < words.length - 1 ? " " : ""), on = w.s != null && t >= w.s && t <= w.e + 0.15;
+        x.lineWidth = size * 0.18; x.strokeStyle = BR.ink; x.strokeText(txt, X, Y);
+        x.fillStyle = on ? BR.orange : "#FFFFFF"; x.fillText(txt, X, Y);
+        X += x.measureText(txt).width;
+      });
+    } else {
+      var fs = Math.round(H * 0.045); x.font = "700 " + fs + "px " + BODY;
+      var lines = wrap(x, c.text, W * 0.8), lh = fs * 1.3, bw = 0;
+      lines.forEach(function (l) { bw = Math.max(bw, x.measureText(l).width); });
+      var top = style === "plain" ? H - 40 - lines.length * lh - 20 : 30 + (style === "square" ? 60 : 50);
+      x.fillStyle = "rgba(23,25,28,.78)"; rrect(x, W / 2 - bw / 2 - 18, top, bw + 36, lines.length * lh + 20, 10); x.fill();
+      x.fillStyle = "#FFFFFF"; lines.forEach(function (l, i) { x.fillText(l, W / 2, top + 10 + lh * (i + 0.5)); });
+    }
+    x.restore();
+  }
+  // Play the take through once, drawing it with the captions onto a canvas, and record that.
+  $("v-caps-burn").addEventListener("click", function () {
+    var tk = takes[capFor], style = capFor, b = $("v-caps-burn");
+    if (!tk || !tk.caps || recording()) return;
+    var caps = capsFromBox(tk);
+    var v = document.createElement("video"); v.src = tk.url; v.playsInline = true; v.preload = "auto";
+    var c = document.createElement("canvas"), x = c.getContext("2d");
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!c.captureStream || !AC) { $("v-burn-msg").textContent = "This browser can't put captions on a video. Save the captions file instead."; return; }
+    b.disabled = true; $("v-burn").classList.remove("hidden"); $("v-burn-msg").textContent = "Getting ready…"; $("v-burn-fill").style.width = "0%";
+    v.onloadedmetadata = function () {
+      c.width = v.videoWidth || 1280; c.height = v.videoHeight || 720;
+      var ac = new AC(), src = ac.createMediaElementSource(v), dest = ac.createMediaStreamDestination(); src.connect(dest);
+      var stream = c.captureStream(30); dest.stream.getAudioTracks().forEach(function (t) { stream.addTrack(t); });
+      var types = ["video/mp4;codecs=avc1,mp4a", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"];
+      var type = types.filter(function (t) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0];
+      var rec = type ? new MediaRecorder(stream, { mimeType: type }) : new MediaRecorder(stream), chunks = [], raf = 0;
+      rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+      rec.onstop = function () {
+        cancelAnimationFrame(raf); try { ac.close(); } catch (e) { /* fine */ }
+        stream.getTracks().forEach(function (t) { t.stop(); });
+        var mime = (rec.mimeType || "video/webm").split(";")[0];
+        if (tk.capUrl) URL.revokeObjectURL(tk.capUrl);
+        tk.capUrl = URL.createObjectURL(new Blob(chunks, { type: mime })); tk.capExt = mime.indexOf("mp4") > -1 ? "mp4" : "webm";
+        b.disabled = false; $("v-burn-fill").style.width = "100%";
+        $("v-burn-msg").textContent = "Done. Watch it back, then save the version with captions.";
+        $("v-play").src = tk.capUrl; $("v-play").classList.remove("hidden");
+        renderTakes();
+      };
+      var dur = isFinite(v.duration) && v.duration > 0 ? v.duration : (caps.length ? caps[caps.length - 1].e + 3 : 90);
+      (function frame() {
+        raf = requestAnimationFrame(frame);
+        var t = v.currentTime;
+        x.drawImage(v, 0, 0, c.width, c.height);
+        drawCaption(x, c.width, c.height, caps.filter(function (k) { return t >= k.s && t <= k.e + 0.25; })[0], t, style);
+        $("v-burn-fill").style.width = Math.min(99, t / dur * 100) + "%";
+        $("v-burn-msg").textContent = "Putting your captions on… " + Math.floor(t) + " of " + Math.round(dur) + " seconds. Keep this page open.";
+      })();
+      v.onended = function () { setTimeout(function () { if (rec.state === "recording") rec.stop(); }, 200); };
+      rec.start();
+      ac.resume().then(function () { return v.play(); }).catch(function () { $("v-burn-msg").textContent = "Press the button again to start."; b.disabled = false; if (rec.state === "recording") rec.stop(); });
+    };
+  });
   $("v-del").addEventListener("click", function () {
     var tk = takes[vStyle]; if (tk) URL.revokeObjectURL(tk.url);
     delete takes[vStyle]; showTake(vStyle); renderTakes();

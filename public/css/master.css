@@ -391,3 +391,27 @@ details.ideas li{margin:0 0 4px}
 .v-takes li{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:8px 0;border-bottom:1px solid var(--pith)}
 .v-takes li strong{min-width:150px}
 @media (max-width:760px){.v-sw{height:40px}.v-sw-social{width:24px}}
+/* LinkedIn square, how long, teleprompter, captions */
+.v-styles{grid-template-columns:repeat(2,1fr)}
+@media (max-width:760px){.v-styles{grid-template-columns:1fr}}
+.v-sw-square{width:62px}
+.v-sw-square i{position:absolute;left:6px;bottom:6px;width:70%;height:12px;border-radius:3px;background:#17191C;border-left:3px solid #1F6B45}
+#v-canvas.square{width:100%;max-width:520px;aspect-ratio:1/1}
+.v-opts{display:grid;grid-template-columns:1fr;gap:12px;margin:12px 0;padding:12px 14px;background:#FFF8EE;border-radius:12px}
+.v-opt-h{display:block;font-weight:700;font-size:15px;margin-bottom:6px}
+.v-seg{display:inline-flex;flex-wrap:wrap;border:2px solid var(--pith);border-radius:999px;overflow:hidden;background:#fff}
+.v-seg button{font:inherit;font-size:14.5px;font-weight:700;border:0;background:transparent;color:var(--ink);padding:8px 14px;cursor:pointer}
+.v-seg button[aria-checked="true"]{background:#1F6B45;color:#FFF3E2}
+.v-seg button:disabled{opacity:.5;cursor:not-allowed}
+.v-opt .small{margin:6px 0 0}
+.v-stage{position:relative;max-width:720px}
+.v-stage.portrait{max-width:420px}
+.v-stage.square{max-width:520px}
+.v-prompter{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:3;width:min(92%,560px);max-height:46%;overflow:hidden;background:rgba(23,25,28,.82);color:#FFF3E2;border-radius:12px;padding:10px 16px;text-align:center;pointer-events:none}
+.v-prompter .v-p-h{display:block;font-size:12.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#FF9632;margin-bottom:4px}
+.v-prompter p{margin:2px 0;font-size:clamp(16px,2.4vw,21px);line-height:1.3;font-weight:600}
+.v-caps{margin-top:14px;border-top:2px dashed var(--pith);padding-top:6px}
+.v-caps h4{font-family:'Bricolage Grotesque',sans-serif;font-size:17px;margin:10px 0 4px}
+.v-burn{margin-top:8px}
+.v-burn .v-bar{height:10px;border-radius:999px;background:var(--pith);overflow:hidden;position:relative;margin:6px 0}
+.v-burn .v-fill{height:100%;background:#FF9632;width:0}

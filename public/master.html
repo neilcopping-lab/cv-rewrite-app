@@ -305,6 +305,12 @@
                 <span>Landscape. Your name, then a skill card for each story and what you'd bring. Calm and polished.</span>
                 <em>Works well for: office and admin, finance, HR, healthcare, public sector, management and bigger employers' apprenticeships.</em>
               </button>
+              <button type="button" class="v-style" role="radio" data-style="square" aria-checked="false">
+                <span class="v-sw v-sw-square" aria-hidden="true"><i></i></span>
+                <strong>LinkedIn square</strong>
+                <span>Square, for the LinkedIn feed. The Professional look, sized to fill the screen as people scroll.</span>
+                <em>Works well for: posting on your LinkedIn profile, office and professional jobs, and recruiters who search LinkedIn.</em>
+              </button>
               <button type="button" class="v-style" role="radio" data-style="social" aria-checked="false">
                 <span class="v-sw v-sw-social" aria-hidden="true"><i></i><b></b></span>
                 <strong>For your socials</strong>
@@ -313,6 +319,21 @@
               </button>
             </div>
             <p class="v-suits hidden" id="v-suits" aria-live="polite"></p>
+
+            <div class="v-opts">
+              <div class="v-opt">
+                <span class="v-opt-h" id="v-len-h">How long</span>
+                <div class="v-seg" role="radiogroup" aria-labelledby="v-len-h">
+                  <button type="button" role="radio" data-len="full" aria-checked="true">The full 90 seconds</button>
+                  <button type="button" role="radio" data-len="short" aria-checked="false">A 30-second cut</button>
+                </div>
+                <p class="small v-short-note hidden">Your opening, your strongest story, then what you'd bring. It uses story one, so swap your notes over if story two is the stronger one. Made for Reels, Shorts and TikTok.</p>
+              </div>
+              <div class="v-opt">
+                <label class="v-brand"><input type="checkbox" id="v-prompt-on"> <span>Show my notes on screen while I record (teleprompter)</span></label>
+                <p class="small">Your notes for each part sit just under the camera so your eyes stay near the lens. They're never in the video. Use it for your first takes, then try one without: telling it beats reading it.</p>
+              </div>
+            </div>
 
             <div class="v-text hidden" id="v-text">
               <h4>The words on screen</h4>
@@ -340,15 +361,34 @@
               <label class="v-brand"><input type="checkbox" id="vt-brand" checked> <span>Show "Made with Comquat" at the end</span></label>
             </div>
 
+            <div class="v-stage" id="v-stage">
+              <div class="v-prompter hidden" id="v-prompter" aria-live="off"></div>
             <canvas id="v-canvas" class="hidden" width="1280" height="720" aria-label="Live preview of your styled video"></canvas>
             <p class="v-next-row hidden" id="v-next-row"><button type="button" class="btn btn-ghost" id="v-next">Next card ›</button> <span class="small">Talking faster or slower than the timer? Tap to move the words on.</span></p>
             <video id="v-live" class="hidden" autoplay muted playsinline></video>
+            </div>
             <video id="v-play" class="hidden" controls playsinline></video>
             <p class="small" id="v-cam-msg" aria-live="polite"></p>
             <p class="v-cam-acts"><button type="button" class="btn btn-primary" id="v-cam-on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h11a2 2 0 0 1 2 2v1.5l4-2.5v10l-4-2.5V16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>Turn on my camera</button> <button type="button" class="btn btn-primary hidden" id="v-rec">● Start recording</button> <a class="btn btn-ghost hidden" id="v-save" download="my-90-seconds.mp4">Save to my device</a> <button type="button" class="linkbtn hidden" id="v-del">Delete this take</button> <button type="button" class="linkbtn hidden" id="v-cam-off">Turn camera off</button></p>
             <div class="v-takes hidden" id="v-takes">
               <h4>Your videos</h4>
               <ul id="v-take-list"></ul>
+              <div class="v-caps hidden" id="v-caps">
+                <h4>Captions for <span id="v-caps-for"></span></h4>
+                <p class="small">Lots of people watch with the sound off, and captions help anyone who's deaf or hard of hearing. To make them, <strong>only the sound of this take is sent to OpenAI</strong> to be turned into words, then deleted. The picture never leaves your device.</p>
+                <div class="build-row">
+                  <button type="button" class="btn btn-spark" id="v-caps-make">Make my captions</button>
+                  <span class="small" id="v-caps-msg" aria-live="polite"></span>
+                </div>
+                <div class="v-caps-edit hidden" id="v-caps-edit">
+                  <p class="ai-warn"><strong>This content is generated by AI, and AI can make mistakes, so please check we haven't told a lie on any of your documents.</strong> Fix any word we misheard below. Keep one caption on each line, so they stay in time.</p>
+                  <label for="v-caps-text">Your captions, one per line</label>
+                  <textarea id="v-caps-text" rows="8"></textarea>
+                  <p class="v-cam-acts"><button type="button" class="btn btn-primary" id="v-caps-burn">Put the captions on my video</button> <a class="btn btn-ghost" id="v-caps-srt" download="captions.srt">Save the captions file</a></p>
+                  <p class="small">Putting them on plays your video through once, so it takes as long as the video. The captions file is for YouTube: upload it under Subtitles and viewers can switch captions on or off.</p>
+                  <div class="v-burn hidden" id="v-burn"><div class="v-bar"><div class="v-fill" id="v-burn-fill"></div></div><span class="small" id="v-burn-msg" aria-live="polite"></span></div>
+                </div>
+              </div>
             </div>
             <p class="small">Once you've saved it, upload it to YouTube (set to Unlisted), Vimeo or a cloud drive, then paste the link below so it goes on your CV.</p>
           </div>
