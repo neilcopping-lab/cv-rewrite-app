@@ -816,6 +816,7 @@
         document.body.appendChild(a); a.click(); a.remove();
         toast(saved ? "Downloaded. A copy is in My documents too." : "Downloaded.");
         confetti();
+        try { if (window.comquatAiNudge) window.comquatAiNudge(btn.parentNode); } catch (e) {}
       });
     }).catch(function (e) { say(e.message, false); toast(e.message); })
       .then(function () { btn.disabled = false; btn.textContent = old; syncConfirm(); });

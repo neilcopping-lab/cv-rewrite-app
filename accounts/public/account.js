@@ -120,9 +120,23 @@
           if (box) box.checked = Boolean(j.subscriptions[t]);
         });
         if (j.jobSearch && j.profileExtras) initSearch(j.jobSearch, j.profileExtras);
+        var aiBox = document.querySelector('#form-ai input[value="' + (j.aiLevel || "essentials") + '"]');
+        if (aiBox) aiBox.checked = true;
       })
       .catch(function () { say("We couldn't load your account just now. Please refresh the page.", false); });
 
+
+    // ---- Your AI setting: Full help, Essentials only or Off
+    var aiForm = document.getElementById("form-ai");
+    if (aiForm) aiForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var picked = aiForm.querySelector('input[name="ai"]:checked');
+      if (!picked) { say("Please choose one of the three settings.", false); return; }
+      var names = { full: "Full help", essentials: "Essentials only", off: "Off" };
+      post("/api/account/ai-level", { level: picked.value })
+        .then(function () { say("Saved. Your AI setting is now " + names[picked.value] + ".", true); })
+        .catch(function (err) { say((err && err.message) || "We couldn't save that just now. Please try again.", false); });
+    });
 
     // ---- My job search: status, photo, the jobs I'm after, suggestions, check-in
     function initSearch(js, extras) {

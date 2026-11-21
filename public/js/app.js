@@ -681,6 +681,7 @@ async function downloadFile(type) {
     const a = document.createElement("a"); a.href = url; a.download = name;
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     busy(s, false, r.headers.get("X-Comquat-Saved") ? 'Downloaded. A copy is saved in <a href="/account/me.html">My documents</a> on your account.' : "Downloaded.");
+    try { if (window.comquatAiNudge) window.comquatAiNudge(s.parentNode); } catch (e) {}
     await refreshAccount();
   // Coming from a card in Your job hunt: bring the advert (and the last CV for
   // this job) across, so nothing is pasted twice.
@@ -1001,3 +1002,31 @@ async function storySaveOffer() {
     else { msg.textContent = (ok ? `Saved ${ok}. ` : "") + err; btn.disabled = false; }
   };
 }
+
+
+// Honesty check button: re-checks the finished CV against what the person told
+// us and highlights anything we can't trace. Nothing is changed automatically.
+(function () {
+  const btn = document.getElementById("honestyBtn");
+  const box = document.getElementById("honestyBox");
+  if (!btn || !box) return;
+  const KIND = { number: "Figure", employer: "Employer", title: "Job title", date: "Date", qualification: "Qualification", skill: "Skill", scope: "Responsibility", claim: "Claim" };
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    box.innerHTML = '<span class="muted">Checking every line against what you told us…</span>';
+    try {
+      const j = await api("/api/honesty-check", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      const offNote = j.aiUsed ? "" : '<p class="muted" style="margin:6px 0 0">Your AI setting is Off, so we checked the figures and dates only.</p>';
+      if (!j.flags.length) {
+        box.innerHTML = '<p style="margin:0"><strong>All clear.</strong> Everything we checked traces back to what you told us. Have a final read through before you tick the box below.</p>' + offNote;
+      } else {
+        box.innerHTML = `<p style="margin:0 0 6px"><strong>${j.flags.length} thing${j.flags.length > 1 ? "s" : ""} to look at.</strong> We couldn't trace ${j.flags.length > 1 ? "these" : "this"} to what you told us. If it's true, keep it and be ready to talk about it. If not, take it out in the Word version, or go back and add the real detail.</p>
+          <ul style="margin:0;padding-left:20px">${j.flags.map((f) => `<li style="margin:4px 0"><strong>${escHtml(KIND[f.kind] || "Claim")}:</strong> "${escHtml(f.text)}"${f.why ? ` <span class="muted">${escHtml(f.why)}</span>` : ""}</li>`).join("")}</ul>` + offNote;
+      }
+    } catch (e) {
+      box.innerHTML = '<span class="muted">⚠ ' + escHtml(e.message) + "</span>";
+    } finally {
+      btn.disabled = false;
+    }
+  });
+})();

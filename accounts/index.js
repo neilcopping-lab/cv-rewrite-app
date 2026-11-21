@@ -32,6 +32,8 @@ const inactive = require("./inactive");
 const jobsearch = require("./jobsearch");
 const weekly = require("./weekly");
 const photo = require("./photo");
+const welcome = require("./welcome");
+const aiLevel = require("../lib/aiLevel");
 const { zip } = require("./zip");
 
 const TOPICS = ["loudspeaker", "guides", "dispatches", "apprenticeships"];
@@ -203,7 +205,8 @@ function mountAccounts(app, opts = {}) {
       req.sb = clientFor(req, res);
       const { data } = await req.sb.auth.getUser();
       if (data && data.user) {
-        req.user = { id: data.user.id, email: data.user.email };
+        const meta = data.user.user_metadata || {};
+        req.user = { id: data.user.id, email: data.user.email, aiLevel: aiLevel.clean(meta.ai_level), aiNudgeSeen: Boolean(meta.ai_nudge_seen) };
         inactive.touch(adminClient(), req.user.id); // once a day at most
       }
     } catch (_) { /* treat as signed out */ }
@@ -253,7 +256,25 @@ function mountAccounts(app, opts = {}) {
       // null until the job search database change has been made
       jobSearch: await jobsearch.stateFor(adminClient(), req.user.id).catch(() => null),
       profileExtras: await photo.stateFor(adminClient(), req.user.id).catch(() => null),
+      aiLevel: req.user.aiLevel,
+      aiNudgeSeen: req.user.aiNudgeSeen,
     });
+  });
+
+  // ---- how much AI they want (Full help, Essentials only, Off) --------------
+  // Kept in the account's own settings, so it applies to every Comquat tool.
+  api.post("/ai-level", writeLimit, requireJson, needUser, async (req, res) => {
+    const level = String((req.body || {}).level || "");
+    if (!aiLevel.LEVELS.includes(level)) return res.status(400).json({ error: "Please choose Full help, Essentials only or Off." });
+    const { error } = await req.sb.auth.updateUser({ data: { ai_level: level } });
+    if (error) return res.status(400).json({ error: friendly(error) });
+    res.json({ ok: true, aiLevel: level });
+  });
+
+  // The one-time "want a bit more help?" note after their first CV.
+  api.post("/ai-nudge-seen", writeLimit, requireJson, needUser, async (req, res) => {
+    if (!req.user.aiNudgeSeen) await req.sb.auth.updateUser({ data: { ai_nudge_seen: true } }).catch(() => {});
+    res.json({ ok: true });
   });
 
   // ---- create an account ---------------------------------------------------
@@ -515,6 +536,16 @@ function mountAccounts(app, opts = {}) {
         await sb.auth.updateUser({ data: { pending_subscriptions: null } });
       } catch (e) {
         console.error("[accounts] saving sign-up choices:", e.message);
+      }
+    }
+    // First confirmation: the welcome email, sent once per account.
+    if (!(data.user.user_metadata && data.user.user_metadata.welcome_sent)) {
+      try {
+        await sb.auth.updateUser({ data: { welcome_sent: true } });
+        const { data: prof } = await sb.from("profiles").select("full_name").eq("id", data.user.id).maybeSingle();
+        welcome.send(data.user.email, (prof && prof.full_name) || "").catch((e) => console.error("[accounts] welcome email:", e.message));
+      } catch (e) {
+        console.error("[accounts] welcome email:", e.message);
       }
     }
     res.redirect(next);

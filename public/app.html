@@ -310,6 +310,11 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
     <!-- Downloads (shown when signed in with credits) -->
     <div id="downloads" class="hidden" style="margin-top:22px">
       <div class="notice" style="border-color:var(--gold)"><strong id="dlBalance"></strong> Download as many formats of your CV as you like. No credits, no card.</div>
+      <div class="honesty" style="margin:14px 0;padding:14px 16px;border:1px solid var(--line, #E9DCC8);border-radius:10px">
+        <p style="margin:0 0 8px"><strong>Honesty check.</strong> We've already checked your CV against what you told us. Want to be sure? Run it again and we'll highlight anything we can't trace back to your own words. You decide what stays.</p>
+        <button class="btn ghost" id="honestyBtn" type="button">Run an honesty check</button>
+        <div id="honestyBox" aria-live="polite" style="margin-top:10px"></div>
+      </div>
       <label class="confirm-row" style="display:flex;gap:10px;align-items:flex-start;text-transform:none;letter-spacing:normal;font-weight:400;font-size:15px;line-height:1.5;font-family:var(--font-body);color:inherit;margin:14px 0;cursor:pointer"><input type="checkbox" id="confirmTrue" style="width:18px;height:18px;margin-top:3px;flex:0 0 auto;accent-color:var(--teal)"><span>I've read this CV from top to bottom. Everything in it is true and accurate, and I'll fix anything that isn't before I send it to anyone.</span></label>
       <div class="dlrow">
         <button class="btn" data-dl="docx">Download Word</button>
@@ -365,8 +370,9 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
   </div>
 </div>
 
-<script src="/js/app.js?v=20261121-ux"></script>
+<script src="/js/app.js?v=20261121-ai"></script>
 <script src="/account/nav.js?v=20261115" defer></script>
 <script src="/account/popup.js?v=20261118" defer></script>
+<script src="/account/ainudge.js?v=20261121" defer></script>
 <script src="/easyread.js?v=20261121" defer></script>
 </body></html>

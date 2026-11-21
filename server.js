@@ -92,6 +92,9 @@ app.use("/vendor/selfie", express.static(path.join(__dirname, "node_modules/@med
 // lib/identityShield.js and lib/anthropic.js). This tells the shield where to
 // find those details: read fresh at each AI call.
 const identityShield = require("./lib/identityShield");
+const aiLevel = require("./lib/aiLevel");
+const GUIDE_CV = "https://the-common-people.com/guide-cv.html";
+const GUIDE_VIDEO = "https://the-common-people.com/guide-video-intro.html";
 app.use((req, res, next) => identityShield.run(() => {
   const st = (req.session && req.session.cv) || {};
   const links = st.links && typeof st.links === "object" ? Object.values(st.links).filter((v) => typeof v === "string") : [];
@@ -519,6 +522,7 @@ async function saveJobCard(req, st) {
 }
 
 app.post("/api/gaps", async (req, res) => {
+  if (!aiLevel.gate(req, res, "core", "", GUIDE_CV)) return;
   try {
     const st = S(req);
     if (!st.cvText || !st.advertText) return res.status(400).json({ error: "Add your CV and the advert first." });
@@ -539,7 +543,7 @@ app.post("/api/gaps", async (req, res) => {
 });
 
 // Voice answer -> text (same mechanism as Interview Prep Report)
-app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
+app.post("/api/transcribe", (req, res, next) => (aiLevel.gate(req, res, "core", "", GUIDE_CV) ? next() : null), upload.single("audio"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No audio uploaded." });
     const text = await transcribe(req.file.path, req.file.originalname, req.file.mimetype);
@@ -603,6 +607,7 @@ async function generateWork(st) {
 }
 
 app.post("/api/generate", (req, res) => {
+  if (!aiLevel.gate(req, res, "core", "", GUIDE_CV)) return;
   const st = S(req);
   if (!st.cvText || !st.advertText) return res.status(400).json({ error: "Add your CV and the advert first." });
   if (overGenCap(st)) return res.status(429).json({ error: "rewrite-limit" });
@@ -651,6 +656,7 @@ async function resolveWork(st, { resolutions, acceptLeaveOutArr }) {
 
 // Candidate resolves [MISSING]/flagged items (answer, or accept leaving out).
 app.post("/api/resolve", (req, res) => {
+  if (!aiLevel.gate(req, res, "core", "", GUIDE_CV)) return;
   try {
     const st = S(req);
     if (!st.cv) return res.status(400).json({ error: "Generate a draft first." });
@@ -667,6 +673,38 @@ app.post("/api/resolve", (req, res) => {
 // "Leave them all out", drop the outstanding flags WITHOUT re-running the AI
 // (the fabricated content was already stripped; this just clears the questions),
 // so the user can proceed straight to choosing a design. No cost, no new flags.
+// "Honesty check" button: a fresh check of the finished CV against everything
+// the person told us. Nothing is changed or removed here: anything we can't
+// trace is shown to them, and they decide what stays. With AI switched Off,
+// only the figures-and-dates check runs (no AI involved).
+app.post("/api/honesty-check", async (req, res) => {
+  const st = S(req);
+  if (!st.cv) return res.status(400).json({ error: "Generate your CV first, then you can check it." });
+  st.honestyChecks = (st.honestyChecks || 0) + 1;
+  if (st.honestyChecks > 20) return res.status(429).json({ error: "You've run a lot of checks on this CV. Have a read through yourself, and try again later." });
+  try {
+    const sot = st.sot || await sourceOfTruth.build({ cvText: st.cvText || "", answers: st.answers || [] });
+    const cv = { ...st.cv, missing: undefined };
+    const numberFlags = fabrication.checkNumbers(cv, sot);
+    let semantic = [];
+    const aiUsed = aiLevel.allows(aiLevel.levelOf(req), "core");
+    if (aiUsed) {
+      const r = await fabrication.checkSemantic(cv, sot);
+      semantic = (r.flags || []).filter((f) => !(f.kind === "date" && fabrication.isTraceableDate(f.text, sot)));
+    }
+    const flags = [...numberFlags, ...semantic].map((f) => ({
+      kind: f.kind || "claim",
+      text: String(f.value || f.text || "").slice(0, 200),
+      why: String(f.why || "").slice(0, 240),
+      where: String(f.location || "").slice(0, 80),
+    })).filter((f) => f.text);
+    res.json({ ok: true, flags, aiUsed });
+  } catch (e) {
+    console.error("[honesty-check]", e.message);
+    res.status(502).json({ error: "We couldn't run the check just now. Please try again in a moment." });
+  }
+});
+
 app.post("/api/drop-flags", (req, res) => {
   const st = S(req);
   if (!st.cv) return res.status(400).json({ error: "Generate a draft first." });
@@ -999,7 +1037,7 @@ function writeAllowed(userId) {
 // never the picture. It goes to OpenAI to be turned into timed words and the
 // file is deleted straight after. Nothing is kept.
 const captionUpload = multer({ dest: path.join(__dirname, "tmp"), limits: { fileSize: 20 * 1024 * 1024, files: 1 } });
-app.post("/api/master/captions", (req, res, next) => captionUpload.single("audio")(req, res, (err) => {
+app.post("/api/master/captions", (req, res, next) => (aiLevel.gate(req, res, "core", "", GUIDE_VIDEO) ? next() : null), (req, res, next) => captionUpload.single("audio")(req, res, (err) => {
   if (err) return res.status(413).json({ error: "That take is too long for captions. Keep it under three minutes." });
   next();
 }), async (req, res) => {
@@ -1020,6 +1058,12 @@ app.post("/api/master/captions", (req, res, next) => captionUpload.single("audio
 
 app.post("/api/master/write", async (req, res) => {
   if (!needAccount(req, res)) return;
+  {
+    // Full help extras: suggested job roles and help with the pitch video.
+    const t = String((req.body || {}).task || "");
+    const extra = { roles: "Suggesting jobs your CV could suit", video: "Help planning your pitch video", videotext: "Help writing your pitch video words", videotiming: "Lining up your pitch video words" }[t];
+    if (!aiLevel.gate(req, res, extra ? "extra" : "core", extra, GUIDE_CV)) return;
+  }
   if (!req.is("application/json")) return res.status(415).json({ error: "Please send JSON." });
   if (!aiHasKey()) return res.status(503).json({ error: "Writing it up isn't available just now. You can still build it from your answers." });
   if (!writeAllowed(req.user.id)) return res.status(429).json({ error: "You've written up a lot today. Have a go at editing it yourself, and try again tomorrow." });
@@ -1092,7 +1136,7 @@ app.post("/api/master/write", async (req, res) => {
 // "Upload my CV": an existing CV read into the builder's sections, plus its
 // health check. Nothing is saved here: the page shows it and the person
 // chooses to use it. The file is deleted as soon as its text is read.
-app.post("/api/master/import", (req, res, next) => { if (needAccount(req, res)) next(); }, upload.single("cvFile"), async (req, res) => {
+app.post("/api/master/import", (req, res, next) => { if (needAccount(req, res) && aiLevel.gate(req, res, "extra", "Reading and checking an old CV", GUIDE_CV)) next(); }, upload.single("cvFile"), async (req, res) => {
   const f = req.file;
   const drop = () => { if (f) try { fs.unlinkSync(f.path); } catch (_) {} };
   if (!f) return res.status(400).json({ error: "Please choose your CV file first." });
@@ -1214,6 +1258,7 @@ app.get("/api/cover-letter/questions", (req, res) => {
 });
 
 app.post("/api/cover-letter", async (req, res) => {
+  if (!aiLevel.gate(req, res, "core", "", GUIDE_CV)) return;
   try {
     const st = S(req);
     if (!st.cv) return res.status(400).json({ error: "Generate your CV first." });
