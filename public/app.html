@@ -127,6 +127,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 </style>
 <link rel="stylesheet" href="/account/fresh.css?v=20261118c">
 <script defer data-site-id="88bb72ef-58ce-4e73-a307-471e35e35b1b" data-api="https://savri.io" src="https://savri.io/script.js"></script>
+<style>#draftPreview.seven{position:relative;max-height:520px;overflow:hidden}#draftPreview.seven::after{content:"";position:absolute;left:0;right:0;top:34%;bottom:0;background:linear-gradient(rgba(255,255,255,.15),#fff 40%);pointer-events:none}</style>
 </head><body class="fx fx-cv">
 
 <header class="site"><nav class="nav">
@@ -200,6 +201,7 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
       <p class="muted" style="font-size:13px;margin:6px 0 0">Only add links you're happy to appear on your CV. We show them exactly as you type them.</p>
       <label>Photo (optional) - appears on the designed CV, never on the ATS version</label>
       <p class="muted" style="font-size:13px;margin:2px 0 6px">Under 18? Leave the photo off. Your CV goes to people you haven't met, and your skills are what count.</p>
+      <p class="muted" style="font-size:13px;margin:2px 0 6px">In the UK a photo usually isn't needed, and leaving it off keeps the focus on what you can do. Add one only if the job asks for it.</p>
       <input type="file" id="photoFile" aria-label="Photo (optional)" accept="image/*">
     </details>
 
@@ -253,6 +255,8 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
       <div id="matchBox"></div>
       <div class="previewbox nocopy" id="draftPreview"></div>
       <p class="muted" style="font-size:13px;margin:6px 0 0">This is a watermarked preview. Choose a design and download to get the clean, full CV.</p>
+      <p style="margin-top:12px"><button type="button" class="btn ghost" id="sevenBtn">See the seven-second read</button></p>
+      <div id="sevenBox" class="notice hidden" style="border-color:var(--teal)"><strong>The seven-second read.</strong> Recruiters' first look at a CV averages about 7.4 seconds (Ladders eye-tracking study, 2018). In that time they mostly see the top of page one: your name, your opening lines and your latest job. We've faded out the rest. Ask yourself: do those three things say why you fit this job? <a href="https://the-common-people.com/guide-cv.html" target="_blank" rel="noopener">More in The CV That Gets Read</a></div>
       <p style="margin-top:18px"><button class="btn accent" id="go3">Choose a design →</button> <button class="btn ghost" id="regen">Regenerate</button> <span id="s3" class="muted"></span></p>
     </div>
   </div>
@@ -362,4 +366,5 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 <script src="/js/app.js?v=20261121-ux"></script>
 <script src="/account/nav.js?v=20261115" defer></script>
 <script src="/account/popup.js?v=20261118" defer></script>
+<script src="/easyread.js?v=20261121" defer></script>
 </body></html>

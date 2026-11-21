@@ -1038,6 +1038,18 @@
       ]);
       var h = sec.querySelector("h2"); h.parentNode.insertBefore(card, h.nextSibling);
     });
+    // Journey extras: Skills from life (Back to work), Your first step after school (1st CV).
+    document.querySelectorAll(".journey-extra").forEach(function (x) { x.remove(); });
+    var ex = (J && J.extras) || {};
+    Object.keys(ex).forEach(function (key) {
+      var sec = document.querySelector('.step[data-key="' + key + '"]'), x = ex[key];
+      if (!sec || !x) return;
+      var kids = [el("strong", { text: x.title }), el("p", { text: x.line })];
+      if (x.items && x.items.length) kids.push(el("ul", {}, x.items.map(function (t) { return el("li", { text: t }); })));
+      (x.links || []).forEach(function (l) { kids.push(el("p", {}, [el("a", { href: l.url, target: "_blank", rel: "noopener", text: l.text })])); });
+      var card = el("aside", { class: "guide-card journey-extra" }, kids);
+      var h = sec.querySelector("h2"); h.parentNode.insertBefore(card, h.nextSibling);
+    });
   }
   function applyJourney() {
     J = findJourney(cv.journey);
@@ -1047,7 +1059,7 @@
     var et = document.querySelector('p[data-tip="experience"]'); if (et) et.classList.toggle("first-cv", !!(J && (J.counts || J.breaks)));
     $("add-break").classList.toggle("hidden", !(J && J.id !== "first"));
     if (J && J.questions && J.questions.length) { QUESTIONS = J.questions; qi = 0; }
-    buildSteps(); guideCards(); renderInterestIdeas(); renderVideo();
+    buildSteps(); renderInterestIdeas(); renderVideo(); guideCards();
     if (loaded) renderQuestion();
     $("up-title").textContent = J && J.upload ? J.upload.title : "Upload a CV you've got";
     $("up-text").textContent = J && J.upload ? J.upload.text : "";

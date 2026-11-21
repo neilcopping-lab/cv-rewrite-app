@@ -808,6 +808,14 @@ async function downloadCover(type) {
 }
 
 // On load: handle return from Stripe / sign-in, then load account state.
+// The seven-second read: fade out everything below the first glance.
+document.addEventListener("click", (e) => {
+  if (!e.target || e.target.id !== "sevenBtn") return;
+  const p = $("#draftPreview"), on = !p.classList.contains("seven");
+  p.classList.toggle("seven", on); $("#sevenBox").classList.toggle("hidden", !on);
+  e.target.textContent = on ? "Show the whole CV" : "See the seven-second read";
+});
+
 (async function init() {
   const p = new URLSearchParams(location.search);
   let jumpToDesign = false;
