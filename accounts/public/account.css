@@ -56,7 +56,7 @@ legend{font-weight:700;font-size:14px;margin:0 0 10px;padding:0}
 .kv{display:grid;grid-template-columns:120px 1fr;gap:6px 14px;margin:0 0 6px;font-size:15px}
 .kv dt{color:var(--muted)}.kv dd{margin:0;font-weight:500;word-break:break-all}
 .soon li{margin:0 0 6px}
-.tool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0 0}
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:16px 0 0}
 .tool{display:flex;flex-direction:column;gap:6px;background:var(--peel);border:1px solid var(--pith);border-radius:14px;padding:16px;color:var(--ink);text-decoration:none}
 a.tool:hover{border-color:var(--leaf);box-shadow:0 4px 14px rgba(31,107,69,.12)}
 .tool strong{font-family:'Bricolage Grotesque','DM Sans',sans-serif;font-size:18px;color:var(--leaf)}

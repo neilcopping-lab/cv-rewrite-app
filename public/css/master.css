@@ -425,3 +425,86 @@ details.ideas li{margin:0 0 4px}
 
 /* CV Builder pill in the header: purple to pink, like its My account card */
 .mcv-body .cq-head .cq-feat{background:linear-gradient(120deg,#7C3AED,#E8467C);color:#fff}
+/* Record it, then style it */
+.v-stage-h{display:flex;align-items:center;gap:10px;font-family:'Bricolage Grotesque',sans-serif;font-size:19px;margin:20px 0 6px}
+.v-stage-h span{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#1F6B45;color:#FFF3E2;font-size:16px}
+.v-stage-h small{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:var(--muted)}
+.v-post{border-top:2px solid var(--pith);margin-top:16px;padding-top:4px}
+.v-styles{grid-template-columns:repeat(3,1fr)}
+@media (max-width:900px){.v-styles{grid-template-columns:1fr}}
+.v-line,.v-pv{margin-top:14px;border-top:2px dashed var(--pith);padding-top:6px}
+.v-line h4,.v-pv h4{font-family:'Bricolage Grotesque',sans-serif;font-size:17px;margin:10px 0 4px}
+.v-timeline{list-style:none;padding:0;margin:10px 0}
+.v-timeline li{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--pith)}
+.v-tl-t{font-variant-numeric:tabular-nums;font-weight:700;min-width:52px}
+.v-tl-l{flex:1;min-width:160px;font-size:14.5px;white-space:pre}
+.v-caps-opt{margin-top:8px}
+.v-pv-box{max-width:720px}
+#v-pv-canvas{display:block;width:100%;border-radius:12px;background:#17191C}
+.v-pv.portrait .v-pv-box{max-width:360px}
+.v-pv.square .v-pv-box{max-width:520px}
+.v-pv-ctrl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;max-width:720px}
+.v-pv-ctrl input[type=range]{flex:1;min-width:140px;accent-color:#1F6B45}
+.v-offscreen{position:fixed;right:0;bottom:0;width:2px;height:2px;opacity:.01;pointer-events:none;z-index:-1}
+#v-canvas.portrait{width:auto;max-width:100%;height:min(70vh,640px)}
+.v-full-only.hidden{display:none}
+/* The video on its own page */
+body.studio .ring-wrap,body.studio #jbar,body.studio #steps,body.studio #stepCount,body.studio #hstrip,body.studio .col-preview,body.studio .step-nav,body.studio #pv-fab,body.studio .guide-note,body.studio .ai-warn-top{display:none!important}
+body.studio .layout{display:block}
+body.studio .col-form{max-width:860px;margin:0 auto}
+.studio-bar{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin:0 0 14px;font-size:15px}
+body.studio .v-own-page{display:none}
+/* Pitch video: one calm step at a time */
+.pv-lede{font-size:17px;line-height:1.55;max-width:62ch;margin:4px 0 8px}
+.pv-steps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:14px 0 6px;padding:0}
+.pv-steps button{display:flex;align-items:center;gap:8px;min-height:48px;font:inherit;font-size:15px;font-weight:700;text-align:left;color:var(--ink);background:#fff;border:2px solid var(--pith);border-radius:14px;padding:6px 10px;cursor:pointer}
+.pv-steps button b{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--pith);font-size:14px}
+.pv-steps button small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.pv-steps button[aria-current="step"]{border-color:#1F6B45;background:#EEF6F1}
+.pv-steps button[aria-current="step"] b{background:#1F6B45;color:#FFF3E2}
+.pv-steps button.done b{background:#1F6B45;color:transparent;position:relative}
+.pv-steps button.done b:after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#FFF3E2}
+.pv-steps button.ready{border-style:dashed;border-color:#FF9632}
+@media (max-width:640px){.pv-steps{grid-template-columns:repeat(5,minmax(0,1fr))}.pv-steps button{flex-direction:column;justify-content:center;gap:2px;font-size:12.5px;padding:6px 2px;text-align:center}.pv-steps button small{display:none}}
+.pv-where{font-size:14.5px;color:var(--muted);margin:2px 0 12px}
+.pv-stage{border:2px solid var(--pith);border-radius:16px;padding:16px 18px;background:#fff}
+.pv-h{font-family:'Bricolage Grotesque',sans-serif;font-size:21px;margin:0 0 6px;outline:none}
+.pv-h:focus-visible{outline:3px solid #FF9632;outline-offset:4px;border-radius:6px}
+.pv-h small{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;color:var(--muted)}
+.pv-do{font-size:16.5px;line-height:1.55;max-width:62ch;margin:0 0 12px}
+details.pv-more,details.v-tips{border:1px solid var(--pith);border-radius:12px;margin:10px 0;background:#FFFCF7}
+details.pv-more>summary,details.v-tips>summary{cursor:pointer;padding:12px 14px;font-weight:700;font-size:15px;list-style:none;display:flex;align-items:center;gap:8px;min-height:24px}
+details.pv-more>summary::-webkit-details-marker,details.v-tips>summary::-webkit-details-marker{display:none}
+details.pv-more>summary:before,details.v-tips>summary:before{content:"+";display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--pith);font-weight:800}
+details[open].pv-more>summary:before,details[open].v-tips>summary:before{content:"−"}
+details.pv-more>*:not(summary),details.v-tips>*:not(summary){margin-left:14px;margin-right:14px}
+details.pv-more>.v-opts{margin:0 10px 10px}
+details.v-tips{margin:6px 0 8px;background:transparent}
+details.v-tips>summary{padding:8px 12px;font-size:14px}
+.pv-opt-now{font-weight:500;color:var(--muted);font-size:14px}
+.pv-nav{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 0;padding-top:14px;border-top:1px solid var(--pith)}
+.pv-sub{display:flex;align-items:center;gap:10px;font-family:'Bricolage Grotesque',sans-serif;font-size:17px;margin:18px 0 6px}
+.pv-sub span{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#FFF3E2;border:2px solid #FF9632;font-size:14px}
+.pv-none{font-size:16px;background:#FFF8EE;border-radius:12px;padding:12px 14px}
+.v-rec-clock{font-family:'Bricolage Grotesque',sans-serif;font-size:22px;font-weight:800;white-space:pre;margin:6px 0}
+.v-cam{border:0;padding:0;margin-top:0}
+.pv-stage .v-safe{margin-top:16px}
+.pv-stage .v-safe h4{margin:12px 0 6px}
+.v-stage{max-width:640px}
+.v-pv-box{max-width:640px}
+.v-pv.portrait .v-pv-box{max-width:320px}
+.v-pv.square .v-pv-box{max-width:460px}
+/* The video page: a smaller header, so the steps are on screen straight away */
+body.studio .hero-in{padding:16px 24px 14px}
+body.studio .hero h1{font-size:clamp(26px,4vw,36px);margin:0 0 4px}
+body.studio .hero-lede{font-size:16px;margin:0}
+body.studio .hero:before,body.studio .hero:after{display:none}
+/* Calmer for anyone who prefers less movement */
+@media (prefers-reduced-motion:reduce){.mcv-main *,.mcv-main *:before,.mcv-main *:after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+.pv-stage video{width:100%;max-width:640px;border-radius:12px;background:#111;display:block;margin:8px 0}
+details.pv-more>summary{flex-wrap:wrap}
+details.pv-more>summary:before,details.v-tips>summary:before{flex:0 0 22px}
+.pv-opt-now{flex-basis:100%;padding-left:30px}
+.step[data-key="video"] .guide-card{display:none}
+.pv-nav{padding-bottom:56px}
+@media (min-width:900px){.pv-nav{padding-bottom:0}}

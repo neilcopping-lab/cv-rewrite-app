@@ -82,6 +82,8 @@ app.use(
 app.use(express.static(path.join(__dirname, "public")));
 // Google's MediaPipe person cut-out (Apache 2.0), served from our own site for the
 // video background options. It runs in the person's browser: no video comes back here.
+// The video on its own page, without going through the CV steps.
+app.get(["/video", "/video/", "/pitch", "/pitch/"], (req, res) => res.redirect(302, "/master.html?studio=video"));
 app.use("/vendor/selfie", express.static(path.join(__dirname, "node_modules/@mediapipe/selfie_segmentation"), { maxAge: "30d", index: false }));
 
 // ─── Identity shield ─────────────────────────────────────────────────────────
@@ -1044,16 +1046,28 @@ app.post("/api/master/write", async (req, res) => {
     if (b.task === "video") {
       // Planned from the saved master CV, so the page saves first.
       const m = await loadMaster(req);
-      if (!m) return res.status(400).json({ error: "Add a bit more to your CV first, then we can plan your 90 seconds." });
+      if (!m) return res.status(400).json({ error: "Add a bit more to your CV first, then we can plan your pitch video." });
       const out = await run([], () => masterWriter.videoPlan({ cv: m.cv, company: String(b.company || "").slice(0, 120), role: String(b.role || "").slice(0, 120) }));
       return res.json({ ok: true, plan: out });
     }
     if (b.task === "videotext") {
       // The words on screen for a styled video, from the saved notes and CV.
       const m = await loadMaster(req);
-      if (!m) return res.status(400).json({ error: "Plan your 90 seconds first, then we can write the words for your video." });
+      if (!m) return res.status(400).json({ error: "Plan your pitch first, then we can write the words for your video." });
       const out = await run([], () => masterWriter.videoText({ cv: m.cv, role: String(b.role || "").slice(0, 120) }));
       return res.json({ ok: true, text: out });
+    }
+    if (b.task === "videotiming") {
+      // Lines the on-screen words up with what they said in a take (timed pieces of
+      // their own words, from the captions step). The video itself never comes here.
+      const m = await loadMaster(req);
+      const segments = Array.isArray(b.segments) ? b.segments.slice(0, 200) : [];
+      const said = segments.map((x) => String((x && x.text) || "")).join(" ").slice(0, 20000);
+      const c = b.cards || {};
+      const cards = { role: String(c.role || "").slice(0, 120), hook: String(c.hook || "").slice(0, 70), s1skill: String(c.s1skill || "").slice(0, 32), s1proof: String(c.s1proof || "").slice(0, 60),
+        s2skill: String(c.s2skill || "").slice(0, 32), s2proof: String(c.s2proof || "").slice(0, 60), bring: (Array.isArray(c.bring) ? c.bring : []).slice(0, 3).map((x) => String(x).slice(0, 44)) };
+      const out = await run([said], () => masterWriter.videoTiming({ cv: (m && m.cv) || {}, segments, cards, short: !!b.short }));
+      return res.json({ ok: true, ...out });
     }
     if (b.task === "roles") {
       // Jobs the saved master CV could suit, for the account page.

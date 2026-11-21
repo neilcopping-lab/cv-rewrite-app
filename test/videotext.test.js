@@ -34,5 +34,5 @@ test("video text drops personal details", async () => {
 });
 
 test("video text needs notes or a CV first", async () => {
-  await assert.rejects(() => mw.videoText({ cv: { header: {} }, role: "" }), /Plan your 90 seconds first/);
+  await assert.rejects(() => mw.videoText({ cv: { header: {} }, role: "" }), /Plan your pitch first/);
 });

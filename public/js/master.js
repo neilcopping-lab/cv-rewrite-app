@@ -73,7 +73,7 @@
     education: { label: "Education", done: function () { return (cv.education || []).some(function (e) { return (e.qualification || "").trim() || (e.institution || "").trim(); }); }, cheer: "Education sorted." },
     interests: { label: "Interests", done: function () { return lineCount(cv.interests) >= 1; }, cheer: "Now they've got a reason to like you." },
     download: { label: "Look and download", done: function () { return false; } },
-    video: { label: "Your 90 seconds", done: function () { var v = cv.videoPlan || {}; return !!((cv.header || {}).introVideo || (String(v.intro || "").trim() && String(v.story1 || "").trim() && String(v.close || "").trim())); } },
+    video: { label: "Pitch video", done: function () { var v = cv.videoPlan || {}; return !!((cv.header || {}).introVideo || (String(v.intro || "").trim() && String(v.story1 || "").trim() && String(v.close || "").trim())); } },
   };
   var STEPS = [];
   function buildSteps() {
@@ -882,7 +882,7 @@
     healthStrip();
   }
 
-  // ---- Your 90 seconds: talking notes for an intro video (Field Guide N°02) -------------
+  // ---- Your pitch video: talking notes, practice, recording and styling (Field Guide N°02) ----
   var VIDEO = { parts: [], checks: [] };
   // The 30-second cut: the opening, one story, the close. For Reels, Shorts and TikTok.
   var vLen = "full";
@@ -907,15 +907,16 @@
       ta.addEventListener("input", function () { vPlan()[pt.id] = ta.value; changed(); });
       box.appendChild(el("div", { class: "v-part", "data-part": pt.id }, [
         el("div", { class: "v-head" }, [el("span", { class: "v-n", text: String(i + 1) }), el("strong", { text: pt.title }), el("span", { class: "v-time", text: pt.time })]),
-        el("p", { class: "v-in" }, [el("b", { text: "Put in: " }), document.createTextNode(pt.putIn)]),
-        el("p", { class: "v-out" }, [el("b", { text: "Leave out: " }), document.createTextNode(pt.leaveOut)]),
+        el("details", { class: "v-tips" }, [el("summary", { text: "Tips for this part" }),
+          el("p", { class: "v-in" }, [el("b", { text: "Put in: " }), document.createTextNode(pt.putIn)]),
+          el("p", { class: "v-out" }, [el("b", { text: "Leave out: " }), document.createTextNode(pt.leaveOut)])]),
         el("label", { for: id, text: "Your notes, one per line" }), ta, mic(ta, "Say it instead", null, { lines: true }),
       ]));
     });
-    var cb = $("v-checks"); cb.textContent = "";
     var ticked = new Set(cv.videoChecks || []);
-    [["record", "Recording"], ["safe", "Staying safe"]].forEach(function (grp) {
-      var list = el("div", { class: "v-check-grp" }, [el("h4", { text: grp[1] })]);
+    [["record", "v-checks-rec"], ["safe", "v-checks-safe"]].forEach(function (grp) {
+      var cb = $(grp[1]); cb.textContent = "";
+      var list = el("div", { class: "v-check-grp" });
       VIDEO.checks.filter(function (c) { return c.group === grp[0]; }).forEach(function (c) {
         var input = el("input", { type: "checkbox" }); input.checked = ticked.has(c.id);
         input.addEventListener("change", function () {
@@ -928,7 +929,7 @@
       cb.appendChild(list);
     });
     if (!writeUp) { $("v-plan").classList.add("hidden"); document.querySelector(".v-ai").classList.add("hidden"); $("v-write").classList.add("hidden"); }
-    fillText();
+    fillText(); pvStart();
   }
   $("v-role").addEventListener("input", function () { vPlan().role = $("v-role").value; queueSave(); });
   $("v-company").addEventListener("input", function () { vPlan().company = $("v-company").value; queueSave(); });
@@ -937,7 +938,7 @@
     var has = VIDEO.parts.some(function (pt) { return String(vp[pt.id] || "").trim(); });
     if (has && !b.dataset.sure) { b.dataset.base = base; sure(b, "Replace my notes?", base); $("v-msg").textContent = "This replaces the notes below. Press again to go ahead."; return; }
     delete b.dataset.sure;
-    b.disabled = true; b.textContent = "Planning your 90 seconds…"; $("v-msg").textContent = "";
+    b.disabled = true; b.textContent = "Planning your pitch…"; $("v-msg").textContent = "";
     flush().then(function () { return postJSON("/api/master/write", { task: "video", role: $("v-role").value, company: $("v-company").value }); })
       .then(function (j) {
         var name = ((cv.header || {}).name || "").trim();
@@ -947,7 +948,7 @@
         });
         renderVideo(); changed();
         $("v-msg").textContent = "Done. Change anything that doesn't sound like you, and fill in anything in brackets.";
-        toast("Your 90 seconds is planned.");
+        toast("Your pitch is planned.");
       })
       .catch(function (e) { $("v-msg").textContent = e.message; })
       .then(function () { b.disabled = false; b.innerHTML = base; });
@@ -960,6 +961,8 @@
     $("v-clock").textContent = Math.floor(whole / 60) + ":" + ("0" + (whole % 60)).slice(-2);
     $("v-fill").style.width = Math.min(100, (sec / capSec()) * 100) + "%";
     var part = curParts().filter(function (pt) { return sec >= pt.from && sec < pt.to; })[0];
+    var rc = $("v-rec-clock");
+    if (rc && recording()) { rc.classList.remove("hidden"); rc.textContent = Math.floor(whole / 60) + ":" + ("0" + (whole % 60)).slice(-2) + "   " + (part ? "Now: " + part.title.toLowerCase() : sec < capSec() ? "Time to wrap up" : "Over time: finish your sentence"); }
     document.querySelectorAll(".v-part").forEach(function (c) { c.classList.toggle("live", !!part && c.getAttribute("data-part") === part.id); });
     var now = $("v-now"), tm = document.querySelector(".v-timer");
     var aim = aimSec(), cap = capSec();
@@ -969,7 +972,7 @@
   function timerStart() { tStart = Date.now(); clearInterval(tTick); tTick = setInterval(tickVideo, 200); $("v-go").textContent = "Stop"; tickVideo(); }
   function timerStop() {
     if (!tTick) return;
-    clearInterval(tTick); tTick = null; $("v-go").textContent = "Start the timer";
+    clearInterval(tTick); tTick = null; $("v-go").textContent = "Start the timer"; $("v-rec-clock").classList.add("hidden");
     document.querySelectorAll(".v-part").forEach(function (c) { c.classList.remove("live"); });
     var sec = Math.round((Date.now() - tStart) / 1000);
     $("v-now").textContent = sec + " seconds. " + (vLen === "short"
@@ -978,16 +981,22 @@
   }
   $("v-go").addEventListener("click", function () { if (tTick) timerStop(); else timerStart(); });
 
-  // Practise on camera. Recorded in the browser and kept on the device: nothing is uploaded.
-  // The styled versions (Professional, For your socials) draw the camera onto a canvas
-  // with the words on top, in Comquat colours, and record the canvas. Still all on the device.
-  var STYLE_FILE = { plain: "my-90-seconds", pro: "my-90-seconds-professional", square: "my-90-seconds-linkedin", social: "my-90-seconds-socials" };
+  // ---- Record your video -------------------------------------------------------------
+  // 1. Record it: the camera (with the background blurred or swapped if they like),
+  //    all in the browser. 2. Style it: afterwards, the words and Comquat branding go
+  //    on top, lined up with what they actually said. The picture never leaves the device.
+  var STYLE_FILE = { plain: "my-pitch-video", pro: "my-pitch-video-professional", square: "my-pitch-video-linkedin", social: "my-pitch-video-socials" };
   var STYLE_NAME = { plain: "Just me", pro: "Professional", square: "LinkedIn square", social: "For your socials" };
   var BR = { ink: "#17191C", green: "#1F6B45", cream: "#FFF3E2", orange: "#FF9632" };
   var HEAD = "'Bricolage Grotesque', 'DM Sans', sans-serif", BODY = "'DM Sans', sans-serif";
-  var camStream = null, camRec = null, camChunks = [], audRec = null, audChunks = [], vStyle = "plain", recStyle = "plain", takes = {};
-  var dr = { raf: 0, endAt: 0, manual: -1, idx: -1, idxAt: 0, canvasStream: null };
+  var camStream = null, camRec = null, camChunks = [], audRec = null, audChunks = [], vStyle = "pro";
+  var take = null;      // the latest take: { url, ext, mime, file, len, dur, audio, words, caps, timing }
+  var made = {};        // styled videos made from it, by style
+  var live = { raf: 0, canvasStream: null, startedAt: 0 };
   var canStyle = !!(window.HTMLCanvasElement && HTMLCanvasElement.prototype.captureStream);
+  var recording = function () { return !!(camRec && camRec.state === "recording"); };
+  var making = false;
+  var vBg = "none";
   var logoLight = new Image(); logoLight.src = "/img/comquat-logo-reversed.svg";
   // Colourways from the Comquat palette: ink, leaf green, cream and kumquat orange,
   // plus the CV builder's bright purple and pink. The person picks one.
@@ -1026,9 +1035,6 @@
   // On a light Comquat backdrop the corner logo goes dark; over a real room it stays light.
   var cornerLogo = function () { return vBg === "brand" && TH().end.logo === "dark" ? logoDark : logoLight; };
     var recording = function () { return !!(camRec && camRec.state === "recording"); };
-  var vBg = "none";
-  var canvasOn = function () { return vStyle !== "plain" || vBg !== "none"; };
-
   // The words on screen, saved with the 90 seconds notes.
   var VT = { name: "vt-name", role: "vt-role", hook: "vt-hook", s1skill: "vt-s1skill", s1proof: "vt-s1proof", s2skill: "vt-s2skill", s2proof: "vt-s2proof", bring: "vt-bring" };
   function vt() { var vp = vPlan(); if (!vp.overlay || typeof vp.overlay !== "object") vp.overlay = {}; return vp.overlay; }
@@ -1080,74 +1086,6 @@
       .then(function () { b.disabled = false; b.innerHTML = base; });
   });
 
-  // ---- picking a style ----
-  function camHint() {
-    var v = $("v-live");
-    if (!camStream) return;
-    if (vStyle === "social") $("v-cam-msg").textContent = "Hold your phone upright for this one. On a laptop, sit in the middle of the shot and we'll crop it to portrait.";
-    else $("v-cam-msg").textContent = v.videoHeight > v.videoWidth ? "Turn your phone sideways: landscape plays properly on a laptop." : "Look at the lens, not at yourself. Press record when you're ready.";
-  }
-  function setStyle(s) {
-    if (recording()) return;
-    if (s !== "plain" && !canStyle) { $("v-cam-msg").textContent = "This browser can't add words to a video. Try Chrome, Edge or Safari, or record it as Just me."; s = "plain"; }
-    if (recording()) return;
-    vStyle = s;
-    document.querySelectorAll(".v-style").forEach(function (b) { b.setAttribute("aria-checked", b.getAttribute("data-style") === s ? "true" : "false"); });
-    $("v-text").classList.toggle("hidden", s === "plain");
-    $("v-text").classList.toggle("is-social", s === "social");
-    var c = $("v-canvas"); c.width = s === "social" ? 720 : s === "square" ? 960 : 1280; c.height = s === "social" ? 1280 : s === "square" ? 960 : 720;
-    c.classList.toggle("portrait", s === "social"); c.classList.toggle("square", s === "square");
-    $("v-stage").className = "v-stage" + (s === "social" ? " portrait" : s === "square" ? " square" : "");
-    if (s !== "plain" && document.fonts && document.fonts.load) { document.fonts.load("800 40px 'Bricolage Grotesque'"); document.fonts.load("700 24px 'DM Sans'"); }
-    liveView(); showTake(s); camHint();
-  }
-  document.querySelectorAll(".v-style").forEach(function (b) { b.addEventListener("click", function () { setStyle(b.getAttribute("data-style")); }); });
-  function liveView() {
-    var styled = canvasOn() && !!camStream;
-    $("v-live").classList.toggle("hidden", !camStream);
-    $("v-live").classList.toggle("v-src", styled);
-    $("v-canvas").classList.toggle("hidden", !styled);
-    $("v-prompter").classList.toggle("hidden", !camStream || !$("v-prompt-on").checked);
-    cancelAnimationFrame(dr.raf); dr.raf = 0;
-    var lastPrompt = 0;
-    if (camStream) (function loop() {
-      dr.raf = requestAnimationFrame(loop);
-      if (canvasOn()) paint();
-      if (Date.now() - lastPrompt > 200) { lastPrompt = Date.now(); prompter(); }
-    })();
-  }
-
-  // ---- the teleprompter: notes for the part you're on, over the preview, never recorded ----
-  var promptPart = null;
-  function prompter() {
-    var box = $("v-prompter");
-    if (!$("v-prompt-on").checked || !camStream) { box.classList.add("hidden"); return; }
-    box.classList.remove("hidden");
-    var parts = curParts(), i = 0;
-    if (recording()) { var sec = (Date.now() - tStart) / 1000; parts.forEach(function (p, k) { if (sec >= p.from) i = k; }); if (dr.manual > i) i = dr.manual; }
-    var p = parts[i], id = p.id + "|" + vLen;
-    if (id === promptPart && box.childNodes.length) return;
-    promptPart = id; box.textContent = "";
-    box.appendChild(el("span", { class: "v-p-h", text: (i + 1) + ". " + p.title }));
-    var lines = String(vPlan()[p.id] || "").split("\n").map(function (l) { return l.replace(/\[(FIRST_)?NAME\]/g, ((cv.header || {}).name || "")).trim(); }).filter(Boolean);
-    if (!lines.length) lines = ["(No notes for this part yet. Add them above.)"];
-    lines.forEach(function (l) { box.appendChild(el("p", { text: l })); });
-  }
-  $("v-prompt-on").addEventListener("change", function () { promptPart = null; prompter(); });
-
-  // ---- how long: the full 90 seconds, or the 30-second cut ----
-  document.querySelectorAll(".v-seg [data-len]").forEach(function (b) {
-    b.addEventListener("click", function () {
-      if (recording()) return;
-      vLen = b.getAttribute("data-len");
-      document.querySelectorAll(".v-seg [data-len]").forEach(function (x) { x.setAttribute("aria-checked", x === b ? "true" : "false"); });
-      document.querySelector(".v-short-note").classList.toggle("hidden", vLen !== "short");
-      promptPart = null; prompter();
-      $("v-now").textContent = vLen === "short" ? "Aim for 30 seconds. 45 is the ceiling." : "Aim for 90 seconds. Two minutes is the ceiling.";
-    });
-  });
-
-  // ---- drawing ----
   var clamp = function (n) { return Math.max(0, Math.min(1, n)); };
   var easeOut = function (t) { t = clamp(t); return 1 - Math.pow(1 - t, 3); };
   var pop = function (t) { t = clamp(t); var c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
@@ -1168,30 +1106,6 @@
     var w = h * img.naturalWidth / img.naturalHeight;
     x.drawImage(img, align === "right" ? X - w : align === "center" ? X - w / 2 : X, Y, w, h);
   }
-  // Where we are in the four parts. Recording follows the timer (or Next card);
-  // the preview flicks through the parts every four seconds so you can see the words.
-  function where() {
-    var parts = curParts(), now = Date.now();
-    if (!recording()) { var i = Math.floor(now / 4000) % parts.length; return { i: i, t: (now % 4000) / 1000 + (i === 0 ? 0 : 1.2), len: 5.2, sec: (i * 4000 + now % 4000) / 1000 * 4.5, preview: true }; }
-    var sec = (now - tStart) / 1000, ti = 0;
-    parts.forEach(function (p, k) { if (sec >= p.from) ti = k; });
-    var i = Math.max(ti, dr.manual);
-    if (i !== dr.idx) { dr.idx = i; dr.idxAt = now; }
-    var p = parts[i], t = (now - dr.idxAt) / 1000;
-    if (i === ti && dr.manual < ti) t = sec - p.from;
-    return { i: i, t: t, len: Math.max(6, p.to - p.from), sec: sec };
-  }
-  function paint() {
-    var c = $("v-canvas"), x = c.getContext("2d"), W = c.width, H = c.height, v = $("v-live");
-    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.shadowColor = "transparent"; x.textBaseline = "alphabetic";
-    x.fillStyle = BR.ink; x.fillRect(0, 0, W, H);
-    if (v.videoWidth) drawCamera(x, W, H, v);
-    if (vStyle === "plain") return;
-    var at = where(), brand = vt().brand !== false;
-    if (vStyle === "social") paintSocial(x, W, H, at, brand); else paintPro(x, W, H, at, brand);
-    if (dr.endAt) endCard(x, W, H, (Date.now() - dr.endAt) / 1000, brand);
-  }
-
   // ---- the background: blur it, or the Comquat backdrop ----
   // Google's MediaPipe finds where the person is in each frame, in the browser.
   var seg = { obj: null, loading: false, busy: false, mask: null, failed: false };
@@ -1252,7 +1166,11 @@
     x.drawImage(pc, 0, 0);
   }
   function renderThemes() {
-    var box = $("v-themes"); box.textContent = "";
+    ["v-themes", "v-themes2"].forEach(function (id) { renderThemesIn($(id)); });
+    if (typeof pvOpts === "function" && pvStarted) pvOpts();
+  }
+  function renderThemesIn(box) {
+    box.textContent = "";
     var cur = THEMES[vt().theme] ? vt().theme : "kumquat";
     Object.keys(THEMES).forEach(function (k) {
       var th = THEMES[k];
@@ -1303,15 +1221,15 @@
     x.restore();
   }
   function paintPro(x, W, H, at, brand) {
-    if (brand && !dr.endAt) { x.save(); x.globalAlpha = 0.9; x.shadowColor = "rgba(0,0,0,.45)"; x.shadowBlur = 8; drawLogo(x, cornerLogo(), W - 36, 30, 30, "right"); x.restore(); }
-    if (dr.endAt) return;
-    var t = at.t, len = at.len, part = curParts()[at.i].id;
+    if (brand && !at.end) { x.save(); x.globalAlpha = 0.9; x.shadowColor = "rgba(0,0,0,.45)"; x.shadowBlur = 8; drawLogo(x, cornerLogo(), W - 36, 30, 30, "right"); x.restore(); }
+    if (at.end) return;
+    var t = at.t, len = at.len, part = at.id;
     if (part === "intro") proCard(x, W, H, vis(t, 0.6, Math.min(8, len - 0.5)), "", vtVal("name") || "(your name)", vtVal("role"));
     if (part === "story1" && vtVal("s1skill")) proCard(x, W, H, vis(t, 1.2, len - 1.2), "SKILL", vtVal("s1skill"), vtVal("s1proof"));
     if (part === "story2" && vtVal("s2skill")) proCard(x, W, H, vis(t, 1.2, len - 1.2), "SKILL", vtVal("s2skill"), vtVal("s2proof"));
     if (part === "close" && bringLines().length) {
       var a = vis(t, 1, len + 60), ls = bringLines();
-      proCard(x, W, H, a, "WHAT I'D BRING", "", "", ls.map(function (l, k) { return t > 1 + k * 1.4 || at.preview ? l : ""; }).filter(Boolean));
+      proCard(x, W, H, a, "WHAT I'D BRING", "", "", ls.map(function (l, k) { return t >= (at.bring && at.bring[k] != null ? at.bring[k] : 1 + k * 1.4) ? l : ""; }).filter(Boolean));
     }
   }
 
@@ -1333,13 +1251,13 @@
     var CX = W * 0.46, MW = W * 0.72;
     var gr = x.createLinearGradient(0, H * 0.45, 0, H); gr.addColorStop(0, "rgba(23,25,28,0)"); gr.addColorStop(1, "rgba(23,25,28,.45)");
     x.fillStyle = gr; x.fillRect(0, H * 0.45, W, H * 0.55);
-    if (!dr.endAt) {
-      var f = at.preview ? (Date.now() % 16000) / 16000 : Math.min(1, at.sec / aimSec());
+    if (!at.end) {
+      var f = Math.min(1, at.sec / (at.total || aimSec()));
       x.fillStyle = "rgba(255,243,226,.35)"; x.fillRect(0, 0, W, 10); x.fillStyle = TH().bar; x.fillRect(0, 0, W * f, 10);
       if (brand) { x.save(); x.shadowColor = "rgba(0,0,0,.5)"; x.shadowBlur = 10; drawLogo(x, cornerLogo(), 30, 34, 34, "left"); x.restore(); }
     }
-    if (dr.endAt) return;
-    var t = at.t, len = at.len, part = curParts()[at.i].id, hook = vtVal("hook"), Y = H * 0.64, S = TH().s;
+    if (at.end) return;
+    var t = at.t, len = at.len, part = at.id, hook = vtVal("hook"), Y = H * 0.64, S = TH().s;
     if (part === "intro") {
       if (hook) sticker(x, hook, "800 50px " + HEAD, 50, S.hook[0], S.hook[1], W / 2, H * 0.3, -2, vis(t, 0.2, 4.2) * 1.0, W * 0.8);
       var n0 = hook ? 4.6 : 0.6;
@@ -1358,7 +1276,7 @@
       var top = Y - 150;
       sticker(x, "WHAT I'D BRING", "800 26px " + BODY, 26, S.tag[0], S.tag[1], CX, top, -3, vis(t, 0.8, len + 60), MW);
       bringLines().forEach(function (l, k) {
-        var st = at.preview ? 1 + k * 0.5 : 1.4 + k * 1.6;
+        var st = at.bring && at.bring[k] != null ? at.bring[k] : 1.4 + k * 1.6;
         sticker(x, "✓ " + l, "800 36px " + HEAD, 36, (k % 2 ? S.b2 : S.b1)[0], (k % 2 ? S.b2 : S.b1)[1], CX + (k % 2 ? 14 : -10), top + 80 + k * 92, k % 2 ? 2 : -2, vis(t, st, len + 60), MW);
       });
     }
@@ -1388,124 +1306,6 @@
     x.restore();
   }
 
-  // ---- the camera and the takes (one per style) ----
-  function camOff() {
-    if (recording()) { dr.endAt = 0; camRec.stop(); }
-    if (camStream) camStream.getTracks().forEach(function (t) { t.stop(); });
-    camStream = null; cancelAnimationFrame(dr.raf); dr.raf = 0;
-    $("v-live").classList.add("hidden"); $("v-canvas").classList.add("hidden"); $("v-prompter").classList.add("hidden"); $("v-rec").classList.add("hidden"); $("v-cam-off").classList.add("hidden"); $("v-next-row").classList.add("hidden"); $("v-cam-on").classList.remove("hidden");
-  }
-  $("v-cam-off").addEventListener("click", function () { camOff(); $("v-cam-msg").textContent = "Camera off."; });
-  window.addEventListener("pagehide", camOff);
-  $("v-cam-on").addEventListener("click", function () {
-    var msg = $("v-cam-msg");
-    if (!navigator.mediaDevices || !window.MediaRecorder) { msg.textContent = "This browser can't record video. You can still practise with the timer."; return; }
-    navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true }).then(function (st) {
-      camStream = st; var v = $("v-live"); v.srcObject = st;
-      // Played from the button press, so browsers keep it running while it feeds the styled preview.
-      var pl = v.play && v.play(); if (pl && pl.catch) pl.catch(function () {});
-      $("v-cam-on").classList.add("hidden"); $("v-rec").classList.remove("hidden"); $("v-cam-off").classList.remove("hidden");
-      liveView();
-      v.onloadedmetadata = camHint;
-    }).catch(function () { msg.textContent = "We couldn't use your camera. Check your browser lets this page use it."; });
-  });
-  function finish() {
-    if (!recording()) return;
-    timerStop();
-    if (recStyle === "plain") { camRec.stop(); return; }
-    // A short end card before it stops.
-    dr.endAt = Date.now(); $("v-rec").disabled = true; $("v-rec").textContent = "Finishing…";
-    setTimeout(function () { if (recording()) camRec.stop(); }, 2600);
-  }
-  $("v-rec").addEventListener("click", function () {
-    if (recording()) { finish(); return; }
-    if (!camStream) return;
-    camChunks = []; recStyle = vStyle; dr.endAt = 0; dr.manual = -1; dr.idx = -1;
-    var stream = camStream;
-    if (canvasOn()) {
-      dr.canvasStream = $("v-canvas").captureStream(30);
-      camStream.getAudioTracks().forEach(function (t) { dr.canvasStream.addTrack(t); });
-      stream = dr.canvasStream;
-    }
-    // mp4 first: it plays on iPhones, Windows and in email. webm is the fallback.
-    var types = ["video/mp4;codecs=avc1,mp4a", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"];
-    var type = types.filter(function (t) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0];
-    camRec = type ? new MediaRecorder(stream, { mimeType: type }) : new MediaRecorder(stream);
-    camRec.ondataavailable = function (e) { if (e.data && e.data.size) camChunks.push(e.data); };
-    // The sound on its own as well, so captions can be made without the picture ever leaving the device.
-    audChunks = []; audRec = null;
-    try {
-      var atypes = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"];
-      var atype = atypes.filter(function (t) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0];
-      var aStream = new MediaStream(camStream.getAudioTracks());
-      if (aStream.getAudioTracks().length) {
-        audRec = atype ? new MediaRecorder(aStream, { mimeType: atype }) : new MediaRecorder(aStream);
-        audRec.ondataavailable = function (e) { if (e.data && e.data.size) audChunks.push(e.data); };
-      }
-    } catch (e) { audRec = null; }
-    camRec.onstop = function () {
-      timerStop(); dr.endAt = 0;
-      if (audRec && audRec.state === "recording") audRec.stop();
-      if (dr.canvasStream) { dr.canvasStream.getVideoTracks().forEach(function (t) { t.stop(); }); dr.canvasStream = null; }
-      var mime = (camRec.mimeType || "video/webm").split(";")[0];
-      var old = takes[recStyle]; if (old) { URL.revokeObjectURL(old.url); if (old.capUrl) URL.revokeObjectURL(old.capUrl); }
-      var ext = mime.indexOf("mp4") > -1 ? "mp4" : "webm";
-      var tk = takes[recStyle] = { url: URL.createObjectURL(new Blob(camChunks, { type: mime })), ext: ext, mime: mime, file: STYLE_FILE[recStyle] + (vLen === "short" ? "-30s" : ""), len: vLen, audio: null };
-      // The sound file finishes a moment after the video.
-      setTimeout(function () { if (audChunks.length) tk.audio = new Blob(audChunks, { type: (audRec && audRec.mimeType || "audio/webm").split(";")[0] }); }, 400);
-      document.querySelectorAll(".v-style, .v-seg button, .v-theme").forEach(function (b) { b.disabled = false; });
-      $("v-next-row").classList.add("hidden");
-      $("v-rec").disabled = false; $("v-rec").textContent = "● Record another take";
-      if (recStyle !== vStyle) setStyle(recStyle); else showTake(recStyle);
-      renderTakes();
-      $("v-cam-msg").textContent = "Watch it back. Take two is usually the best one." + (recStyle !== "plain" && !takes[recStyle === "pro" ? "social" : "pro"] ? " Fancy the other style too? Pick it above and record again." : "");
-    };
-    camRec.start(); if (audRec) audRec.start(); timerStart();
-    document.querySelectorAll(".v-style, .v-seg button, .v-theme").forEach(function (b) { b.disabled = true; });
-    $("v-next-row").classList.toggle("hidden", recStyle === "plain");
-    $("v-rec").textContent = "■ Stop recording";
-    $("v-cam-msg").textContent = "Recording. The timer above shows where you should be.";
-  });
-  $("v-next").addEventListener("click", function () {
-    if (!recording()) return;
-    var at = where(); dr.manual = Math.min(curParts().length - 1, at.i + 1);
-  });
-  function showTake(style) {
-    var tk = takes[style], p = $("v-play"), sv = $("v-save");
-    if (!tk) { p.removeAttribute("src"); p.classList.add("hidden"); sv.classList.add("hidden"); $("v-del").classList.add("hidden"); return; }
-    p.src = tk.url; p.classList.remove("hidden");
-    sv.href = tk.url; sv.setAttribute("download", tk.file + "." + tk.ext); sv.classList.remove("hidden");
-    $("v-del").classList.remove("hidden");
-  }
-  function renderTakes() {
-    var list = $("v-take-list"); list.textContent = "";
-    ["plain", "pro", "square", "social"].forEach(function (s) {
-      var tk = takes[s]; if (!tk) return;
-      var watch = el("button", { type: "button", class: "linkbtn", text: "Watch" });
-      watch.addEventListener("click", function () { setStyle(s); $("v-play").scrollIntoView({ behavior: "smooth", block: "center" }); });
-      var kids = [el("strong", { text: STYLE_NAME[s] + (tk.len === "short" ? ", 30 seconds" : "") }), watch, el("a", { class: "linkbtn", href: tk.url, download: tk.file + "." + tk.ext, text: "Save to my device" })];
-      if (tk.capUrl) kids.push(el("a", { class: "linkbtn", href: tk.capUrl, download: tk.file + "-captions." + tk.capExt, text: "Save with captions" }));
-      if (voice) {
-        var cb = el("button", { type: "button", class: "linkbtn", text: tk.caps ? "Edit captions" : "Add captions" });
-        cb.addEventListener("click", function () { openCaps(s); });
-        kids.push(cb);
-      }
-      list.appendChild(el("li", {}, kids));
-    });
-    $("v-takes").classList.toggle("hidden", !list.children.length);
-    if (capFor && !takes[capFor]) { capFor = null; $("v-caps").classList.add("hidden"); }
-  }
-
-  // ---- captions: the sound goes to be turned into timed words, then they're drawn onto a copy ----
-  var capFor = null;
-  function openCaps(s) {
-    capFor = s; var tk = takes[s];
-    $("v-caps-for").textContent = STYLE_NAME[s] + (tk.len === "short" ? ", 30 seconds" : "");
-    $("v-caps").classList.remove("hidden"); $("v-caps-msg").textContent = "";
-    $("v-caps-edit").classList.toggle("hidden", !tk.caps);
-    if (tk.caps) { $("v-caps-text").value = tk.caps.map(function (c) { return c.text; }).join("\n"); srtLink(tk); }
-    $("v-caps").scrollIntoView({ behavior: "smooth", block: "center" });
-  }
   // Group the words into short captions: three words at a time on socials, more on the others.
   function chunk(words, style) {
     var max = style === "social" ? 3 : 7, out = [], cur = null;
@@ -1515,41 +1315,7 @@
     });
     return out.map(function (c) { return { s: c.s, e: Math.max(c.e, c.s + 0.6), text: c.words.map(function (w) { return w.w; }).join(" "), words: c.words }; });
   }
-  $("v-caps-make").addEventListener("click", function () {
-    var tk = takes[capFor], b = $("v-caps-make"), msg = $("v-caps-msg");
-    if (!tk) return;
-    if (!tk.audio) { msg.textContent = "We didn't catch the sound for this take. Record it again, then try captions."; return; }
-    b.disabled = true; msg.textContent = "Listening to your take…";
-    var fd = new FormData(); fd.append("audio", tk.audio, "take." + (tk.audio.type.indexOf("mp4") > -1 ? "mp4" : tk.audio.type.indexOf("ogg") > -1 ? "ogg" : "webm"));
-    fetch("/api/master/captions", { method: "POST", body: fd, credentials: "same-origin" })
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || "We couldn't make captions just now."); return j; }); })
-      .then(function (j) {
-        tk.caps = chunk(j.words || [], capFor);
-        $("v-caps-text").value = tk.caps.map(function (c) { return c.text; }).join("\n");
-        $("v-caps-edit").classList.remove("hidden"); srtLink(tk); renderTakes();
-        msg.textContent = "Done. Read them through and fix anything we misheard.";
-      })
-      .catch(function (e) { msg.textContent = e.message; })
-      .then(function () { b.disabled = false; });
-  });
-  // Edits keep each line's timing, so one caption per line.
-  function capsFromBox(tk) {
-    var lines = $("v-caps-text").value.split("\n").map(function (l) { return l.replace(/\s+/g, " ").trim(); });
-    return tk.caps.map(function (c, i) {
-      var t = lines[i] == null ? c.text : lines[i];
-      return { s: c.s, e: c.e, text: t, words: t === c.text ? c.words : null };
-    }).filter(function (c) { return c.text; });
-  }
   var srtTime = function (t) { var ms = Math.round(t * 1000), h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, sec = Math.floor(ms / 1000) % 60; return ("0" + h).slice(-2) + ":" + ("0" + m).slice(-2) + ":" + ("0" + sec).slice(-2) + "," + ("00" + ms % 1000).slice(-3); };
-  function srtLink(tk) {
-    var caps = capsFromBox(tk), a = $("v-caps-srt");
-    var srt = caps.map(function (c, i) { return (i + 1) + "\n" + srtTime(c.s) + " --> " + srtTime(c.e) + "\n" + c.text + "\n"; }).join("\n");
-    if (tk.srtUrl) URL.revokeObjectURL(tk.srtUrl);
-    tk.srtUrl = URL.createObjectURL(new Blob([srt], { type: "application/x-subrip" }));
-    a.href = tk.srtUrl; a.setAttribute("download", tk.file + "-captions.srt");
-  }
-  $("v-caps-text").addEventListener("input", function () { var tk = takes[capFor]; if (tk && tk.caps) srtLink(tk); });
-
   // Draw one caption. Socials: big bold words, the one being said in orange.
   // The others: a clean subtitle strip, at the top where the skill cards aren't.
   function drawCaption(x, W, H, c, t, style) {
@@ -1578,54 +1344,441 @@
     }
     x.restore();
   }
-  // Play the take through once, drawing it with the captions onto a canvas, and record that.
-  $("v-caps-burn").addEventListener("click", function () {
-    var tk = takes[capFor], style = capFor, b = $("v-caps-burn");
-    if (!tk || !tk.caps || recording()) return;
-    var caps = capsFromBox(tk);
-    var v = document.createElement("video"); v.src = tk.url; v.playsInline = true; v.preload = "auto";
-    var c = document.createElement("canvas"), x = c.getContext("2d");
+  // ---- 1. Record it ----
+  function camHint() {
+    var v = $("v-live");
+    if (!camStream) return;
+    $("v-cam-msg").textContent = v.videoHeight > v.videoWidth
+      ? "Phone upright is perfect for socials. Turn it sideways for the Professional and LinkedIn versions."
+      : "Look at the lens, not at yourself. Press record when you're ready.";
+  }
+  function liveView() {
+    var bg = vBg !== "none" && canStyle && !!camStream;
+    $("v-live").classList.toggle("hidden", !camStream);
+    $("v-live").classList.toggle("v-src", bg);
+    $("v-canvas").classList.toggle("hidden", !bg);
+    $("v-prompter").classList.toggle("hidden", !camStream || !$("v-prompt-on").checked);
+    cancelAnimationFrame(live.raf); live.raf = 0;
+    var lastPrompt = 0;
+    if (camStream) (function loop() {
+      live.raf = requestAnimationFrame(loop);
+      if (bg) paintLive();
+      if (Date.now() - lastPrompt > 200) { lastPrompt = Date.now(); prompter(); }
+    })();
+  }
+  function paintLive() {
+    var c = $("v-canvas"), x = c.getContext("2d"), v = $("v-live");
+    if (v.videoWidth && (c.width !== v.videoWidth || c.height !== v.videoHeight)) { c.width = v.videoWidth; c.height = v.videoHeight; c.classList.toggle("portrait", c.height > c.width); }
+    x.setTransform(1, 0, 0, 1, 0, 0); x.fillStyle = "#17191C"; x.fillRect(0, 0, c.width, c.height);
+    if (v.videoWidth) drawCamera(x, c.width, c.height, v);
+  }
+
+  // The teleprompter: notes for the part you're on, over the preview, never recorded.
+  var promptPart = null;
+  function prompter() {
+    var box = $("v-prompter");
+    if (!$("v-prompt-on").checked || !camStream) { box.classList.add("hidden"); return; }
+    box.classList.remove("hidden");
+    var parts = curParts(), i = 0;
+    if (recording()) { var sec = (Date.now() - tStart) / 1000; parts.forEach(function (p, k) { if (sec >= p.from) i = k; }); }
+    var p = parts[i], id = p.id + "|" + vLen;
+    if (id === promptPart && box.childNodes.length) return;
+    promptPart = id; box.textContent = "";
+    box.appendChild(el("span", { class: "v-p-h", text: (i + 1) + ". " + p.title }));
+    var lines = String(vPlan()[p.id] || "").split("\n").map(function (l) { return l.replace(/\[(FIRST_)?NAME\]/g, ((cv.header || {}).name || "")).trim(); }).filter(Boolean);
+    if (!lines.length) lines = ["(No notes for this part yet. Add them above.)"];
+    lines.forEach(function (l) { box.appendChild(el("p", { text: l })); });
+  }
+  $("v-prompt-on").addEventListener("change", function () { promptPart = null; prompter(); });
+
+  // How long: the full 90 seconds, or the 30-second cut.
+  document.querySelectorAll(".v-seg [data-len]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      if (recording()) return;
+      vLen = b.getAttribute("data-len");
+      document.querySelectorAll(".v-seg [data-len]").forEach(function (x) { x.setAttribute("aria-checked", x === b ? "true" : "false"); });
+      document.querySelector(".v-short-note").classList.toggle("hidden", vLen !== "short");
+      promptPart = null; prompter();
+      $("v-now").textContent = vLen === "short" ? "Aim for 30 seconds. 45 is the ceiling." : "Aim for 90 seconds. Two minutes is the ceiling.";
+    });
+  });
+
+  function camOff() {
+    if (recording()) camRec.stop();
+    if (camStream) camStream.getTracks().forEach(function (t) { t.stop(); });
+    camStream = null; cancelAnimationFrame(live.raf); live.raf = 0;
+    ["v-live", "v-canvas", "v-prompter", "v-rec", "v-cam-off"].forEach(function (id) { $(id).classList.add("hidden"); });
+    $("v-cam-on").classList.remove("hidden");
+  }
+  $("v-cam-off").addEventListener("click", function () { camOff(); $("v-cam-msg").textContent = "Camera off."; });
+  window.addEventListener("pagehide", camOff);
+  $("v-cam-on").addEventListener("click", function () {
+    var msg = $("v-cam-msg");
+    if (!navigator.mediaDevices || !window.MediaRecorder) { msg.textContent = "This browser can't record video. You can still practise with the timer."; return; }
+    navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true }).then(function (st) {
+      camStream = st; var v = $("v-live"); v.srcObject = st;
+      // Played from the button press, so browsers keep it running while it feeds the background tool.
+      var pl = v.play && v.play(); if (pl && pl.catch) pl.catch(function () {});
+      $("v-cam-on").classList.add("hidden"); $("v-rec").classList.remove("hidden"); $("v-cam-off").classList.remove("hidden");
+      liveView();
+      v.onloadedmetadata = camHint;
+    }).catch(function () { msg.textContent = "We couldn't use your camera. Check your browser lets this page use it."; });
+  });
+  var pickType = function (list) { return list.filter(function (t) { return window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0]; };
+  var VIDEO_TYPES = ["video/mp4;codecs=avc1,mp4a", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"];
+  $("v-rec").addEventListener("click", function () {
+    if (recording()) { timerStop(); camRec.stop(); return; }
+    if (!camStream || making) return;
+    camChunks = []; audChunks = []; audRec = null;
+    var stream = camStream;
+    if (vBg !== "none" && canStyle) {
+      live.canvasStream = $("v-canvas").captureStream(30);
+      camStream.getAudioTracks().forEach(function (t) { live.canvasStream.addTrack(t); });
+      stream = live.canvasStream;
+    }
+    var type = pickType(VIDEO_TYPES);
+    camRec = type ? new MediaRecorder(stream, { mimeType: type }) : new MediaRecorder(stream);
+    camRec.ondataavailable = function (e) { if (e.data && e.data.size) camChunks.push(e.data); };
+    // The sound on its own as well, so the lining up and captions never need the picture.
+    try {
+      var atype = pickType(["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"]);
+      var aStream = new MediaStream(camStream.getAudioTracks());
+      if (aStream.getAudioTracks().length) {
+        audRec = atype ? new MediaRecorder(aStream, { mimeType: atype }) : new MediaRecorder(aStream);
+        audRec.ondataavailable = function (e) { if (e.data && e.data.size) audChunks.push(e.data); };
+      }
+    } catch (e) { audRec = null; }
+    camRec.onstop = function () {
+      timerStop();
+      if (audRec && audRec.state === "recording") audRec.stop();
+      if (live.canvasStream) { live.canvasStream.getVideoTracks().forEach(function (t) { t.stop(); }); live.canvasStream = null; }
+      var mime = (camRec.mimeType || "video/webm").split(";")[0];
+      if (take) URL.revokeObjectURL(take.url);
+      Object.keys(made).forEach(function (k) { URL.revokeObjectURL(made[k].url); }); made = {};
+      var tk = take = { url: URL.createObjectURL(new Blob(camChunks, { type: mime })), ext: mime.indexOf("mp4") > -1 ? "mp4" : "webm", mime: mime,
+        file: STYLE_FILE.plain + (vLen === "short" ? "-30s" : ""), len: vLen, dur: (Date.now() - live.startedAt) / 1000, audio: null, words: null, caps: null, timing: null };
+      setTimeout(function () { if (audChunks.length && take === tk) tk.audio = new Blob(audChunks, { type: (audRec && audRec.mimeType || "audio/webm").split(";")[0] }); }, 400);
+      document.querySelectorAll(".v-seg button, .v-theme").forEach(function (b) { b.disabled = false; });
+      var p = $("v-play"); p.src = tk.url; p.classList.remove("hidden");
+      var sv = $("v-save"); sv.href = tk.url; sv.setAttribute("download", tk.file + "." + tk.ext); sv.classList.remove("hidden");
+      $("v-del").classList.remove("hidden");
+      $("v-rec").textContent = "● Record another take";
+      $("v-cam-msg").textContent = "Watch it back. Take two is usually the best one. Happy with it? Style it below.";
+      openPost();
+    };
+    camRec.start(); if (audRec) audRec.start(); live.startedAt = Date.now(); timerStart();
+    document.querySelectorAll(".v-seg button, .v-theme").forEach(function (b) { b.disabled = true; });
+    $("v-rec").textContent = "■ Stop recording";
+    $("v-cam-msg").textContent = "Recording. The timer above shows where you should be.";
+  });
+  $("v-del").addEventListener("click", function () {
+    if (take) URL.revokeObjectURL(take.url);
+    Object.keys(made).forEach(function (k) { URL.revokeObjectURL(made[k].url); }); made = {};
+    take = null; pvStop();
+    var p = $("v-play"); p.removeAttribute("src"); p.classList.add("hidden");
+    $("v-save").classList.add("hidden"); $("v-del").classList.add("hidden"); $("v-post").classList.add("hidden"); $("pv-none").classList.remove("hidden"); pvMark();
+    $("v-rec").textContent = "● Start recording";
+    $("v-cam-msg").textContent = "Deleted.";
+  });
+
+  // ---- 2. Style it ----
+  function openPost() {
+    $("v-post").classList.remove("hidden"); $("pv-none").classList.add("hidden"); pvMark();
+    $("v-timeline").classList.add("hidden"); $("v-tl-help").classList.add("hidden"); $("v-caps-opt").classList.add("hidden");
+    $("v-caps-on").checked = false; $("v-caps-edit").classList.add("hidden"); $("v-align-msg").textContent = "";
+    document.querySelectorAll(".v-full-only").forEach(function (e) { e.classList.toggle("hidden", take.len === "short"); });
+    renderMade(); setStyle(vStyle); pvLoad();
+  }
+  function setStyle(s) {
+    if (making) return;
+    vStyle = s;
+    document.querySelectorAll(".v-style").forEach(function (b) { b.setAttribute("aria-checked", b.getAttribute("data-style") === s ? "true" : "false"); });
+    $("v-text").classList.toggle("is-social", s === "social");
+    var c = $("v-pv-canvas"); c.width = s === "social" ? 720 : s === "square" ? 960 : 1280; c.height = s === "social" ? 1280 : s === "square" ? 960 : 720;
+    $("v-pv").className = "v-pv" + (s === "social" ? " portrait" : s === "square" ? " square" : "");
+    if (s !== "plain" && document.fonts && document.fonts.load) { document.fonts.load("800 40px 'Bricolage Grotesque'"); document.fonts.load("700 24px 'DM Sans'"); }
+    pvDraw();
+  }
+  document.querySelectorAll(".v-style").forEach(function (b) { b.addEventListener("click", function () { setStyle(b.getAttribute("data-style")); }); });
+
+  // When each part starts. Until it's lined up with what they said, the practice timer's
+  // timings, stretched to the length of the take.
+  function timing() {
+    if (take && take.timing) return take.timing;
+    var parts = take && take.len === "short" ? SHORT_PARTS : VIDEO.parts, dur = (take && take.dur) || 90, aim = take && take.len === "short" ? 30 : 90;
+    var k = Math.min(1.4, Math.max(0.5, dur / aim)), t = { story2: null, bring: [] };
+    parts.forEach(function (p) { t[p.id] = p.from * k; });
+    return t;
+  }
+  function partsAt() {
+    var tm = timing();
+    return ["intro", "story1", "story2", "close"].filter(function (k) { return tm[k] != null; }).map(function (k) { return { id: k, at: tm[k] }; });
+  }
+  function whereAt(sec) {
+    var ps = partsAt(), i = 0, dur = (take && take.dur) || 90;
+    ps.forEach(function (p, k) { if (sec >= p.at) i = k; });
+    var p = ps[i], next = ps[i + 1] ? ps[i + 1].at : dur;
+    var bring = p.id === "close" ? (timing().bring || []).map(function (b) { return b - p.at; }) : null;
+    return { id: p.id, t: sec - p.at, len: Math.max(2, next - p.at), sec: sec, total: dur, bring: bring && bring.length ? bring : null, end: sec > dur };
+  }
+  var END = 2.6;
+  // One frame of the styled video, from the take at second `sec`.
+  function frame(x, W, H, v, sec) {
+    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.shadowColor = "transparent"; x.textBaseline = "alphabetic"; x.textAlign = "left";
+    x.fillStyle = "#17191C"; x.fillRect(0, 0, W, H);
+    if (v.videoWidth) { var s = Math.max(W / v.videoWidth, H / v.videoHeight), dw = v.videoWidth * s, dh = v.videoHeight * s; x.drawImage(v, (W - dw) / 2, (H - dh) / 2, dw, dh); }
+    var dur = (take && take.dur) || 90, at = whereAt(Math.min(sec, dur)), brand = vt().brand !== false;
+    at.end = sec > dur;
+    if (vStyle === "social") paintSocial(x, W, H, at, brand); else paintPro(x, W, H, at, brand);
+    if ($("v-caps-on").checked && take && take.caps && !at.end) {
+      var cur = capsFromBox().filter(function (k) { return sec >= k.s && sec <= k.e + 0.25; })[0];
+      // Socials show three words at a time, whatever length the caption lines are.
+      if (cur && vStyle === "social") {
+        var ws = cur.words || (function () { var t = cur.text.split(" "), d = (cur.e - cur.s) / t.length; return t.map(function (w, i) { return { w: w, s: cur.s + i * d, e: cur.s + (i + 1) * d }; }); })();
+        var gi = 0; ws.forEach(function (w, i) { if (sec >= w.s) gi = Math.floor(i / 3); });
+        var g = ws.slice(gi * 3, gi * 3 + 3);
+        cur = { s: g[0].s, e: g[g.length - 1].e, text: g.map(function (w) { return w.w; }).join(" "), words: cur.words ? g : null };
+      }
+      drawCaption(x, W, H, cur, sec, vStyle);
+    }
+    if (at.end) endCard(x, W, H, sec - dur, brand);
+  }
+
+  // The preview: the take plays (with its sound) and the styled frame is drawn over it.
+  var pv = { raf: 0 };
+  function pvLoad() {
+    var v = $("v-src"); v.muted = false; v.src = take.url; v.currentTime = 0;
+    // Draw as soon as a frame is ready, and again whenever it's moved.
+    v.onloadeddata = v.oncanplay = v.onseeked = function () { pvDraw(); };
+    // Some browsers only have the first picture ready a moment after they say they do.
+    [300, 800, 1500].forEach(function (ms) { setTimeout(function () { if (take && v.paused) pvDraw(); }, ms); });
+    v.onended = function () { pvStop(); };
+    $("v-pv-seek").value = 0; $("v-pv-time").textContent = "0:00";
+  }
+  var mmss = function (t) { t = Math.max(0, Math.floor(t)); return Math.floor(t / 60) + ":" + ("0" + (t % 60)).slice(-2); };
+  function pvDraw() {
+    if (!take) return;
+    var c = $("v-pv-canvas"), v = $("v-src"), sec = v.currentTime || 0;
+    frame(c.getContext("2d"), c.width, c.height, v, sec);
+    $("v-pv-seek").value = Math.round(sec / take.dur * 1000); $("v-pv-time").textContent = mmss(sec) + " of " + mmss(take.dur);
+  }
+  function pvStop() { cancelAnimationFrame(pv.raf); pv.raf = 0; var v = $("v-src"); if (!v.paused) v.pause(); $("v-pv-play").textContent = "▶ Play"; pvDraw(); }
+  $("v-pv-play").addEventListener("click", function () {
+    var v = $("v-src");
+    if (!take || making) return;
+    if (!v.paused) { pvStop(); return; }
+    if (v.currentTime >= take.dur - 0.1) v.currentTime = 0;
+    v.play().then(function () {
+      $("v-pv-play").textContent = "❚❚ Pause";
+      (function loop() { pv.raf = requestAnimationFrame(loop); pvDraw(); })();
+    }).catch(function () {});
+  });
+  $("v-pv-seek").addEventListener("input", function () {
+    if (!take) return;
+    var v = $("v-src"); v.currentTime = Math.min(take.dur - 0.05, $("v-pv-seek").value / 1000 * take.dur);
+    setTimeout(pvDraw, 60);
+  });
+  // Redraw when the words or colours change, so the preview always matches.
+  ["vt-name", "vt-role", "vt-hook", "vt-s1skill", "vt-s1proof", "vt-s2skill", "vt-s2proof", "vt-bring", "vt-brand", "v-caps-on", "v-caps-text"].forEach(function (id) {
+    $(id).addEventListener("input", function () { pvDraw(); });
+    $(id).addEventListener("change", function () { pvDraw(); });
+  });
+  ["v-themes", "v-themes2"].forEach(function (id) { $(id).addEventListener("click", function () { setTimeout(pvDraw, 0); }); });
+  $("v-caps-on").addEventListener("change", function () { $("v-caps-edit").classList.toggle("hidden", !$("v-caps-on").checked); });
+
+  // ---- Line it up with what I said ----
+  // The sound goes to be turned into timed words (then deleted); the AI finds where each
+  // part starts and matches the cards to what they said.
+  function segmentsOf(words) {
+    var out = [], cur = null;
+    words.forEach(function (w) {
+      if (!cur || cur.n >= 8 || w.s - cur.e > 0.9 || /[.!?]$/.test(cur.last)) { cur = { t: w.s, e: w.e, text: "", n: 0, last: "" }; out.push(cur); }
+      cur.text += (cur.text ? " " : "") + w.w; cur.e = w.e; cur.n++; cur.last = w.w;
+    });
+    return out.map(function (c) { return { t: Math.round(c.t * 10) / 10, text: c.text }; });
+  }
+  $("v-align").addEventListener("click", function () {
+    var b = $("v-align"), msg = $("v-align-msg");
+    if (!take || making) return;
+    if (!take.audio) { msg.textContent = "We didn't catch the sound for this take. Record it again, then try."; return; }
+    b.disabled = true; msg.textContent = "Listening to your take…";
+    var tk = take;
+    var getWords = tk.words ? Promise.resolve(tk.words) : (function () {
+      var fd = new FormData(); fd.append("audio", tk.audio, "take." + (tk.audio.type.indexOf("mp4") > -1 ? "mp4" : tk.audio.type.indexOf("ogg") > -1 ? "ogg" : "webm"));
+      return fetch("/api/master/captions", { method: "POST", body: fd, credentials: "same-origin" })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok) throw new Error(j.error || "We couldn't listen to that just now."); return j.words || []; }); });
+    })();
+    getWords.then(function (words) {
+      tk.words = words;
+      msg.textContent = "Lining up your words…";
+      var o = vt();
+      return flush().then(function () {
+        return postJSON("/api/master/write", { task: "videotiming", short: tk.len === "short", segments: segmentsOf(words),
+          cards: { role: vtVal("role"), hook: vtVal("hook"), s1skill: vtVal("s1skill"), s1proof: vtVal("s1proof"), s2skill: vtVal("s2skill"), s2proof: vtVal("s2proof"), bring: bringLines() } });
+      });
+    }).then(function (j) {
+      if (take !== tk) return;
+      var w = j.words || {}, o = vt();
+      if (w.hook) o.hook = w.hook;
+      if (w.s1 && w.s1.skill) { o.s1skill = w.s1.skill; o.s1proof = w.s1.proof || ""; }
+      if (w.s2 && w.s2.skill) { o.s2skill = w.s2.skill; o.s2proof = w.s2.proof || ""; }
+      if ((w.bring || []).length) o.bring = w.bring.join("\n");
+      fillText(); queueSave();
+      tk.timing = j.timing;
+      tk.caps = chunk(tk.words, "pro");
+      $("v-caps-text").value = tk.caps.map(function (c) { return c.text; }).join("\n"); srtLink();
+      $("v-caps-opt").classList.remove("hidden");
+      renderTimeline(); pvDraw();
+      msg.textContent = "Done. Play the preview to check each card comes in at the right moment, and read every word.";
+    }).catch(function (e) { msg.textContent = e.message; })
+      .then(function () { b.disabled = false; });
+  });
+
+  // The timeline: each card, when it comes in, and buttons to move it.
+  function renderTimeline() {
+    var ol = $("v-timeline"), tm = timing(); ol.textContent = "";
+    var rows = [["intro", "Your name"], ["story1", "Story one: " + (vtVal("s1skill") || "skill")], ["story2", "Story two: " + (vtVal("s2skill") || "skill")], ["close", "What you'd bring"]]
+      .filter(function (r) { return tm[r[0]] != null; }).map(function (r) { return { key: r[0], label: r[1] }; });
+    (tm.bring || []).forEach(function (t, i) { rows.push({ key: "bring" + i, label: "  ✓ " + (bringLines()[i] || "") }); });
+    rows.forEach(function (r) {
+      var get = function () { return /^bring/.test(r.key) ? tm.bring[+r.key.slice(5)] : tm[r.key]; };
+      var put = function (v) { v = Math.max(0, Math.min(take.dur, Math.round(v * 10) / 10)); if (/^bring/.test(r.key)) tm.bring[+r.key.slice(5)] = v; else tm[r.key] = v; renderTimeline(); pvDraw(); };
+      var time = el("span", { class: "v-tl-t", text: mmss(get()) + "." + Math.floor((get() % 1) * 10) });
+      var minus = el("button", { type: "button", class: "icon-btn", "aria-label": "One second earlier", text: "−1s" });
+      var plus = el("button", { type: "button", class: "icon-btn", "aria-label": "One second later", text: "+1s" });
+      var here = el("button", { type: "button", class: "icon-btn", text: "Set to here" });
+      minus.addEventListener("click", function () { put(get() - 1); });
+      plus.addEventListener("click", function () { put(get() + 1); });
+      here.addEventListener("click", function () { put($("v-src").currentTime || 0); });
+      if (r.key === "intro") { minus.disabled = plus.disabled = here.disabled = true; }
+      ol.appendChild(el("li", {}, [time, el("span", { class: "v-tl-l", text: r.label }), minus, plus, here]));
+    });
+    ol.classList.remove("hidden"); $("v-tl-help").classList.remove("hidden");
+  }
+
+  // Captions: from the same timed words. Edits keep each line's timing.
+  function capsFromBox() {
+    var tk = take; if (!tk || !tk.caps) return [];
+    var lines = $("v-caps-text").value.split("\n").map(function (l) { return l.replace(/\s+/g, " ").trim(); });
+    return tk.caps.map(function (c, i) {
+      var t = lines[i] == null ? c.text : lines[i];
+      return { s: c.s, e: c.e, text: t, words: t === c.text ? c.words : null };
+    }).filter(function (c) { return c.text; });
+  }
+  function srtLink() {
+    var tk = take; if (!tk || !tk.caps) return;
+    var caps = capsFromBox(), a = $("v-caps-srt");
+    var srt = caps.map(function (c, i) { return (i + 1) + "\n" + srtTime(c.s) + " --> " + srtTime(c.e) + "\n" + c.text + "\n"; }).join("\n");
+    if (tk.srtUrl) URL.revokeObjectURL(tk.srtUrl);
+    tk.srtUrl = URL.createObjectURL(new Blob([srt], { type: "application/x-subrip" }));
+    a.href = tk.srtUrl; a.setAttribute("download", tk.file + "-captions.srt");
+  }
+  $("v-caps-text").addEventListener("input", srtLink);
+
+  // ---- Make my video: play the take through once, drawing each styled frame, and record that ----
+  $("v-make").addEventListener("click", function () {
+    var tk = take, style = vStyle, b = $("v-make");
+    if (!tk || making || recording()) return;
     var AC = window.AudioContext || window.webkitAudioContext;
-    if (!c.captureStream || !AC) { $("v-burn-msg").textContent = "This browser can't put captions on a video. Save the captions file instead."; return; }
-    b.disabled = true; $("v-burn").classList.remove("hidden"); $("v-burn-msg").textContent = "Getting ready…"; $("v-burn-fill").style.width = "0%";
-    v.onloadedmetadata = function () {
-      c.width = v.videoWidth || 1280; c.height = v.videoHeight || 720;
+    var c = document.createElement("canvas"), x = c.getContext("2d");
+    if (!c.captureStream || !AC || !window.MediaRecorder) { $("v-burn-msg").textContent = "This browser can't make styled videos. Try Chrome, Edge or Safari on a laptop."; $("v-burn").classList.remove("hidden"); return; }
+    pvStop();
+    making = true; b.disabled = true; $("v-burn").classList.remove("hidden"); $("v-burn-fill").style.width = "0%"; $("v-burn-msg").textContent = "Getting ready…";
+    c.width = $("v-pv-canvas").width; c.height = $("v-pv-canvas").height;
+    var v = document.createElement("video"); v.src = tk.url; v.playsInline = true; v.preload = "auto";
+    var done = function (msg) { making = false; b.disabled = false; $("v-burn-msg").textContent = msg; };
+    v.onerror = function () { done("We couldn't read that take. Record it again and try once more."); };
+    v.onloadeddata = function () {
       var ac = new AC(), src = ac.createMediaElementSource(v), dest = ac.createMediaStreamDestination(); src.connect(dest);
       var stream = c.captureStream(30); dest.stream.getAudioTracks().forEach(function (t) { stream.addTrack(t); });
-      var types = ["video/mp4;codecs=avc1,mp4a", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"];
-      var type = types.filter(function (t) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0];
-      var rec = type ? new MediaRecorder(stream, { mimeType: type }) : new MediaRecorder(stream), chunks = [], raf = 0;
+      var type = pickType(VIDEO_TYPES);
+      var rec = type ? new MediaRecorder(stream, { mimeType: type }) : new MediaRecorder(stream), chunks = [], raf = 0, endAt = 0;
       rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
       rec.onstop = function () {
         cancelAnimationFrame(raf); try { ac.close(); } catch (e) { /* fine */ }
         stream.getTracks().forEach(function (t) { t.stop(); });
+        if (take !== tk) { making = false; b.disabled = false; return; }
         var mime = (rec.mimeType || "video/webm").split(";")[0];
-        if (tk.capUrl) URL.revokeObjectURL(tk.capUrl);
-        tk.capUrl = URL.createObjectURL(new Blob(chunks, { type: mime })); tk.capExt = mime.indexOf("mp4") > -1 ? "mp4" : "webm";
-        b.disabled = false; $("v-burn-fill").style.width = "100%";
-        $("v-burn-msg").textContent = "Done. Watch it back, then save the version with captions.";
-        $("v-play").src = tk.capUrl; $("v-play").classList.remove("hidden");
-        renderTakes();
+        if (made[style]) URL.revokeObjectURL(made[style].url);
+        made[style] = { url: URL.createObjectURL(new Blob(chunks, { type: mime })), ext: mime.indexOf("mp4") > -1 ? "mp4" : "webm", file: STYLE_FILE[style] + (tk.len === "short" ? "-30s" : "") + ($("v-caps-on").checked && tk.caps ? "-captions" : "") };
+        $("v-burn-fill").style.width = "100%";
+        renderMade();
+        done("Done. Watch it back below, then save it." + (Object.keys(made).length < 3 ? " Want another style? Pick it above and make that one too." : ""));
       };
-      var dur = isFinite(v.duration) && v.duration > 0 ? v.duration : (caps.length ? caps[caps.length - 1].e + 3 : 90);
-      (function frame() {
-        raf = requestAnimationFrame(frame);
-        var t = v.currentTime;
-        x.drawImage(v, 0, 0, c.width, c.height);
-        drawCaption(x, c.width, c.height, caps.filter(function (k) { return t >= k.s && t <= k.e + 0.25; })[0], t, style);
-        $("v-burn-fill").style.width = Math.min(99, t / dur * 100) + "%";
-        $("v-burn-msg").textContent = "Putting your captions on… " + Math.floor(t) + " of " + Math.round(dur) + " seconds. Keep this page open.";
+      (function tick() {
+        raf = requestAnimationFrame(tick);
+        var sec = endAt ? tk.dur + (Date.now() - endAt) / 1000 : v.currentTime;
+        frame(x, c.width, c.height, v, sec);
+        $("v-burn-fill").style.width = Math.min(99, sec / (tk.dur + END) * 100) + "%";
+        $("v-burn-msg").textContent = "Making your " + STYLE_NAME[style] + " video… " + Math.floor(sec) + " of " + Math.round(tk.dur + END) + " seconds. Keep this page open.";
       })();
-      v.onended = function () { setTimeout(function () { if (rec.state === "recording") rec.stop(); }, 200); };
+      // The end card runs on for a moment after the take finishes.
+      v.onended = function () { endAt = Date.now(); setTimeout(function () { if (rec.state === "recording") rec.stop(); }, END * 1000); };
       rec.start();
-      ac.resume().then(function () { return v.play(); }).catch(function () { $("v-burn-msg").textContent = "Press the button again to start."; b.disabled = false; if (rec.state === "recording") rec.stop(); });
+      ac.resume().then(function () { return v.play(); }).catch(function () { if (rec.state === "recording") rec.stop(); done("Press Make my video again to start."); });
     };
   });
-  $("v-del").addEventListener("click", function () {
-    var tk = takes[vStyle]; if (tk) URL.revokeObjectURL(tk.url);
-    delete takes[vStyle]; showTake(vStyle); renderTakes();
-    $("v-cam-msg").textContent = "Deleted.";
+  function renderMade() {
+    var list = $("v-take-list"); list.textContent = "";
+    ["pro", "square", "social"].forEach(function (s) {
+      var m = made[s]; if (!m) return;
+      var watch = el("button", { type: "button", class: "linkbtn", text: "Watch" });
+      watch.addEventListener("click", function () { var p = $("v-play"); p.src = m.url; p.classList.remove("hidden"); p.scrollIntoView({ behavior: "smooth", block: "center" }); });
+      list.appendChild(el("li", {}, [el("strong", { text: STYLE_NAME[s] }), watch, el("a", { class: "linkbtn", href: m.url, download: m.file + "." + m.ext, text: "Save to my device" })]));
+    });
+    $("v-takes").classList.toggle("hidden", !list.children.length);
+  }
+
+  // ---- The pitch video, one step at a time ----
+  // Plan, Practise, Record, Style (optional), Share. Only one is on screen, so it's calm
+  // to follow. It remembers where you were on this device.
+  var PV = [["plan", "Plan what to say", "about 10 minutes"], ["practise", "Practise out loud", "about 5 minutes"], ["record", "Record it", "about 5 minutes"],
+    ["style", "Style it (optional)", "about 5 minutes"], ["share", "Share it safely", "about 5 minutes"]];
+  var pvAt = "plan";
+  function pvMark() {
+    document.querySelectorAll("#pv-steps button").forEach(function (b) {
+      var k = b.getAttribute("data-stage");
+      b.classList.toggle("ready", k === "style" && !!take);
+      b.classList.toggle("done", (k === "plan" && VIDEO.parts.every(function (p) { return String(vPlan()[p.id] || "").trim(); })) || (k === "record" && !!take) || (k === "share" && !!(cv.header || {}).introVideo));
+    });
+  }
+  function pvShow(k, focus) {
+    if (recording() || making) { toast(recording() ? "Stop recording first." : "Wait for your video to finish first."); return; }
+    if (!PV.some(function (p) { return p[0] === k; })) k = "plan";
+    if (pvAt === "record" && k !== "record" && camStream) camOff();
+    if (pvAt === "practise" && k !== "practise") timerStop();
+    if (pvAt === "style" && k !== "style") pvStop();
+    pvAt = k;
+    document.querySelectorAll(".pv-stage").forEach(function (st) { st.classList.toggle("hidden", st.getAttribute("data-stage") !== k); });
+    document.querySelectorAll("#pv-steps button").forEach(function (b) { if (b.getAttribute("data-stage") === k) b.setAttribute("aria-current", "step"); else b.removeAttribute("aria-current"); });
+    var i = PV.map(function (p) { return p[0]; }).indexOf(k);
+    $("pv-where").textContent = "Step " + (i + 1) + " of 5: " + PV[i][1] + ". " + PV[i][2].charAt(0).toUpperCase() + PV[i][2].slice(1) + ".";
+    try { localStorage.setItem("pv-stage", k); } catch (e) { /* fine */ }
+    pvMark(); pvOpts();
+    if (focus) {
+      var h = document.querySelector('.pv-stage[data-stage="' + k + '"] .pv-h');
+      $("pv-steps").scrollIntoView({ behavior: "smooth", block: "start" });
+      if (h) setTimeout(function () { h.focus({ preventScroll: true }); }, 250);
+    }
+  }
+  document.querySelectorAll("#pv-steps button, .pv-stage [data-go]").forEach(function (b) {
+    b.addEventListener("click", function () { pvShow(b.getAttribute("data-stage") || b.getAttribute("data-go"), true); });
   });
+  // What the options are set to, so they can stay tucked away.
+  function pvOpts() {
+    var th = THEMES[vt().theme] || THEMES.kumquat;
+    $("pv-opt-now").textContent = "(" + [vLen === "short" ? "30 seconds" : "90 seconds", th.name + " colours", vBg === "blur" ? "blurred background" : vBg === "brand" ? "Comquat backdrop" : "", $("v-prompt-on").checked ? "teleprompter on" : ""].filter(Boolean).join(", ") + ")";
+  }
+  $("v-opts-box").addEventListener("click", function () { setTimeout(pvOpts, 0); });
+  $("v-opts-box").addEventListener("change", function () { setTimeout(pvOpts, 0); });
+  var pvStarted = false;
+  function pvStart() {
+    if (pvStarted) { pvMark(); return; }
+    pvStarted = true;
+    var k = "plan"; try { k = localStorage.getItem("pv-stage") || "plan"; } catch (e) { /* fine */ }
+    if (k === "style") k = "record";
+    pvShow(k, false);
+  }
 
   // ---- the journeys: Create your 1st CV, Update your CV, Back to work -------------------
   var findJourney = function (id) { return CFG.journeys.filter(function (j) { return j.id === id; })[0] || null; };
@@ -1711,6 +1864,21 @@
     refreshProgress(); queuePreview(true);
   }
   $("jchange").addEventListener("click", showChooser);
+
+  // The video on its own page (cv.the-common-people.com/video): straight to Your 90
+  // seconds, without the CV steps around it. Notes and words still save to the CV.
+  function openStudio() {
+    document.body.classList.add("studio");
+    applyJourney(); openBuilder();
+    $("hero-kicker").textContent = "Comquat pitch video";
+    $("hero-title").textContent = "Your pitch video.";
+    $("hero-lede").textContent = "Plan it, practise it, record it, style it and share it, one step at a time. Your video stays on your device.";
+    var card = $("video-card");
+    if (!$("studio-bar")) card.insertBefore(el("p", { class: "studio-bar", id: "studio-bar" }, [
+      el("a", { href: "/master.html", text: "← Back to my CV" }), el("a", { href: "/account/me.html", text: "My account" }),
+    ]), card.firstChild);
+    go(stepOf("video"));
+  }
 
   // ---- start from a CV you've got --------------------------------------------------
   var pendingImport = null;
@@ -1813,7 +1981,8 @@
       status(j.saved ? "All saved" : "Saves as you go");
       loaded = true;
       var asked4 = (/[?&]journey=(first|update|back)\b/.exec(location.search) || [])[1];
-      if (asked4) pickJourney(asked4);
+      if (/[?&]studio=video\b/.test(location.search)) openStudio();
+      else if (asked4) pickJourney(asked4);
       else if (!cv.journey) showChooser();
       else {
         applyJourney(); openBuilder();
