@@ -176,13 +176,14 @@ app.post("/api/subscribe", async (req, res) => {
         text:
           "Thanks for subscribing to the Loudspeaker.\n\n" +
           "Once a month you'll get an editor's view from the recruitment frontline, plus a heads-up when new free guides and dispatches land. No spam, no selling your details, and you can unsubscribe any time from the link in every email.\n\n" +
+          require("./lib/spamNote").SPAM_TEXT + "\n\n" +
           "The Com'mon People\nFree, always.",
       }),
     });
   } catch (e) {
     // ignore welcome-email errors
   }
-  return res.json({ message: "You're on the list. Welcome aboard." });
+  return res.json({ message: "You're on the list. Welcome aboard. We've sent you a welcome email: if it's not in your inbox, check your spam or junk folder and press \"Not spam\" so The Loudspeaker reaches you every month." });
 });
 
 const S = (req) => (req.session.cv = req.session.cv || {});

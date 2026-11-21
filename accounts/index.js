@@ -301,7 +301,7 @@ function mountAccounts(app, opts = {}) {
     });
     if (error) return res.status(400).json({ error: friendly(error) });
     // Same answer whether or not the address already had an account.
-    res.json({ ok: true, message: "Nearly there. We've sent you an email: click the link in it to confirm your address and finish setting up your account. Can't see it? Check your spam or junk folder. If it's there, mark it as \"not spam\" first, because some email providers switch off links in spam." });
+    res.json({ ok: true, message: "Nearly there. We've sent you an email: click the link in it to confirm your address and finish setting up your account. Can't see it? Check your spam or junk folder. If it's there, press \"Not spam\" (or \"Not junk\" in Outlook) first, because some email providers switch off links in spam. That also means our emails land in your inbox from now on." });
   });
 
   // ---- sign in with password ----------------------------------------------
@@ -323,7 +323,7 @@ function mountAccounts(app, opts = {}) {
       options: { shouldCreateUser: false, emailRedirectTo: confirmUrl(req, req.body.next) },
     });
     // Never say whether the address has an account.
-    res.json({ ok: true, message: "If that email has a Comquat account, a sign-in link is on its way. It works once and expires after an hour. Can't see it? Check your spam or junk folder. If it's there, mark it as \"not spam\" first, because some email providers switch off links in spam." });
+    res.json({ ok: true, message: "If that email has a Comquat account, a sign-in link is on its way. It works once and expires after an hour. Can't see it? Check your spam or junk folder. If it's there, press \"Not spam\" (or \"Not junk\" in Outlook) first, because some email providers switch off links in spam. That also means our emails land in your inbox from now on." });
   });
 
   // ---- forgotten password ---------------------------------------------------
@@ -331,7 +331,7 @@ function mountAccounts(app, opts = {}) {
     const email = String(req.body.email || "").trim().toLowerCase();
     if (!isEmail(email)) return res.status(400).json({ error: "Please enter a valid email address." });
     await req.sb.auth.resetPasswordForEmail(email, { redirectTo: confirmUrl(req, `${pagesPath}/reset.html`) });
-    res.json({ ok: true, message: "If that email has a Comquat account, we've sent a link to set a new password. Can't see it? Check your spam or junk folder. If it's there, mark it as \"not spam\" first, because some email providers switch off links in spam." });
+    res.json({ ok: true, message: "If that email has a Comquat account, we've sent a link to set a new password. Can't see it? Check your spam or junk folder. If it's there, press \"Not spam\" (or \"Not junk\" in Outlook) first, because some email providers switch off links in spam. That also means our emails land in your inbox from now on." });
   });
 
   // ---- set a new password (signed in, including via the reset link) --------

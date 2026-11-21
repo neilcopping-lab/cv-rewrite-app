@@ -571,7 +571,7 @@ async function requestSignin(email, msg) {
   try {
     const j = await api("/api/auth/request", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }) });
     showCodeEntry(msg, email);
-    if (j.sent) busy(msg, false, "We've emailed you a 6-digit code - type it in below to sign in. You won't lose anything on this page.");
+    if (j.sent) busy(msg, false, "We've emailed you a 6-digit code. Type it in below to sign in. You won't lose anything on this page. Can't see it? Check your spam or junk folder, and if it's there, press \"Not spam\" so our emails reach your inbox from now on.");
     else if (j.devCode) busy(msg, false, `Email isn't set up. Your code is <strong>${j.devCode}</strong> - type it in below.`);
     else busy(msg, false, "Code sent - type it in below.");
     pollForSignin(msg); // backup: if they click the emailed link instead
