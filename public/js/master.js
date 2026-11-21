@@ -917,7 +917,8 @@
       });
       cb.appendChild(list);
     });
-    if (!writeUp) { $("v-plan").classList.add("hidden"); document.querySelector(".v-ai").classList.add("hidden"); }
+    if (!writeUp) { $("v-plan").classList.add("hidden"); document.querySelector(".v-ai").classList.add("hidden"); $("v-write").classList.add("hidden"); }
+    fillText();
   }
   $("v-role").addEventListener("input", function () { vPlan().role = $("v-role").value; queueSave(); });
   $("v-company").addEventListener("input", function () { vPlan().company = $("v-company").value; queueSave(); });
@@ -965,11 +966,261 @@
   $("v-go").addEventListener("click", function () { if (tTick) timerStop(); else timerStart(); });
 
   // Practise on camera. Recorded in the browser and kept on the device: nothing is uploaded.
-  var camStream = null, camRec = null, camChunks = [], camUrl = null;
+  // The styled versions (Professional, For your socials) draw the camera onto a canvas
+  // with the words on top, in Comquat colours, and record the canvas. Still all on the device.
+  var STYLE_FILE = { plain: "my-90-seconds", pro: "my-90-seconds-professional", social: "my-90-seconds-socials" };
+  var STYLE_NAME = { plain: "Just me", pro: "Professional", social: "For your socials" };
+  var BR = { ink: "#17191C", green: "#1F6B45", cream: "#FFF3E2", orange: "#FF9632" };
+  var HEAD = "'Bricolage Grotesque', 'DM Sans', sans-serif", BODY = "'DM Sans', sans-serif";
+  var camStream = null, camRec = null, camChunks = [], vStyle = "plain", recStyle = "plain", takes = {};
+  var dr = { raf: 0, endAt: 0, manual: -1, idx: -1, idxAt: 0, canvasStream: null };
+  var canStyle = !!(window.HTMLCanvasElement && HTMLCanvasElement.prototype.captureStream);
+  var logoLight = new Image(); logoLight.src = "/img/comquat-logo-reversed.svg";
+    var recording = function () { return !!(camRec && camRec.state === "recording"); };
+
+  // The words on screen, saved with the 90 seconds notes.
+  var VT = { name: "vt-name", role: "vt-role", hook: "vt-hook", s1skill: "vt-s1skill", s1proof: "vt-s1proof", s2skill: "vt-s2skill", s2proof: "vt-s2proof", bring: "vt-bring" };
+  function vt() { var vp = vPlan(); if (!vp.overlay || typeof vp.overlay !== "object") vp.overlay = {}; return vp.overlay; }
+  function vtVal(k) {
+    var o = vt(), h = cv.header || {}, v = String(o[k] == null ? "" : o[k]);
+    if (o[k] == null && k === "name") v = h.name || "";
+    if (o[k] == null && k === "role") v = vPlan().role || h.targetRole || "";
+    return v.trim();
+  }
+  var bringLines = function () { return vtVal("bring").split("\n").map(function (l) { return l.trim(); }).filter(Boolean).slice(0, 3); };
+  function fillText() {
+    Object.keys(VT).forEach(function (k) { $(VT[k]).value = vtVal(k); });
+    $("vt-brand").checked = vt().brand !== false;
+    showSuits();
+  }
+  Object.keys(VT).forEach(function (k) {
+    $(VT[k]).addEventListener("input", function () { vt()[k] = $(VT[k]).value; queueSave(); });
+  });
+  $("vt-brand").addEventListener("change", function () { vt().brand = $("vt-brand").checked; queueSave(); });
+
+  // Which kinds of job each style suits, for this person (from Write my on-screen words).
+  function showSuits() {
+    var s = vt().suits || {}, pro = s.professional || [], soc = s.socials || [], box = $("v-suits");
+    box.textContent = "";
+    if (!pro.length && !soc.length) { box.classList.add("hidden"); return; }
+    box.appendChild(el("strong", { text: "For the jobs in your CV: " }));
+    if (pro.length) box.appendChild(document.createTextNode("Professional suits " + pro.join(", ") + ". "));
+    if (soc.length) box.appendChild(document.createTextNode("For your socials suits " + soc.join(", ") + ". "));
+    box.appendChild(document.createTextNode("Making both? Send each one where it fits."));
+    box.classList.remove("hidden");
+  }
+
+  $("v-write").addEventListener("click", function () {
+    var b = $("v-write"), base = b.innerHTML, o = vt();
+    var has = ["hook", "s1skill", "s1proof", "s2skill", "s2proof", "bring"].some(function (k) { return String(o[k] || "").trim(); });
+    if (has && !b.dataset.sure) { b.dataset.base = base; sure(b, "Replace my words?", base); $("v-write-msg").textContent = "This replaces the words below. Press again to go ahead."; return; }
+    delete b.dataset.sure;
+    b.disabled = true; b.textContent = "Writing your words…"; $("v-write-msg").textContent = "";
+    flush().then(function () { return postJSON("/api/master/write", { task: "videotext", role: vtVal("role") }); })
+      .then(function (j) {
+        var t = j.text || {}, s1 = t.story1 || {}, s2 = t.story2 || {};
+        o.hook = t.hook || ""; o.s1skill = s1.skill || ""; o.s1proof = s1.proof || ""; o.s2skill = s2.skill || ""; o.s2proof = s2.proof || "";
+        o.bring = (t.bring || []).join("\n"); o.suits = t.suits || {};
+        fillText(); queueSave();
+        $("v-write-msg").textContent = "Done. Check every word is true and matches what you'll say.";
+        toast("Your on-screen words are ready.");
+      })
+      .catch(function (e) { $("v-write-msg").textContent = e.message; })
+      .then(function () { b.disabled = false; b.innerHTML = base; });
+  });
+
+  // ---- picking a style ----
+  function camHint() {
+    var v = $("v-live");
+    if (!camStream) return;
+    if (vStyle === "social") $("v-cam-msg").textContent = "Hold your phone upright for this one. On a laptop, sit in the middle of the shot and we'll crop it to portrait.";
+    else $("v-cam-msg").textContent = v.videoHeight > v.videoWidth ? "Turn your phone sideways: landscape plays properly on a laptop." : "Look at the lens, not at yourself. Press record when you're ready.";
+  }
+  function setStyle(s) {
+    if (recording()) return;
+    if (s !== "plain" && !canStyle) { $("v-cam-msg").textContent = "This browser can't add words to a video. Try Chrome, Edge or Safari, or record it as Just me."; s = "plain"; }
+    vStyle = s;
+    document.querySelectorAll(".v-style").forEach(function (b) { b.setAttribute("aria-checked", b.getAttribute("data-style") === s ? "true" : "false"); });
+    $("v-text").classList.toggle("hidden", s === "plain");
+    $("v-text").classList.toggle("is-social", s === "social");
+    var c = $("v-canvas"); c.width = s === "social" ? 720 : 1280; c.height = s === "social" ? 1280 : 720;
+    c.classList.toggle("portrait", s === "social");
+    if (s !== "plain" && document.fonts && document.fonts.load) { document.fonts.load("800 40px 'Bricolage Grotesque'"); document.fonts.load("700 24px 'DM Sans'"); }
+    liveView(); showTake(s); camHint();
+  }
+  document.querySelectorAll(".v-style").forEach(function (b) { b.addEventListener("click", function () { setStyle(b.getAttribute("data-style")); }); });
+  function liveView() {
+    var styled = vStyle !== "plain" && !!camStream;
+    $("v-live").classList.toggle("hidden", !camStream);
+    $("v-live").classList.toggle("v-src", styled);
+    $("v-canvas").classList.toggle("hidden", !styled);
+    cancelAnimationFrame(dr.raf); dr.raf = 0;
+    if (styled) (function loop() { dr.raf = requestAnimationFrame(loop); paint(); })();
+  }
+
+  // ---- drawing ----
+  var clamp = function (n) { return Math.max(0, Math.min(1, n)); };
+  var easeOut = function (t) { t = clamp(t); return 1 - Math.pow(1 - t, 3); };
+  var pop = function (t) { t = clamp(t); var c = 1.70158; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
+  // How visible something is: in over 0.4s from a, out over 0.4s to b.
+  var vis = function (t, a, b) { return t < a || t > b ? 0 : Math.min(clamp((t - a) / 0.4), clamp((b - t) / 0.4)); };
+  function rrect(x, X, Y, w, h, r) {
+    x.beginPath(); x.moveTo(X + r, Y); x.lineTo(X + w - r, Y); x.quadraticCurveTo(X + w, Y, X + w, Y + r); x.lineTo(X + w, Y + h - r);
+    x.quadraticCurveTo(X + w, Y + h, X + w - r, Y + h); x.lineTo(X + r, Y + h); x.quadraticCurveTo(X, Y + h, X, Y + h - r); x.lineTo(X, Y + r); x.quadraticCurveTo(X, Y, X + r, Y); x.closePath();
+  }
+  function wrap(x, text, maxW) {
+    var words = String(text).split(/\s+/), lines = [], line = "";
+    words.forEach(function (w) { var t = line ? line + " " + w : w; if (line && x.measureText(t).width > maxW) { lines.push(line); line = w; } else line = t; });
+    if (line) lines.push(line);
+    return lines;
+  }
+  function drawLogo(x, img, X, Y, h, align) {
+    if (!img.complete || !img.naturalWidth) return;
+    var w = h * img.naturalWidth / img.naturalHeight;
+    x.drawImage(img, align === "right" ? X - w : align === "center" ? X - w / 2 : X, Y, w, h);
+  }
+  // Where we are in the four parts. Recording follows the timer (or Next card);
+  // the preview flicks through the parts every four seconds so you can see the words.
+  function where() {
+    var parts = VIDEO.parts, now = Date.now();
+    if (!recording()) { var i = Math.floor(now / 4000) % parts.length; return { i: i, t: (now % 4000) / 1000 + (i === 0 ? 0 : 1.2), len: 5.2, sec: (i * 4000 + now % 4000) / 1000 * 4.5, preview: true }; }
+    var sec = (now - tStart) / 1000, ti = 0;
+    parts.forEach(function (p, k) { if (sec >= p.from) ti = k; });
+    var i = Math.max(ti, dr.manual);
+    if (i !== dr.idx) { dr.idx = i; dr.idxAt = now; }
+    var p = parts[i], t = (now - dr.idxAt) / 1000;
+    if (i === ti && dr.manual < ti) t = sec - p.from;
+    return { i: i, t: t, len: Math.max(6, p.to - p.from), sec: sec };
+  }
+  function paint() {
+    var c = $("v-canvas"), x = c.getContext("2d"), W = c.width, H = c.height, v = $("v-live");
+    x.setTransform(1, 0, 0, 1, 0, 0); x.globalAlpha = 1; x.shadowColor = "transparent"; x.textBaseline = "alphabetic";
+    x.fillStyle = BR.ink; x.fillRect(0, 0, W, H);
+    if (v.videoWidth) { var s = Math.max(W / v.videoWidth, H / v.videoHeight), dw = v.videoWidth * s, dh = v.videoHeight * s; x.drawImage(v, (W - dw) / 2, (H - dh) / 2, dw, dh); }
+    var at = where(), brand = vt().brand !== false;
+    if (vStyle === "social") paintSocial(x, W, H, at, brand); else paintPro(x, W, H, at, brand);
+    if (dr.endAt) endCard(x, W, H, (Date.now() - dr.endAt) / 1000, brand);
+  }
+
+  // Professional: a calm lower third in ink and green, the logo small in the corner.
+  function proCard(x, W, H, a, label, big, small, lines) {
+    if (a <= 0) return;
+    var pad = 26, maxW = W * 0.58, X = 48 - (1 - easeOut(a)) * 40, rows = [];
+    x.font = "800 44px " + HEAD; var bigL = big ? wrap(x, big, maxW) : [];
+    x.font = "500 27px " + BODY; var smallL = small ? wrap(x, small, maxW) : [];
+    var w = 0;
+    x.font = "800 44px " + HEAD; bigL.forEach(function (l) { w = Math.max(w, x.measureText(l).width); });
+    x.font = "500 27px " + BODY; smallL.forEach(function (l) { w = Math.max(w, x.measureText(l).width); });
+    x.font = "700 28px " + BODY; (lines || []).forEach(function (l) { w = Math.max(w, x.measureText(l).width + 40); });
+    x.font = "700 19px " + BODY; if (label) w = Math.max(w, x.measureText(label).width);
+    var h = pad * 2 + (label ? 30 : 0) + bigL.length * 50 + smallL.length * 34 + (lines || []).length * 42;
+    var Y = H - 56 - h;
+    x.save(); x.globalAlpha = easeOut(a);
+    x.fillStyle = "rgba(23,25,28,.9)"; rrect(x, X, Y, w + pad * 2 + 10, h, 14); x.fill();
+    x.fillStyle = BR.green; rrect(x, X, Y, 10, h, 5); x.fill();
+    var cy = Y + pad, L = X + 10 + pad;
+    if (label) { x.font = "700 19px " + BODY; x.fillStyle = BR.orange; x.fillText(label, L, cy + 16); cy += 30; }
+    x.font = "800 44px " + HEAD; x.fillStyle = BR.cream; bigL.forEach(function (l) { x.fillText(l, L, cy + 40); cy += 50; });
+    x.font = "500 27px " + BODY; x.fillStyle = "rgba(255,243,226,.88)"; smallL.forEach(function (l) { x.fillText(l, L, cy + 27); cy += 34; });
+    (lines || []).forEach(function (l, k) {
+      var la = clamp(a * 3 - k * 0.5); x.globalAlpha = easeOut(a) * la;
+      x.fillStyle = BR.green; x.beginPath(); x.arc(L + 12, cy + 20, 12, 0, 7); x.fill();
+      x.strokeStyle = BR.cream; x.lineWidth = 3; x.beginPath(); x.moveTo(L + 6, cy + 20); x.lineTo(L + 10, cy + 25); x.lineTo(L + 18, cy + 15); x.stroke();
+      x.font = "700 28px " + BODY; x.fillStyle = BR.cream; x.fillText(l, L + 40, cy + 30); cy += 42;
+    });
+    x.restore();
+  }
+  function paintPro(x, W, H, at, brand) {
+    if (brand && !dr.endAt) { x.save(); x.globalAlpha = 0.9; x.shadowColor = "rgba(0,0,0,.45)"; x.shadowBlur = 8; drawLogo(x, logoLight, W - 36, 30, 30, "right"); x.restore(); }
+    if (dr.endAt) return;
+    var t = at.t, len = at.len, part = VIDEO.parts[at.i].id;
+    if (part === "intro") proCard(x, W, H, vis(t, 0.6, Math.min(8, len - 0.5)), "", vtVal("name") || "(your name)", vtVal("role"));
+    if (part === "story1" && vtVal("s1skill")) proCard(x, W, H, vis(t, 1.2, len - 1.2), "SKILL", vtVal("s1skill"), vtVal("s1proof"));
+    if (part === "story2" && vtVal("s2skill")) proCard(x, W, H, vis(t, 1.2, len - 1.2), "SKILL", vtVal("s2skill"), vtVal("s2proof"));
+    if (part === "close" && bringLines().length) {
+      var a = vis(t, 1, len + 60), ls = bringLines();
+      proCard(x, W, H, a, "WHAT I'D BRING", "", "", ls.map(function (l, k) { return t > 1 + k * 1.4 || at.preview ? l : ""; }).filter(Boolean));
+    }
+  }
+
+  // For your socials: portrait, a hook, bold stickers that pop in, a progress bar.
+  function sticker(x, text, font, size, fg, bg, cx, cy, rot, a, maxW) {
+    if (a <= 0 || !text) return 0;
+    x.font = font; var lines = wrap(x, text, maxW), lh = size * 1.18, w = 0;
+    lines.forEach(function (l) { w = Math.max(w, x.measureText(l).width); });
+    var padX = size * 0.5, padY = size * 0.3, bw = w + padX * 2, bh = lines.length * lh + padY * 2;
+    x.save(); x.translate(cx, cy); x.rotate(rot * Math.PI / 180); var sc = pop(a); x.scale(sc, sc); x.globalAlpha = clamp(a * 2);
+    x.shadowColor = "rgba(0,0,0,.28)"; x.shadowBlur = 14; x.shadowOffsetY = 5;
+    x.fillStyle = bg; rrect(x, -bw / 2, -bh / 2, bw, bh, size * 0.32); x.fill();
+    x.shadowColor = "transparent"; x.fillStyle = fg; x.textAlign = "center";
+    lines.forEach(function (l, k) { x.fillText(l, 0, -bh / 2 + padY + lh * k + size * 0.92); });
+    x.restore();
+    return bh;
+  }
+  function paintSocial(x, W, H, at, brand) {
+    var CX = W * 0.46, MW = W * 0.72;
+    var gr = x.createLinearGradient(0, H * 0.45, 0, H); gr.addColorStop(0, "rgba(23,25,28,0)"); gr.addColorStop(1, "rgba(23,25,28,.45)");
+    x.fillStyle = gr; x.fillRect(0, H * 0.45, W, H * 0.55);
+    if (!dr.endAt) {
+      var f = at.preview ? (Date.now() % 16000) / 16000 : Math.min(1, at.sec / 90);
+      x.fillStyle = "rgba(255,243,226,.35)"; x.fillRect(0, 0, W, 10); x.fillStyle = BR.orange; x.fillRect(0, 0, W * f, 10);
+      if (brand) { x.save(); x.shadowColor = "rgba(0,0,0,.5)"; x.shadowBlur = 10; drawLogo(x, logoLight, 30, 34, 34, "left"); x.restore(); }
+    }
+    if (dr.endAt) return;
+    var t = at.t, len = at.len, part = VIDEO.parts[at.i].id, hook = vtVal("hook"), Y = H * 0.64;
+    if (part === "intro") {
+      if (hook) sticker(x, hook, "800 50px " + HEAD, 50, BR.ink, "#FFFFFF", W / 2, H * 0.3, -2, vis(t, 0.2, 4.2) * 1.0, W * 0.8);
+      var n0 = hook ? 4.6 : 0.6;
+      var a = vis(t, n0, Math.min(n0 + 9, len - 0.4));
+      var h1 = sticker(x, "I'm " + (vtVal("name") || "(your name)").split(" ")[0], "800 58px " + HEAD, 58, BR.ink, BR.orange, CX, Y, -3, a, MW);
+      sticker(x, vtVal("role"), "700 34px " + BODY, 34, BR.cream, BR.green, CX + 10, Y + h1 / 2 + 44, 2, vis(t, n0 + 0.35, Math.min(n0 + 9, len - 0.4)), MW);
+    }
+    var story = part === "story1" ? ["s1skill", "s1proof"] : part === "story2" ? ["s2skill", "s2proof"] : null;
+    if (story && vtVal(story[0])) {
+      var b = vis(t, 1.2, len - 1.2), tilt = part === "story1" ? -2 : 2;
+      sticker(x, "SKILL", "800 24px " + BODY, 24, BR.ink, BR.orange, CX - 120, Y - 92, tilt * 2, b, MW);
+      var h2 = sticker(x, vtVal(story[0]), "800 54px " + HEAD, 54, BR.ink, BR.cream, CX, Y - 10, tilt, vis(t, 1.4, len - 1.2), MW);
+      sticker(x, vtVal(story[1]), "700 30px " + BODY, 30, BR.cream, BR.green, CX + 6, Y + h2 / 2 + 46, -tilt, vis(t, 2.2, len - 1.2), MW);
+    }
+    if (part === "close" && bringLines().length) {
+      var top = Y - 150;
+      sticker(x, "WHAT I'D BRING", "800 26px " + BODY, 26, BR.ink, BR.orange, CX, top, -3, vis(t, 0.8, len + 60), MW);
+      bringLines().forEach(function (l, k) {
+        var st = at.preview ? 1 + k * 0.5 : 1.4 + k * 1.6;
+        sticker(x, "✓ " + l, "800 36px " + HEAD, 36, k % 2 ? BR.ink : BR.cream, k % 2 ? BR.cream : BR.green, CX + (k % 2 ? 14 : -10), top + 80 + k * 92, k % 2 ? 2 : -2, vis(t, st, len + 60), MW);
+      });
+    }
+  }
+
+  // The last two and a half seconds: name, the job, and Made with Comquat.
+  function endCard(x, W, H, t, brand) {
+    var a = easeOut(t / 0.5), social = vStyle === "social";
+    x.save(); x.globalAlpha = a;
+    x.fillStyle = social ? BR.green : BR.ink; x.fillRect(0, 0, W, H);
+    x.textAlign = "center"; x.fillStyle = BR.cream;
+    var size = social ? 84 : 66, cy = H * (social ? 0.42 : 0.42);
+    x.font = "800 " + size + "px " + HEAD;
+    var nm = wrap(x, vtVal("name") || "", W * 0.84);
+    nm.forEach(function (l, k) { x.fillText(l, W / 2, cy + k * size * 1.1); });
+    cy += nm.length * size * 1.1 + 10;
+    if (vtVal("role")) {
+      if (social) sticker(x, vtVal("role"), "700 38px " + BODY, 38, BR.ink, BR.orange, W / 2, cy + 10, -2, clamp(t / 0.6), W * 0.8);
+      else { x.font = "500 32px " + BODY; x.fillStyle = BR.orange; x.textAlign = "center"; x.fillText(vtVal("role"), W / 2, cy); }
+    }
+    if (brand) {
+      x.textAlign = "center"; x.font = "500 22px " + BODY; x.fillStyle = "rgba(255,243,226,.8)";
+      x.fillText("Made with", W / 2, H - (social ? 210 : 92));
+      drawLogo(x, logoLight, W / 2, H - (social ? 196 : 80), social ? 44 : 34, "center");
+    }
+    x.restore();
+  }
+
+  // ---- the camera and the takes (one per style) ----
   function camOff() {
-    if (camRec && camRec.state === "recording") camRec.stop();
+    if (recording()) { dr.endAt = 0; camRec.stop(); }
     if (camStream) camStream.getTracks().forEach(function (t) { t.stop(); });
-    camStream = null; $("v-live").classList.add("hidden"); $("v-rec").classList.add("hidden"); $("v-cam-off").classList.add("hidden"); $("v-cam-on").classList.remove("hidden");
+    camStream = null; cancelAnimationFrame(dr.raf); dr.raf = 0;
+    $("v-live").classList.add("hidden"); $("v-canvas").classList.add("hidden"); $("v-rec").classList.add("hidden"); $("v-cam-off").classList.add("hidden"); $("v-next-row").classList.add("hidden"); $("v-cam-on").classList.remove("hidden");
   }
   $("v-cam-off").addEventListener("click", function () { camOff(); $("v-cam-msg").textContent = "Camera off."; });
   window.addEventListener("pagehide", camOff);
@@ -977,39 +1228,80 @@
     var msg = $("v-cam-msg");
     if (!navigator.mediaDevices || !window.MediaRecorder) { msg.textContent = "This browser can't record video. You can still practise with the timer."; return; }
     navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: true }).then(function (st) {
-      camStream = st; var v = $("v-live"); v.srcObject = st; v.classList.remove("hidden");
+      camStream = st; var v = $("v-live"); v.srcObject = st;
+      // Played from the button press, so browsers keep it running while it feeds the styled preview.
+      var pl = v.play && v.play(); if (pl && pl.catch) pl.catch(function () {});
       $("v-cam-on").classList.add("hidden"); $("v-rec").classList.remove("hidden"); $("v-cam-off").classList.remove("hidden");
-      v.onloadedmetadata = function () { msg.textContent = v.videoHeight > v.videoWidth ? "Turn your phone sideways: landscape plays properly on a laptop." : "Look at the lens, not at yourself. Press record when you're ready."; };
+      liveView();
+      v.onloadedmetadata = camHint;
     }).catch(function () { msg.textContent = "We couldn't use your camera. Check your browser lets this page use it."; });
   });
+  function finish() {
+    if (!recording()) return;
+    timerStop();
+    if (recStyle === "plain") { camRec.stop(); return; }
+    // A short end card before it stops.
+    dr.endAt = Date.now(); $("v-rec").disabled = true; $("v-rec").textContent = "Finishing…";
+    setTimeout(function () { if (recording()) camRec.stop(); }, 2600);
+  }
   $("v-rec").addEventListener("click", function () {
-    if (camRec && camRec.state === "recording") { camRec.stop(); return; }
+    if (recording()) { finish(); return; }
     if (!camStream) return;
-    camChunks = [];
+    camChunks = []; recStyle = vStyle; dr.endAt = 0; dr.manual = -1; dr.idx = -1;
+    var stream = camStream;
+    if (recStyle !== "plain") {
+      dr.canvasStream = $("v-canvas").captureStream(30);
+      camStream.getAudioTracks().forEach(function (t) { dr.canvasStream.addTrack(t); });
+      stream = dr.canvasStream;
+    }
     // mp4 first: it plays on iPhones, Windows and in email. webm is the fallback.
     var types = ["video/mp4;codecs=avc1,mp4a", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"];
     var type = types.filter(function (t) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); })[0];
-    camRec = type ? new MediaRecorder(camStream, { mimeType: type }) : new MediaRecorder(camStream);
+    camRec = type ? new MediaRecorder(stream, { mimeType: type }) : new MediaRecorder(stream);
     camRec.ondataavailable = function (e) { if (e.data && e.data.size) camChunks.push(e.data); };
     camRec.onstop = function () {
-      timerStop();
+      timerStop(); dr.endAt = 0;
+      if (dr.canvasStream) { dr.canvasStream.getVideoTracks().forEach(function (t) { t.stop(); }); dr.canvasStream = null; }
       var mime = (camRec.mimeType || "video/webm").split(";")[0];
-      if (camUrl) URL.revokeObjectURL(camUrl);
-      camUrl = URL.createObjectURL(new Blob(camChunks, { type: mime }));
-      var p = $("v-play"); p.src = camUrl; p.classList.remove("hidden");
-      var sv = $("v-save"); sv.href = camUrl; sv.setAttribute("download", "my-90-seconds." + (mime.indexOf("mp4") > -1 ? "mp4" : "webm")); sv.classList.remove("hidden");
-      $("v-del").classList.remove("hidden");
-      $("v-rec").textContent = "● Record another take";
-      $("v-cam-msg").textContent = "Watch it back. Take two is usually the best one.";
+      var old = takes[recStyle]; if (old) URL.revokeObjectURL(old.url);
+      takes[recStyle] = { url: URL.createObjectURL(new Blob(camChunks, { type: mime })), ext: mime.indexOf("mp4") > -1 ? "mp4" : "webm" };
+      document.querySelectorAll(".v-style").forEach(function (b) { b.disabled = false; });
+      $("v-next-row").classList.add("hidden");
+      $("v-rec").disabled = false; $("v-rec").textContent = "● Record another take";
+      if (recStyle !== vStyle) setStyle(recStyle); else showTake(recStyle);
+      renderTakes();
+      $("v-cam-msg").textContent = "Watch it back. Take two is usually the best one." + (recStyle !== "plain" && !takes[recStyle === "pro" ? "social" : "pro"] ? " Fancy the other style too? Pick it above and record again." : "");
     };
     camRec.start(); timerStart();
+    document.querySelectorAll(".v-style").forEach(function (b) { b.disabled = true; });
+    $("v-next-row").classList.toggle("hidden", recStyle === "plain");
     $("v-rec").textContent = "■ Stop recording";
     $("v-cam-msg").textContent = "Recording. The timer above shows where you should be.";
   });
+  $("v-next").addEventListener("click", function () {
+    if (!recording()) return;
+    var at = where(); dr.manual = Math.min(VIDEO.parts.length - 1, at.i + 1);
+  });
+  function showTake(style) {
+    var tk = takes[style], p = $("v-play"), sv = $("v-save");
+    if (!tk) { p.removeAttribute("src"); p.classList.add("hidden"); sv.classList.add("hidden"); $("v-del").classList.add("hidden"); return; }
+    p.src = tk.url; p.classList.remove("hidden");
+    sv.href = tk.url; sv.setAttribute("download", STYLE_FILE[style] + "." + tk.ext); sv.classList.remove("hidden");
+    $("v-del").classList.remove("hidden");
+  }
+  function renderTakes() {
+    var list = $("v-take-list"); list.textContent = "";
+    ["plain", "pro", "social"].forEach(function (s) {
+      var tk = takes[s]; if (!tk) return;
+      var watch = el("button", { type: "button", class: "linkbtn", text: "Watch" });
+      watch.addEventListener("click", function () { setStyle(s); $("v-play").scrollIntoView({ behavior: "smooth", block: "center" }); });
+      list.appendChild(el("li", {}, [el("strong", { text: STYLE_NAME[s] }), watch, el("a", { class: "linkbtn", href: tk.url, download: STYLE_FILE[s] + "." + tk.ext, text: "Save to my device" })]));
+    });
+    $("v-takes").classList.toggle("hidden", !list.children.length);
+  }
   $("v-del").addEventListener("click", function () {
-    if (camUrl) URL.revokeObjectURL(camUrl); camUrl = null;
-    var p = $("v-play"); p.removeAttribute("src"); p.classList.add("hidden");
-    $("v-save").classList.add("hidden"); $("v-del").classList.add("hidden");
+    var tk = takes[vStyle]; if (tk) URL.revokeObjectURL(tk.url);
+    delete takes[vStyle]; showTake(vStyle); renderTakes();
     $("v-cam-msg").textContent = "Deleted.";
   });
 

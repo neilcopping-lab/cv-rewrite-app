@@ -12,6 +12,7 @@ test("the pack: 18 statements, 12 follow-ups and 2 job write-ups", () => {
   assert.strictEqual(j.filter((x) => x.kind === "statement").length, 18);
   assert.strictEqual(j.filter((x) => /followup/.test(x.kind)).length, 12);
   assert.strictEqual(j.filter((x) => x.kind === "job").length, 2);
+  assert.strictEqual(j.filter((x) => x.kind === "videotext").length, 5);
 });
 
 test("the checks catch a personal detail, a probing question and a dropped result", () => {
@@ -39,7 +40,7 @@ test("a full run with the test AI emails the report with every write-up attached
   assert.strictEqual(sent.length, 1);
   assert.strictEqual(sent[0].to, "neil.copping@aol.co.uk");
   const att = JSON.parse(sent[0].attachments[0].content.toString());
-  assert.strictEqual(att.writeUps.length, 32);
+  assert.strictEqual(att.writeUps.length, 37);
 });
 
 test("schedule: first run, then after a change to the instructions, then quarterly", () => {
