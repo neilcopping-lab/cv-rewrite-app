@@ -102,7 +102,7 @@
       if (HEALTH && HEALTH.stops && (filled() || cv.healthStart)) {
         var order = { red: 3, amber: 2, green: 1 }, worst = null;
         HEALTH.stops.forEach(function (st) { if (st.step === s.key && order[st.rag] && (!worst || order[st.rag] > order[worst.rag])) worst = st; });
-        if (worst) { b.appendChild(el("i", { class: "hdot " + worst.rag, "aria-hidden": "true" })); b.title = worst.title + ": " + worst.note; b.setAttribute("aria-label", s.n + " " + s.label + ", health check " + ((typeof RAG_WORD !== "undefined" && RAG_WORD[worst.rag]) || worst.rag)); }
+        if (worst) { b.appendChild(el("i", { class: "hdot " + worst.rag, "aria-hidden": "true" })); b.title = worst.title + ": " + worst.note; b.appendChild(el("span", { class: "sr-only", text: ", health check " + ((typeof RAG_WORD !== "undefined" && RAG_WORD[worst.rag]) || worst.rag) })); }
       }
       b.addEventListener("click", function () { go(s.n); });
       nav.appendChild(b);
