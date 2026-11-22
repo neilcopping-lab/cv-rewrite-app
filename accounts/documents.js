@@ -12,7 +12,7 @@
 const crypto = require("crypto");
 
 const BUCKET = "documents";
-const KINDS = { cv: "CV", cover: "Cover letter", prep: "Interview prep report" };
+const KINDS = { cv: "CV", cover: "Cover letter", prep: "Interview prep report", profile: "Candidate profile" };
 const MIME_OK = new Set([
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/pdf",
@@ -77,6 +77,15 @@ async function save(req, doc) {
         storage_path: storagePath,
         source_key: key,
       });
+      // A database set up before profiles existed may only allow the first three
+      // kinds: keep it as a CV-type row, still labelled as a profile when listed.
+      if (error && kind === "profile" && /check|violat/i.test(error.message || "")) {
+        const retry = await req.sb.from("documents").insert({
+          user_id: req.user.id, kind: "cv", title: clip(real(doc.title) || KINDS.profile, 200), job_title: clip(real(doc.jobTitle), 200),
+          company: clip(real(doc.company), 200), file_name: fileName, mime_type: mime, size_bytes: data.length, storage_path: storagePath, source_key: key,
+        });
+        if (!retry.error) return { saved: true };
+      }
       if (error) {
         // Most likely a second click that raced the first: tidy up the extra file.
         await req.sb.storage.from(BUCKET).remove([storagePath]).catch(() => {});
@@ -94,13 +103,14 @@ async function save(req, doc) {
 async function list(req) {
   const { data, error } = await req.sb
     .from("documents")
-    .select("id, kind, title, job_title, company, file_name, mime_type, size_bytes, created_at")
+    .select("id, kind, title, job_title, company, file_name, mime_type, size_bytes, created_at, source_key")
     .eq("user_id", req.user.id)
     .order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
   // Only these fields ever go to the browser (never the storage path).
   return (data || []).map((d) => ({
-    id: d.id, kind: d.kind, kind_label: KINDS[d.kind] || "Document",
+    id: d.id, kind: String(d.source_key || "").startsWith("profile:") ? "profile" : d.kind,
+    kind_label: String(d.source_key || "").startsWith("profile:") ? KINDS.profile : KINDS[d.kind] || "Document",
     title: real(d.title) || KINDS[d.kind] || "Document",
     job_title: real(d.job_title), company: real(d.company), file_name: d.file_name,
     mime_type: d.mime_type, size_bytes: d.size_bytes, created_at: d.created_at,

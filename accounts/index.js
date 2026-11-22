@@ -237,6 +237,37 @@ function mountAccounts(app, opts = {}) {
     return `${base}/auth/confirm?next=${encodeURIComponent(dest.startsWith("/") ? base + dest : dest)}`;
   }
 
+  // ---- a profile from Comquat for Recruiters --------------------------------
+  // The candidate pressed "Save to my free Comquat account" on their profile.
+  // Only when they press Save here, signed in, do we collect it, using the
+  // one-time key in their link. The recruiters address is fixed, never taken
+  // from the request.
+  const RECRUITERS_URL = (process.env.RECRUITERS_URL || "https://recruiters.the-common-people.com").replace(/\/$/, "");
+  api.post("/save-profile", needUser, async (req, res) => {
+    const t = String((req.body && req.body.t) || "");
+    if (!/^[A-Za-z0-9_-]{20,100}$/.test(t)) return res.status(400).json({ error: "This link isn't complete. Please use the button in your recruiter's email again." });
+    let d;
+    try {
+      const r = await fetch(`${RECRUITERS_URL}/api/handoff/${t}`, { method: "POST", signal: AbortSignal.timeout(45000), headers: { "user-agent": "Comquat accounts" } });
+      d = await r.json().catch(() => ({}));
+      if (!r.ok) return res.status(r.status === 410 ? 410 : 400).json({ error: d.error || "We couldn't collect your profile. Please try the link again." });
+    } catch (e) {
+      console.error("[save-profile]", e.message);
+      return res.status(502).json({ error: "We couldn't reach your recruiter's system just now. Please try again in a minute." });
+    }
+    const pdf = Buffer.from(String(d.pdf || ""), "base64");
+    if (!pdf.length || pdf.slice(0, 4).toString() !== "%PDF") return res.status(502).json({ error: "We couldn't collect your profile. Please try the link again." });
+    const out = await documents.save(req, {
+      kind: "profile", data: pdf, mimeType: "application/pdf",
+      title: `Your profile${d.roleTitle ? ` for ${d.roleTitle}` : ""}`,
+      jobTitle: d.roleTitle || "", company: d.client || d.agency || "",
+      fileName: d.fileName || "Profile.pdf",
+      sourceKey: documents.sourceKey("profile", String(d.ref || ""), String(d.version || "")),
+    });
+    if (!out.saved) return res.status(500).json({ error: "We couldn't save it to your account just now. Please try the link again." });
+    res.json({ ok: true, already: !!out.already });
+  });
+
   // ---- who am I ----------------------------------------------------------
   api.get("/me", async (req, res) => {
     if (!req.user) return res.json({ signedIn: false, accountsOn: true });
