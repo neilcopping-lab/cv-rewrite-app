@@ -622,7 +622,7 @@ app.post("/api/generate", (req, res) => {
 });
 
 // Candidate resolves [MISSING]/flagged items (answer, or accept leaving out).
-async function resolveWork(st, { resolutions, acceptLeaveOutArr }) {
+async function resolveWork(st, { resolutions, acceptLeaveOutArr }, req) {
   const acceptLeaveOut = new Set(acceptLeaveOutArr || []);
   // Fold answers back into the answer set and regenerate for a clean pass.
   st.answers = (st.answers || []).concat(
@@ -666,7 +666,7 @@ app.post("/api/resolve", (req, res) => {
     if (overGenCap(st)) return res.status(429).json({ error: "rewrite-limit" });
     const resolutions = req.body.resolutions || [];
     const acceptLeaveOutArr = req.body.acceptLeaveOut || [];
-    const jobId = startJob(req, () => resolveWork(st, { resolutions, acceptLeaveOutArr }));
+    const jobId = startJob(req, () => resolveWork(st, { resolutions, acceptLeaveOutArr }, req));
     res.status(202).json({ jobId });
   } catch (e) {
     res.status(500).json({ error: e.message });
