@@ -15,14 +15,14 @@
 
   var tools = document.getElementById("tools");
   if (!tools) return;
-  var hunt = el('<section class="card hidden" id="hunt-card"><h2>Your job hunt</h2>' +
+  var hunt = el('<section class="card hidden" id="hunt-card" data-tab="search"><h2>Your job hunt</h2>' +
     '<p class="small">One card for each job you\'re going for. Your CV and the advert carry from CV Rewrite into Interview Prep, so you never upload them twice.</p>' +
     '<div id="hunt-week"></div><div id="hunt-list"></div>' +
     '<details style="margin-top:14px"><summary><b>Add a job by hand</b></summary><form id="hunt-add" style="margin-top:10px">' +
     '<label>Job title<input name="title" maxlength="200" required></label><label>Company<input name="company" maxlength="200"></label>' +
     '<label>The advert <span class="hint">Paste it in if you have it.</span><textarea name="advert" rows="4" maxlength="30000"></textarea></label>' +
     '<button class="btn btn-primary">Add this job</button></form></details></section>');
-  var bank = el('<section class="card hidden" id="story-card"><h2>Your story bank</h2>' +
+  var bank = el('<section class="card hidden" id="story-card" data-tab="search"><h2>Your story bank</h2>' +
     '<p class="small">The examples you\'d tell an employer: what happened, what you did and how it turned out. Save them once and use them for every CV, cover letter and interview.</p>' +
     '<div id="story-list"></div>' +
     '<details style="margin-top:14px"><summary><b>Add a story</b></summary><form id="story-add" style="margin-top:10px">' +

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/account/account.css?v=20261120-search">
+<link rel="stylesheet" href="/account/account.css?v=20261123-tabs">
 <link rel="stylesheet" href="/account/fresh.css?v=20261121b">
 <style id="a11y-base">.skip{position:absolute;left:-9999px;top:8px;z-index:10000;background:#17191C;color:#fff;padding:12px 16px;border-radius:8px;font-weight:700;text-decoration:none}.skip:focus{left:8px}main p a:not(.btn):not([class*="btn"]),footer p a{text-decoration:underline}@media (prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}</style>
 </head>
@@ -31,8 +31,24 @@
   
   <div class="msg" id="msg" role="status" aria-live="polite"></div>
 
-  <nav class="acct-jump" aria-label="On this page"><a href="#tools">Your tools</a><a href="#search-card">Job search</a><a href="#docs-card">My documents</a><a href="#settings">Settings and data</a></nav>
-  <section class="card tools" id="tools">
+  <nav class="acct-tabs" id="acct-tabs" aria-label="Your account">
+    <button type="button" data-tab="profile" class="hidden">My profile</button>
+    <button type="button" data-tab="tools">Tools</button>
+    <button type="button" data-tab="search">Job search</button>
+    <button type="button" data-tab="docs">My documents</button>
+    <button type="button" data-tab="settings">Settings</button>
+  </nav>
+
+  <section class="card hidden" id="profile-card" data-tab="profile">
+    <div class="prof-head">
+      <div><h2>My profile</h2><p class="small" id="prof-from"></p></div>
+      <div class="row prof-acts"><a class="btn btn-ghost" id="prof-dl" download>Download PDF</a></div>
+    </div>
+    <div class="row prof-pick hidden" id="prof-pick" role="group" aria-label="Choose a profile"></div>
+    <div id="prof-body"><p class="small">Loading your profile…</p></div>
+    <p class="small prof-note">This is the profile your recruiter wrote with you and you signed off. It's your copy to keep: it stays here until you delete it in My documents.</p>
+  </section>
+  <section class="card tools" id="tools" data-tab="tools">
     <h2>Your tools</h2>
     <p class="small">One sign-in for all three. Whatever you download while signed in lands in My documents below.</p>
     <div class="tool-grid">
@@ -59,7 +75,7 @@
     </div>
   </section>
 
-  <section class="card hidden" id="search-card">
+  <section class="card hidden" id="search-card" data-tab="search">
     <div class="me-top">
       <div class="me-photo">
         <img id="photo-img" class="hidden" alt="Your profile photo">
@@ -126,7 +142,7 @@
     </div>
   </section>
 
-  <section class="card" id="ai">
+  <section class="card" id="ai" data-tab="settings">
     <h2>Your AI setting</h2>
     <p class="small">Comquat uses AI, but only as much as you want. Your choice applies to CV Rewrite, Interview Prep and the CV Builder. Change it whenever you like. <a href="https://the-common-people.com/ai-promise.html">Read our AI promise</a>.</p>
     <form id="form-ai" novalidate>
@@ -141,7 +157,7 @@
     </form>
   </section>
 
-  <section class="card" id="settings">
+  <section class="card" id="settings" data-tab="settings">
     <h2>Your details</h2>
     <dl class="kv"><dt>Email</dt><dd id="email">…</dd><dt>Member since</dt><dd id="since">…</dd></dl>
     <form id="form-name" novalidate>
@@ -150,7 +166,7 @@
     </form>
   </section>
 
-  <section class="card" id="docs-card">
+  <section class="card" id="docs-card" data-tab="docs">
     <h2>My documents</h2>
     <p class="small">Every CV, cover letter and interview prep report you download while signed in is kept here, so you can grab it again whenever you need it. Only you can see them.</p>
     <p class="small hidden" id="docs-empty">Nothing here yet. Your next download from <a href="https://cv.the-common-people.com/">CV Rewrite</a> or <a href="https://prep.the-common-people.com/">Interview Prep</a> will appear here.</p>
@@ -158,7 +174,7 @@
     <ul class="docs" id="docs-list"></ul>
   </section>
 
-  <section class="card">
+  <section class="card" id="subs-card" data-tab="settings">
     <h2>What you'd like from us</h2>
     <p class="small">Tick what you want, untick what you don't, then save. You can change this whenever you like.</p>
     <form id="form-subs" novalidate>
@@ -171,7 +187,7 @@
   </section>
 
 
-  <section class="card" id="share-card">
+  <section class="card" id="share-card" data-tab="tools">
     <h2>Share Comquat</h2>
     <p class="small">Know someone who's job hunting? Comquat is free. Change the message to say it your way, then send it however you like. We never see who you send it to.</p>
     <label for="share-text" class="sr-only">Your message</label>
@@ -184,7 +200,7 @@
     </div>
   </section>
 
-  <section class="card">
+  <section class="card" id="password-card" data-tab="settings">
     <h2>Password</h2>
     <form id="form-password" novalidate>
       <label>New password<span class="hint">At least 10 characters.</span><input type="password" name="password" autocomplete="new-password" minlength="10" required></label>
@@ -192,7 +208,7 @@
     </form>
   </section>
 
-  <section class="card" id="your-data">
+  <section class="card" id="your-data" data-tab="settings">
     <h2>Your data</h2>
     <p class="small">Download a copy of everything your account holds, saved documents included, or delete the lot. Deleting is permanent and can't be undone.</p>
     <div class="row">
@@ -207,8 +223,9 @@
   </section>
 </main>
 <footer>Comquat is part of <a href="https://the-common-people.com/">The Com'mon People</a>, run by Comquat Ventures UK Ltd. <a href="/privacy.html">Privacy notice</a> &middot; <a href="/safeguarding.html">Keeping you safe</a> &middot; <a href="/safeguarding.html#report">Report a concern</a> &middot; <a href="https://the-common-people.com/accessibility.html">Accessibility</a></footer>
-<script src="/account/account.js?v=20261121-ai" defer></script>
-<script src="/account/jobhunt.js?v=20261121" defer></script>
+<script src="/account/account.js?v=20261123-tabs" defer></script>
+<script src="/account/jobhunt.js?v=20261123" defer></script>
 <script src="/easyread.js?v=20261121" defer></script>
+<script src="/account/tabs.js?v=20261123" defer></script>
 </body>
 </html>

@@ -329,6 +329,8 @@
         ", " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
     }
     function showDocs(docs) {
+      // My profile (tabs.js) shows saved candidate profiles on the page.
+      try { document.dispatchEvent(new CustomEvent("cq:docs", { detail: docs })); } catch (_) {}
       document.getElementById("docs-loading").classList.add("hidden");
       document.getElementById("docs-empty").classList.toggle("hidden", docs.length > 0);
       docsList.textContent = "";

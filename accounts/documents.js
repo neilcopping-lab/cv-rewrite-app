@@ -84,8 +84,9 @@ async function save(req, doc) {
           user_id: req.user.id, kind: "cv", title: clip(real(doc.title) || KINDS.profile, 200), job_title: clip(real(doc.jobTitle), 200),
           company: clip(real(doc.company), 200), file_name: fileName, mime_type: mime, size_bytes: data.length, storage_path: storagePath, source_key: key,
         });
-        if (!retry.error) return { saved: true };
+        if (!retry.error) { await saveView(req, storagePath, doc.view); return { saved: true }; }
       }
+      if (!error) await saveView(req, storagePath, doc.view);
       if (error) {
         // Most likely a second click that raced the first: tidy up the extra file.
         await req.sb.storage.from(BUCKET).remove([storagePath]).catch(() => {});
@@ -98,6 +99,36 @@ async function save(req, doc) {
     console.error("[documents] save failed:", e.message);
     return { saved: false, reason: "error" };
   }
+}
+
+// A profile can come with a readable copy (headings and lines) so it can be
+// shown on the page. It sits next to the file, in the same private folder.
+const VIEW_SUFFIX = ".view.json";
+function cleanView(v) {
+  if (!v || typeof v !== "object" || !Array.isArray(v.sections)) return null;
+  const t = (x, n) => clip(x, n);
+  const out = {
+    v: 1, name: t(v.name, 120), roleTitle: t(v.roleTitle, 200), headline: t(v.headline, 300),
+    sections: v.sections.slice(0, 30).map((x) => ({
+      heading: t(x && x.heading, 120),
+      paras: (Array.isArray(x && x.paras) ? x.paras : []).slice(0, 20).map((y) => String(y == null ? "" : y).replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim().slice(0, 4000)).filter(Boolean),
+      items: (Array.isArray(x && x.items) ? x.items : []).slice(0, 40).map((y) => t(y, 1000)).filter(Boolean),
+    })).filter((x) => x.heading && (x.paras.length || x.items.length)),
+  };
+  return out.sections.length ? out : null;
+}
+async function saveView(req, storagePath, view) {
+  const v = cleanView(view);
+  if (!v) return;
+  try {
+    const up = await req.sb.storage.from(BUCKET).upload(storagePath + VIEW_SUFFIX, Buffer.from(JSON.stringify(v)), { contentType: "text/plain", upsert: true });
+    if (up.error) console.error("[documents] view not kept:", up.error.message);
+  } catch (e) { console.error("[documents] view not kept:", e.message); }
+}
+async function viewOf(req, row) {
+  const { data, error } = await req.sb.storage.from(BUCKET).download(row.storage_path + VIEW_SUFFIX);
+  if (error || !data) return null;
+  try { return cleanView(JSON.parse(Buffer.from(await data.arrayBuffer()).toString("utf8"))); } catch (_) { return null; }
 }
 
 async function list(req) {
@@ -130,7 +161,7 @@ async function fileOf(req, row) {
 }
 
 async function removeOne(req, row) {
-  const { error: e1 } = await req.sb.storage.from(BUCKET).remove([row.storage_path]);
+  const { error: e1 } = await req.sb.storage.from(BUCKET).remove([row.storage_path, row.storage_path + VIEW_SUFFIX]);
   if (e1) throw new Error(e1.message);
   const { error: e2 } = await req.sb.from("documents").delete().eq("user_id", req.user.id).eq("id", row.id);
   if (e2) throw new Error(e2.message);
@@ -153,4 +184,4 @@ async function removeAllFor(admin, userId) {
   }
 }
 
-module.exports = { save, list, getOne, fileOf, removeOne, removeAllFor, sourceKey, KINDS };
+module.exports = { save, list, getOne, fileOf, viewOf, cleanView, removeOne, removeAllFor, sourceKey, KINDS };

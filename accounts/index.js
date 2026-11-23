@@ -261,7 +261,7 @@ function mountAccounts(app, opts = {}) {
       kind: "profile", data: pdf, mimeType: "application/pdf",
       title: `Your profile${d.roleTitle ? ` for ${d.roleTitle}` : ""}`,
       jobTitle: d.roleTitle || "", company: d.client || d.agency || "",
-      fileName: d.fileName || "Profile.pdf",
+      fileName: d.fileName || "Profile.pdf", view: d.view,
       sourceKey: documents.sourceKey("profile", String(d.ref || ""), String(d.version || "")),
     });
     if (!out.saved) return res.status(500).json({ error: "We couldn't save it to your account just now. Please try the link again." });
@@ -476,12 +476,24 @@ function mountAccounts(app, opts = {}) {
       const buf = await documents.fileOf(req, row);
       res.set("Cache-Control", "no-store");
       res.set("Content-Type", row.mime_type);
-      res.set("Content-Disposition", `attachment; filename="${row.file_name.replace(/"/g, "")}"`);
+      // ?inline=1 shows a PDF in the page (My profile) instead of downloading it.
+      const inline = req.query.inline === "1" && row.mime_type === "application/pdf";
+      res.set("Content-Disposition", `${inline ? "inline" : "attachment"}; filename="${row.file_name.replace(/"/g, "")}"`);
       res.send(buf);
     } catch (e) {
       console.error("[accounts] documents file:", e.message);
       res.status(500).json({ error: "We couldn't fetch that document just now. Please try again." });
     }
+  });
+
+  // The readable copy of a saved profile, for showing it on the page.
+  api.get("/documents/:id/view", needUser, async (req, res) => {
+    const row = await documents.getOne(req, req.params.id).catch(() => null);
+    if (!row) return res.status(404).json({ error: "We couldn't find that document." });
+    res.set("Cache-Control", "no-store");
+    const view = await documents.viewOf(req, row).catch(() => null);
+    if (!view) return res.status(404).json({ error: "No readable copy of this one." });
+    res.json({ view });
   });
 
   api.post("/documents/:id/delete", writeLimit, requireJson, needUser, async (req, res) => {

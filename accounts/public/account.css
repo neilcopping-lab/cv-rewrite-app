@@ -122,3 +122,22 @@ h3.sub{font-family:'Bricolage Grotesque','DM Sans',sans-serif;font-weight:800;fo
 .acct-jump{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
 .acct-jump a{display:inline-flex;align-items:center;min-height:40px;padding:6px 14px;border-radius:999px;background:#fff;border:1px solid var(--pith);font-weight:700;font-size:14px;text-decoration:none;color:inherit}
 .acct-jump a:hover{border-color:currentColor}
+/* My account sub menu and My profile (Nov 2026) */
+.tab-off{display:none!important}
+.acct-tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px;position:sticky;top:0;z-index:5;padding:8px 0;background:var(--cream,#FFF8EE)}
+.acct-tabs button{display:inline-flex;align-items:center;min-height:44px;padding:6px 16px;border-radius:999px;background:#fff;border:1px solid var(--pith,#e6e0d6);font:inherit;font-weight:700;font-size:15px;color:inherit;cursor:pointer}
+.acct-tabs button:hover{border-color:currentColor}
+.acct-tabs button[aria-pressed="true"]{background:#17191C;color:#fff;border-color:#17191C}
+.acct-tabs button.hidden{display:none}
+.prof-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.prof-head h2{margin-bottom:4px}
+.prof-pick{gap:8px;margin:6px 0 12px}
+.prof-pick [aria-pressed="true"]{background:#17191C;color:#fff}
+.prof-headline{font-size:1.2rem;font-weight:700;line-height:1.35;margin:8px 0 14px}
+.prof-jump{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.prof-jump button{background:none;border:1px solid var(--pith,#e6e0d6);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;color:inherit;min-height:36px}
+.prof-sec{border-top:1px solid var(--pith,#e6e0d6);padding:10px 0}
+.prof-sec summary{font-weight:700;cursor:pointer;font-size:1.05rem;min-height:32px}
+.prof-sec p,.prof-sec li{line-height:1.55}
+.prof-pdf{width:100%;height:75vh;border:1px solid var(--pith,#e6e0d6);border-radius:12px;background:#fff}
+.prof-note{margin-top:14px}
