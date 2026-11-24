@@ -141,3 +141,5 @@ h3.sub{font-family:'Bricolage Grotesque','DM Sans',sans-serif;font-weight:800;fo
 .prof-sec p,.prof-sec li{line-height:1.55}
 .prof-pdf{width:100%;height:75vh;border:1px solid var(--pith,#e6e0d6);border-radius:12px;background:#fff}
 .prof-note{margin-top:14px}
+.ms-profile{white-space:pre-wrap;font-family:inherit;background:#FFF8EE;border:1px solid var(--pith);border-radius:12px;padding:12px 14px;margin:6px 0 10px}
+#my-style textarea{width:100%;box-sizing:border-box;margin:4px 0 10px}

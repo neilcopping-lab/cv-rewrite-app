@@ -109,7 +109,63 @@ app.use((req, res, next) => identityShield.run(() => {
 // Lives in ./accounts. Switched off until SUPABASE_URL and keys are set, in
 // which case the older email-code sign-in below keeps working as before.
 const { mountAccounts, enabled: accountsOn, startInactiveAccountJob, adminClient: accountsAdmin } = require("./accounts");
+const myStyle = require("./lib/myStyle");
+const styleLink = require("./lib/styleLink");
 mountAccounts(app);
+
+// ─── "My writing style" (saved on the Comquat account, shared across Comquat apps) ───
+// The learned DESCRIPTION of their voice is saved; the samples are used once and dropped.
+const styleLimiter = new Map();
+const styleAllowed = (id) => { const now = Date.now(); const h = (styleLimiter.get(id) || []).filter((t) => now - t < 3600e3); if (h.length >= 6) return false; h.push(now); styleLimiter.set(id, h); return true; };
+app.get("/api/my-style", async (req, res) => {
+  if (!req.user) return res.json({ signedIn: false, style: null });
+  res.json({ signedIn: true, style: await myStyle.load(req).catch(() => null), linkOn: styleLink.enabled() });
+});
+app.post("/api/my-style/learn", express.json({ limit: "64kb" }), async (req, res) => {
+  if (!req.user || !req.sb) return res.status(401).json({ error: "Please sign in to your Comquat account first." });
+  if (!styleAllowed(req.user.id)) return res.status(429).json({ error: "You've tried a few times this hour. Please try again later." });
+  try {
+    const profile = await myStyle.learn((req.body || {}).samples);
+    const learnedAt = new Date().toISOString();
+    const { error } = await req.sb.from("profiles").update({ style_profile: profile, style_learned_at: learnedAt, style_source: styleLink.SOURCE }).eq("id", req.user.id);
+    if (error) throw error;
+    styleLink.push(req.user.email, { profile, learnedAt, source: styleLink.SOURCE }).catch(() => {});
+    res.json({ ok: true, style: { profile, learnedAt, source: styleLink.SOURCE } });
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.status ? e.message : "We couldn't learn your style just now. Please try again." });
+  }
+});
+app.post("/api/my-style/import", async (req, res) => {
+  if (!req.user || !req.sb) return res.status(401).json({ error: "Please sign in to your Comquat account first." });
+  const got = await styleLink.pull(req.user.email).catch(() => null);
+  if (!got) return res.json({ ok: true, found: false });
+  const mine = await myStyle.load(req).catch(() => null);
+  if (mine && mine.learnedAt && new Date(mine.learnedAt) >= new Date(got.learnedAt)) return res.json({ ok: true, found: true, kept: true, style: mine });
+  await req.sb.from("profiles").update({ style_profile: got.profile, style_learned_at: got.learnedAt, style_source: got.source }).eq("id", req.user.id);
+  res.json({ ok: true, found: true, style: got });
+});
+app.delete("/api/my-style", async (req, res) => {
+  if (!req.user || !req.sb) return res.status(401).json({ error: "Please sign in first." });
+  await req.sb.from("profiles").update({ style_profile: null, style_learned_at: null, style_source: null }).eq("id", req.user.id);
+  res.json({ ok: true });
+});
+// Server to server, from the other Comquat apps (shared secret).
+app.post("/api/link/style", express.json({ limit: "16kb" }), async (req, res) => {
+  if (!styleLink.secretOk(req.get("x-comquat-link"))) return res.status(403).json({ error: "Not allowed." });
+  const admin = accountsAdmin();
+  if (!admin) return res.json({ found: false });
+  const b = req.body || {};
+  const email = String(b.email || "").trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.json({ found: false });
+  if (b.action === "style_push" && b.style && b.style.profile) {
+    const { data } = await admin.rpc("comquat_set_style_for_email", { e: email, prof: String(b.style.profile).slice(0, 2000), learned: b.style.learned_at || new Date().toISOString(), src: String(b.style.source || "comquat").slice(0, 60) });
+    return res.json({ stored: data === true });
+  }
+  const { data } = await admin.rpc("comquat_style_for_email", { e: email });
+  const row = Array.isArray(data) ? data[0] : data;
+  res.json(row && row.style_profile ? { found: true, style: { profile: row.style_profile, learned_at: row.style_learned_at, source: row.style_source } } : { found: false });
+});
+
 // The 12 month clean-up of unused accounts and the monthly check-in run here, and only here.
 startInactiveAccountJob();
 // The automatic bias test of the CV Builder's write-ups: after any change to
@@ -449,6 +505,12 @@ app.post(
       if (req.body.links) { try { st.links = JSON.parse(req.body.links); } catch (_) {} }
       // Optional writing style + a sample of the candidate's own writing to mirror.
       if (req.body.writingStyle) st.writingStyle = req.body.writingStyle;
+      // "My writing style": the voice saved on their Comquat account.
+      if (st.writingStyle === "mine") {
+        const mine = await myStyle.load(req).catch(() => null);
+        st.voiceProfile = mine ? mine.profile : null;
+        if (!mine) st.writingStyle = "professional";
+      }
       // A job card from Your job hunt this CV is for.
       if (typeof req.body.jobId === "string" && /^[0-9a-f-]{36}$/i.test(req.body.jobId)) st.jobId = req.body.jobId;
       if (typeof req.body.styleSample === "string") st.styleSample = req.body.styleSample.slice(0, 4000);
@@ -566,7 +628,7 @@ async function generateWork(st) {
   let cv = await cvGenerator.generate({
     cvText: st.cvText, advertText: st.advertText, gaps: st.gaps,
     answers: st.answers, linksConfirmed: st.linksConfirmed,
-    writingStyle: st.writingStyle, styleSample: st.styleSample
+    writingStyle: st.writingStyle, styleSample: st.styleSample, voiceProfile: st.voiceProfile
   });
   // Private skills match report, built before the honesty gate reshapes the CV.
   st.matchReport = matchReport.build(cv, st.gaps);
@@ -633,7 +695,7 @@ async function resolveWork(st, { resolutions, acceptLeaveOutArr }, req) {
   let cv = await cvGenerator.generate({
     cvText: st.cvText, advertText: st.advertText, gaps: st.gaps,
     answers: st.answers, linksConfirmed: st.linksConfirmed,
-    writingStyle: st.writingStyle, styleSample: st.styleSample
+    writingStyle: st.writingStyle, styleSample: st.styleSample, voiceProfile: st.voiceProfile
   });
   st.matchReport = matchReport.build(cv, st.gaps);
   const [fab, review] = await Promise.all([
@@ -1073,21 +1135,22 @@ app.post("/api/master/write", async (req, res) => {
   const b = req.body || {};
   try {
     const style = String(b.style || ""), styleSample = String(b.styleSample || "").slice(0, 3000);
+    const voiceProfile = style === "mine" ? ((await myStyle.load(req).catch(() => null)) || {}).profile || null : null;
     const journey = journeys.isJourney(b.journey) ? b.journey : "";
     const run = (texts, work) => new Promise((resolve, reject) => { masterShield(req, texts, () => work().then(resolve, reject)); });
     if (b.task === "statement") {
       // Private answers (such as the hours someone needs) never leave the account.
       const answers = { ...(b.answers || {}) };
       for (const k of journeys.privateKeys(journey)) delete answers[k];
-      const out = await run([b.current], () => masterWriter.statement({ answers, current: String(b.current || "").slice(0, 2500), targetRole: String(b.targetRole || "").slice(0, 120), style, styleSample, journey }));
+      const out = await run([b.current], () => masterWriter.statement({ answers, current: String(b.current || "").slice(0, 2500), targetRole: String(b.targetRole || "").slice(0, 120), style, styleSample, voiceProfile, journey }));
       return res.json({ ok: true, ...out });
     }
     if (b.task === "job") {
-      const out = await run([], () => masterWriter.job({ job: b.job || {}, style, styleSample }));
+      const out = await run([], () => masterWriter.job({ job: b.job || {}, style, styleSample, voiceProfile }));
       return res.json({ ok: true, ...out });
     }
     if (b.task === "proof") {
-      const out = await run([], () => masterWriter.proof({ strength: String(b.strength || ""), words: String(b.words || ""), style, styleSample }));
+      const out = await run([], () => masterWriter.proof({ strength: String(b.strength || ""), words: String(b.words || ""), style, styleSample, voiceProfile }));
       return res.json({ ok: true, ...out });
     }
     if (b.task === "video") {
@@ -1286,7 +1349,7 @@ app.post("/api/cover-letter", async (req, res) => {
     st.coverAnswers = answers;
     const cleanCv = sanitizeForOutput(st.cv);
     const letter = await coverLetter.generate({
-      cv: cleanCv, advertText: st.advertText, writingStyle: st.writingStyle, styleSample: st.styleSample, answers
+      cv: cleanCv, advertText: st.advertText, writingStyle: st.writingStyle, styleSample: st.styleSample, voiceProfile: st.voiceProfile, answers
     });
     st.coverLetter = letter;
     st.coverLetterVersion = st.cvVersion;

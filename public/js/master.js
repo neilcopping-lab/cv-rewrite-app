@@ -255,8 +255,20 @@
     { id: "concise", name: "Concise and punchy", desc: "Short, sharp sentences. No filler.", eg: "\"Fast learner. Calm on busy shifts. Never late.\"" },
     { id: "senior", name: "Confident and senior", desc: "Authoritative, for people with a few years behind them.", eg: "\"I lead teams through busy service and train new starters.\"" },
   ];
+  // "My writing style" from their Comquat account, when they've set one up.
+  var myStyleState = { checked: false, has: false };
+  fetch("/api/my-style", { credentials: "same-origin", cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
+    myStyleState = { checked: true, has: !!(j && j.style) };
+    if (myStyleState.has && !STYLES.some(function (s) { return s.id === "mine"; })) {
+      STYLES.unshift({ id: "mine", name: "My writing style", desc: "Learned from your own writing, so it sounds like you.", eg: "Set up in My account." });
+    }
+    if ($("styles")) renderStyles();
+  }).catch(function () {});
   function renderStyles() {
     var box = $("styles"); box.textContent = "";
+    if (myStyleState.checked && !myStyleState.has) {
+      box.appendChild(el("a", { class: "style", href: "/account/me.html#my-style" }, [el("strong", { text: "My writing style" }), el("span", { text: "Paste three pieces of your own writing and we'll learn how you write." }), el("em", { text: "Set it up in My account" })]));
+    }
     STYLES.forEach(function (s) {
       var b = el("button", { type: "button", class: "style", role: "radio", "aria-checked": String(cv.writingStyle === s.id) }, [el("strong", { text: s.name }), el("span", { text: s.desc }), el("em", { text: s.eg })]);
       b.addEventListener("click", function () { cv.writingStyle = s.id; renderStyles(); queueSave(); toast("Got it: " + s.name.toLowerCase() + "."); });

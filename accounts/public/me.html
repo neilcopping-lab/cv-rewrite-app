@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/account/account.css?v=20261123-tabs">
+<link rel="stylesheet" href="/account/account.css?v=20261124-style">
 <link rel="stylesheet" href="/account/fresh.css?v=20261121b">
 <style id="a11y-base">.skip{position:absolute;left:-9999px;top:8px;z-index:10000;background:#17191C;color:#fff;padding:12px 16px;border-radius:8px;font-weight:700;text-decoration:none}.skip:focus{left:8px}main p a:not(.btn):not([class*="btn"]),footer p a{text-decoration:underline}@media (prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}</style>
 </head>
@@ -157,6 +157,25 @@
     </form>
   </section>
 
+  <section class="card" id="my-style" data-tab="settings">
+    <h2>My writing style</h2>
+    <p>Paste three pieces of your own writing, like an email, a cover letter or a LinkedIn post. We learn how you write, so your CVs, cover letters and interview pitches sound like you. Pick <b>My writing style</b> in CV Rewrite or the CV Builder to use it.</p>
+    <p class="small">We keep a short description of your voice, never the writing you paste. If you use other Comquat apps with this email, it's shared with them so you only set it up once. <a href="/privacy.html#my-style">How this works</a></p>
+    <div id="ms-current" class="hidden">
+      <p><b>Your style</b> <span class="small" id="ms-when"></span></p>
+      <pre class="ms-profile" id="ms-profile"></pre>
+      <p class="row"><button class="btn btn-ghost" type="button" id="ms-redo">Learn it again</button> <button class="linkbtn" type="button" id="ms-del">Delete my writing style</button></p>
+    </div>
+    <form id="ms-form" novalidate>
+      <label for="ms-1">Piece 1</label><textarea id="ms-1" rows="5" placeholder="Paste something you wrote yourself (at least 40 words)"></textarea>
+      <label for="ms-2">Piece 2</label><textarea id="ms-2" rows="5"></textarea>
+      <label for="ms-3">Piece 3</label><textarea id="ms-3" rows="5"></textarea>
+      <p class="small" id="ms-count" aria-live="polite"></p>
+      <p class="row"><button class="btn btn-primary" type="submit" id="ms-learn">Learn my style</button> <button class="linkbtn hidden" type="button" id="ms-import">Use the style from my other Comquat app</button></p>
+    </form>
+    <p class="small" id="ms-msg" role="status" aria-live="polite"></p>
+  </section>
+
   <section class="card" id="settings" data-tab="settings">
     <h2>Your details</h2>
     <dl class="kv"><dt>Email</dt><dd id="email">…</dd><dt>Member since</dt><dd id="since">…</dd></dl>
@@ -233,5 +252,6 @@
 <script src="/easyread.js?v=20261121" defer></script>
 <script src="/account/tabs.js?v=20261123" defer></script>
 <script src="/account/twostep.js?v=20261123" defer></script>
+<script src="/account/my-style.js?v=20261124" defer></script>
 </body>
 </html>
