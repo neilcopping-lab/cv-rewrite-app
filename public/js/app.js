@@ -1030,3 +1030,27 @@ async function storySaveOffer() {
     }
   });
 })();
+
+// "My writing style": offer the voice saved on their Comquat account.
+(function () {
+  const ws = document.getElementById("writingStyle");
+  if (!ws) return;
+  fetch("/api/my-style", { credentials: "same-origin", cache: "no-store" })
+    .then((r) => r.json())
+    .then((j) => {
+      if (!j || !j.signedIn) return;
+      const opt = document.createElement("option");
+      if (j.style) {
+        opt.value = "mine";
+        opt.textContent = "My writing style - learned from your own writing";
+        ws.insertBefore(opt, ws.firstChild);
+        ws.value = "mine";
+      } else {
+        opt.value = "";
+        opt.disabled = true;
+        opt.textContent = "My writing style - set it up in My account first";
+        ws.appendChild(opt);
+      }
+    })
+    .catch(() => {});
+})();
