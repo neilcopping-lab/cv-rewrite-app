@@ -115,6 +115,12 @@ startInactiveAccountJob();
 // The automatic bias test of the CV Builder's write-ups: after any change to
 // the AI instructions, and quarterly. The report is emailed (lib/biasTest.js).
 if (require.main === module && accountsOn()) require("./lib/biasTest").start({ admin: accountsAdmin() });
+// Identify Your Options (Nov 2026): career options matched against Skills England
+// and O*NET data, Your Options Report, then a tailored CV through CV Rewrite.
+require("./lib/options/routes").mount(app, { accountsOn });
+app.get(["/options", "/options/"], (req, res) => res.redirect(302, "/options.html"));
+// Builds the career data in the background the first time, once the Skills England key is set.
+if (require.main === module) require("./lib/options/careerData").ensure();
 // The Loudspeaker goes out by itself on the last Friday of each month (see lib/loudspeaker.js).
 if (require.main === module) require("./lib/loudspeaker").start();
 
