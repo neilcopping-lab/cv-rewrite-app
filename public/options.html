@@ -184,6 +184,7 @@ body.fx.fx-options .btn.ghost:hover{border-color:#0F766E!important}
   <p style="margin:20px 0"><span class="price-flag">Free with your account</span> &nbsp;<span class="muted" style="font-family:var(--font-label);text-transform:uppercase;letter-spacing:.06em;font-size:14px">No labels. No tests. No catch.</span></p>
   <p><a class="btn accent" href="/options-app.html">Find my options</a> <a class="btn ghost" href="/account/me.html">Back to My account</a></p>
   <p class="fine">Take it at your own pace. It saves as you go, so you can stop and come back.</p>
+  <p class="ai-note" id="notReady" hidden><strong>Opening soon:</strong> we're loading the official UK job data now. You can start your answers today and they'll be saved, ready for when your options appear.</p>
 </div></section>
 
 <section><div class="wrap">
@@ -262,4 +263,5 @@ body.fx.fx-options .btn.ghost:hover{border-color:#0F766E!important}
 <script src="/account/nav.js?v=20261115" defer></script>
 <script src="/account/popup.js?v=20261118" defer></script>
 <script src="/account/mobile-nav.js?v=20261125" defer></script>
+<script>fetch("/api/options/cards",{credentials:"same-origin"}).then(function(r){return r.json()}).then(function(d){if(d&&d.data&&!d.data.ready){document.getElementById("notReady").hidden=false}}).catch(function(){});</script>
 </body></html>
