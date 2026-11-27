@@ -523,3 +523,34 @@ body.pitch .btn-spark,#video-card .btn-spark{background:linear-gradient(120deg,#
 #video-card .ai-warn{border-left-color:#B3192F;background:#FFF1F3}
 #video-card input:focus,#video-card textarea:focus{border-color:#B3192F;box-shadow:0 0 0 4px rgba(179,25,47,.18)}
 #video-card .v-part.live{box-shadow:0 0 0 5px rgba(179,25,47,.14)}
+
+/* ---- Pitch video: no green anywhere, everything red fading to black (27 Nov 2026, Neil's request).
+   Covers the pitch video page (body.pitch) and the video step inside the CV Builder (#video-card).
+   The CV Builder's own green ticks and health dots are left alone. ---- */
+body.fx.pitch,body.pitch,#video-card{--leaf:#B3192F;--mint:#B3192F}
+body.pitch .btn-primary,body.pitch .btn.accent,body.pitch .btn:not(.ghost):not(.btn-ghost):not(.btn-danger),#video-card .btn:not(.ghost):not(.btn-ghost):not(.btn-danger){background:linear-gradient(120deg,#D7263D,#17191C)!important;color:#fff!important;box-shadow:0 6px 16px rgba(215,38,61,.25)!important}
+body.pitch .btn-primary:hover,body.pitch .btn:not(.ghost):not(.btn-ghost):not(.btn-danger):hover,#video-card .btn:not(.ghost):not(.btn-ghost):not(.btn-danger):hover{background:linear-gradient(120deg,#B3192F,#17191C)!important}
+body.pitch .btn-ghost:hover,body.pitch .btn.ghost:hover,#video-card .btn-ghost:hover,#video-card .btn.ghost:hover{border-color:#B3192F!important;color:#B3192F!important}
+body.pitch .cq-brand{color:#17191C}
+body.pitch .pv-steps button[aria-current="step"],#video-card .pv-steps button[aria-current="step"]{border-color:#B3192F;background:#FCEBEE}
+body.pitch .pv-steps button[aria-current="step"] b,body.pitch .pv-steps button.done b,#video-card .pv-steps button[aria-current="step"] b,#video-card .pv-steps button.done b{background:#B3192F;color:#fff}
+body.pitch .pv-steps button.done b,#video-card .pv-steps button.done b{color:transparent}
+body.pitch .pv-steps button.done b:after,#video-card .pv-steps button.done b:after{color:#fff}
+body.pitch .pv-steps button.ready,#video-card .pv-steps button.ready{border-color:#D7263D}
+body.pitch .pv-h:focus-visible,#video-card .pv-h:focus-visible{outline-color:#D7263D}
+body.pitch .pv-sub span,#video-card .pv-sub span{background:#FCEBEE;border-color:#B3192F;color:#B3192F}
+body.pitch .v-stage-h span,#video-card .v-stage-h span{background:#B3192F;color:#fff}
+body.pitch .v-style[aria-checked="true"],body.pitch .v-theme[aria-checked="true"],#video-card .v-style[aria-checked="true"],#video-card .v-theme[aria-checked="true"]{border-color:#B3192F;box-shadow:0 0 0 3px rgba(179,25,47,.15)}
+body.pitch .v-seg button[aria-checked="true"],#video-card .v-seg button[aria-checked="true"]{background:#B3192F;color:#fff}
+body.pitch .v-suits,#video-card .v-suits{background:#FCEBEE}
+body.pitch .v-safe,#video-card .v-safe{border-left-color:#B3192F;background:#FFF1F3}
+body.pitch .v-in b,#video-card .v-in b{color:#17191C}
+body.pitch .v-bar i.v-90,#video-card .v-bar i.v-90{background:#B3192F}
+body.pitch .v-check input,body.pitch .v-pv-ctrl input[type=range],#video-card .v-check input,#video-card .v-pv-ctrl input[type=range]{accent-color:#B3192F}
+body.pitch .v-sw-pro i,body.pitch .v-sw-square i,#video-card .v-sw-pro i,#video-card .v-sw-square i{border-left-color:#D7263D}
+body.pitch .small.ok,body.pitch .stmt-check.ok,#video-card .small.ok,#video-card .stmt-check.ok{color:#B3192F}
+body.pitch .heard,#video-card .heard{border-left-color:#B3192F;background:#FFF1F3}
+body.pitch .chip,#video-card .chip{border-color:#B3192F;color:#B3192F}
+body.pitch .chip:hover,#video-card .chip:hover{background:#FFF1F3}
+body.pitch details.pv-more>summary,body.pitch details.v-tips>summary,#video-card details.eg summary,#video-card details.ideas summary{color:#17191C}
+body.pitch .add-btn,#video-card .add-btn{color:#B3192F}
