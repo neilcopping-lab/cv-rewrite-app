@@ -83,6 +83,17 @@
 
   // ── Shared bits: one calm line per step, "Why we ask this", and a record button ──
   const CALM = `<p class="yo-calm">Everything you tell us here is yours. You choose what goes in your report.</p>`;
+  const CONSENT_TEXT = "Keep my notes. If I mention my health, a disability or anything that helps me at work in these boxes, I'm happy for Comquat to keep it, so I can choose to add it to my report. It's never sent to the AI or used to suggest jobs, and I can untick this at any time to delete it.";
+  const consentOn = () => !!(P.consent && P.consent.given);
+  const consentBox = () => `<label class="yo-consent"><input type="checkbox" data-consent ${consentOn() ? "checked" : ""}> <span>${esc(CONSENT_TEXT)}</span></label>${consentOn() ? "" : '<p class="yo-consent-note">Tick the box above to use these notes. They\'re optional.</p>'}`;
+  function bindConsent() {
+    document.querySelectorAll("[data-consent]").forEach((c) => c.addEventListener("change", async () => {
+      if (c.checked) P.consent = { given: true, at: new Date().toISOString(), version: "2026-11-27" };
+      else { P.consent = { given: false }; P.howIWorkBest = ""; P.helps = {}; P.include = false; }
+      await save(true); render();
+      if (!c.checked) savedNote("Your notes have been deleted.");
+    }));
+  }
   const why = (t) => `<details class="yo-why"><summary>Why we ask this</summary><p>${t}</p></details>`;
   const canTalk = () => C.aiLevel !== "off" && !!(navigator.mediaDevices && window.MediaRecorder);
   const micBtn = (forId) => canTalk() ? `<span class="yo-mic-wrap"><button type="button" class="yo-mic" data-mic="${forId}"><span aria-hidden="true">&#127897;</span> Record your answer</button><span class="yo-mic-st" role="status"></span></span>` : "";
@@ -132,7 +143,8 @@
       ${C.workStyle.map((w) => `<div class="yo-q"><fieldset><legend>${esc(w.q)}${heardIds.has(w.id) ? ' <span class="yo-from">from your story</span>' : ""}</legend><div class="yo-pics">${w.a.map((ans, i) => `<label class="yo-pic ${A.workStyle[w.id] === ans ? "on" : ""}"><input type="radio" name="ws_${w.id}" value="${esc(ans)}" ${A.workStyle[w.id] === ans ? "checked" : ""}><span class="em" aria-hidden="true">${w.pic ? w.pic[i] : ""}</span><span>${esc(w.show ? w.show[i] : ans)}</span></label>`).join("")}</div></fieldset>
         <details class="yo-more" ${A.workNotes[w.id] ? "open" : ""}><summary>Tell us why (optional)</summary><textarea id="wn_${w.id}" data-wn="${w.id}" rows="2">${esc(A.workNotes[w.id] || "")}</textarea>${micBtn("wn_" + w.id)}</details></div>`).join("")}
       <div class="yo-q"><label class="qt" for="hiwb">Anything that helps you have a good day at work? (optional)</label>
-        <textarea id="hiwb" placeholder="For example: a quiet space, written instructions, regular breaks, hours that fit around family.">${esc(P.howIWorkBest)}</textarea>${micBtn("hiwb")}</div>
+        ${consentBox()}
+        <textarea id="hiwb" ${consentOn() ? "" : "disabled"} placeholder="For example: a quiet space, written instructions, regular breaks, hours that fit around family.">${esc(P.howIWorkBest)}</textarea>${consentOn() ? micBtn("hiwb") : ""}</div>
       ${nav(true, true)}</section>`;
   }
   function heardChips() {
@@ -160,7 +172,7 @@
     C.workStyle.forEach((w) => document.querySelectorAll(`input[name="ws_${w.id}"]`).forEach((r) => r.addEventListener("change", () => { A.workStyle[w.id] = r.value; save(); render(); })));
     document.querySelectorAll("[data-wn]").forEach((t) => t.addEventListener("input", () => { if (t.value.trim()) A.workNotes[t.dataset.wn] = t.value; else delete A.workNotes[t.dataset.wn]; save(); }));
     $("#hiwb").addEventListener("input", (e) => { P.howIWorkBest = e.target.value; save(); });
-    bindMics();
+    bindConsent(); bindMics();
   }
 
   // ── Step 3: What would your mates say? ───────────────────────────────────
@@ -170,13 +182,14 @@
       ${CALM}
       <p class="lead">Tick the ones they'd say about you, as many as are true. Then tell us about a time it happened. From work or from life, it all counts.</p>
       ${why("The strengths you pick, and the moments you share, are matched against what real jobs need. They also give you true examples to use on your CV and in interviews.")}
+      <details class="yo-more"><summary>About the "What helps you" boxes</summary>${consentBox()}</details>
       ${C.traitGroups.map((g) => `<div class="yo-group"><h3>${esc(g)}</h3>${C.traits.filter((t) => t.group === g).map((t) => {
         const p = picked.get(t.id);
         return `<div class="yo-trait ${p ? "on" : ""}" data-t="${t.id}"><label class="head"><input type="checkbox" ${p ? "checked" : ""}> &ldquo;${esc(t.said || t.card)}&rdquo;</label>
           <p class="kinds">Often suits: ${esc(t.kinds)}</p>
           <div class="more"><label class="qt" for="ex_${t.id}">Tell us about a time that happened</label>
             <textarea id="ex_${t.id}" data-ex="${t.id}" placeholder="What happened, and what came of it?">${esc(p ? p.example : "")}</textarea>${micBtn("ex_" + t.id)}
-            ${t.helps ? `<label class="qt" for="hp_${t.id}" style="display:block;margin-top:10px">What helps you have a day like that? (optional)</label><input type="text" id="hp_${t.id}" data-hp="${t.id}" placeholder="${esc(t.helps)}" value="${esc(P.helps[t.id] || "")}">` : ""}</div></div>`;
+            ${t.helps ? `<label class="qt" for="hp_${t.id}" style="display:block;margin-top:10px">What helps you have a day like that? (optional)</label><input type="text" id="hp_${t.id}" data-hp="${t.id}" ${consentOn() ? "" : 'disabled title="Tick Keep my notes at the top of this step to use this box"'} placeholder="${esc(t.helps)}" value="${esc(P.helps[t.id] || "")}">` : ""}</div></div>`;
       }).join("")}</div>`).join("")}
       <p class="yo-msg" id="exWarn" hidden>Some of the strengths you ticked don't have a story yet. They'll only count once they do.</p>
       ${nav(true, true)}</section>`;
@@ -192,7 +205,7 @@
     });
     document.querySelectorAll("[data-ex]").forEach((ta) => ta.addEventListener("input", () => { const t = A.traits.find((x) => x.id === ta.dataset.ex); if (t) { t.example = ta.value; save(); } }));
     document.querySelectorAll("[data-hp]").forEach((inp) => inp.addEventListener("input", () => { if (inp.value.trim()) P.helps[inp.dataset.hp] = inp.value; else delete P.helps[inp.dataset.hp]; save(); }));
-    bindMics();
+    bindConsent(); bindMics();
   }
 
   // ── Step 4: What matters to you ──────────────────────────────────────────
@@ -282,7 +295,7 @@
       ${r.plan.length ? `<h3>Your plan</h3><ol>${r.plan.map((p) => `<li>${esc(p)}</li>`).join("")}</ol>` : ""}
       ${rep.aiLevel !== "full" ? `<p class="yo-msg ok">Want help answering interview questions about these gaps, and a step-by-step plan? That's a Full help extra. <a href="/account/me.html#ai">Switch on Full help</a></p>` : ""}
       ${r.coachingError ? `<p class="yo-msg">${esc(r.coachingError)}</p>` : ""}
-      <div class="yo-q"><label class="yo-opt"><input type="checkbox" id="incl" ${P.include ? "checked" : ""}> Include my "good day at work" notes in this report</label>
+      <div class="yo-q" ${consentOn() ? "" : "hidden"}><label class="yo-opt"><input type="checkbox" id="incl" ${P.include ? "checked" : ""}> Include my "good day at work" notes in this report</label>
         ${r.howYouWorkBest ? `<h3>How you work best</h3>${r.howYouWorkBest.notes ? `<p>${esc(r.howYouWorkBest.notes)}</p>` : ""}${r.howYouWorkBest.helps.length ? `<ul>${r.howYouWorkBest.helps.map((h) => `<li>${esc(h.strength)}: ${esc(h.helps)}</li>`).join("")}</ul>` : ""}` : ""}</div>
       <h3>Your next step</h3><p>${esc(r.nextStep)}</p>
       ${r.aiNotice ? `<p class="yo-ai"><b>${esc(r.aiNotice)}</b></p>` : ""}
@@ -329,7 +342,7 @@
       C = await api("/api/options/cards");
       if (!C.signedIn) { location.href = "/account/?next=" + encodeURIComponent("/options-app.html"); return; }
       const p = await api("/api/options/profile");
-      A = p.answers; P = p.private; chosen = p.chosen || []; A.workNotes = A.workNotes || {}; A.heard = A.heard || [];
+      A = p.answers; P = p.private; chosen = p.chosen || []; A.workNotes = A.workNotes || {}; A.heard = A.heard || []; P.consent = P.consent || { given: false };
       A.pick = chosen[0] ? chosen[0].code : undefined;
       step = A.step || 1;
       const a = C.data.attribution || {};

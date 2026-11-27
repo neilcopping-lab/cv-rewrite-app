@@ -220,6 +220,11 @@ body.fx.fx-options .yo-main textarea:focus,body.fx.fx-options .yo-main input:foc
 .yo-pic.on{border-color:#17191C;box-shadow:0 0 0 4px #E6FF1A}
 .yo-pic:focus-within{outline:3px solid #17191C;outline-offset:2px}
 .yo-more{margin-top:10px;font-size:14.5px}.yo-more summary{cursor:pointer;font-weight:700;color:#17191C}
+.yo-consent{display:flex;gap:10px;align-items:flex-start;margin:8px 0 6px;font-size:14.5px;line-height:1.45;background:#FAFFD1;border-radius:10px;padding:10px 12px;cursor:pointer}
+.yo-consent input{width:20px;height:20px;flex:none;margin-top:2px;accent-color:#17191C}
+html body.fx .yo-main .yo-consent span{font-weight:400!important}
+.yo-consent-note{font-size:13.5px;color:#5B5F66;margin:0 0 6px}
+.yo-main textarea:disabled,.yo-main input:disabled{background:#F3F1EC;cursor:not-allowed}
 @media print{header.site,.yo-band,.yo-steps,.yo-nav,footer,.skip{display:none!important}.yo-main{max-width:none}}
 </style>
 <style id="a11y-base">.skip{position:absolute;left:-9999px;top:8px;z-index:10000;background:#17191C;color:#fff;padding:12px 16px;border-radius:8px;font-weight:700;text-decoration:none}.skip:focus{left:8px}@media (prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}</style>
@@ -253,7 +258,7 @@ body.fx.fx-options .yo-main textarea:focus,body.fx.fx-options .yo-main input:foc
   <p class="yo-attr" id="attr"></p>
 </main>
 
-<script src="/js/options.js?v=20261127c" defer></script>
+<script src="/js/options.js?v=20261127d" defer></script>
 <footer class="footer" style="padding:44px 0"><div class="wrap">
   <div class="footcols">
     <div><a class="cq-foot" href="/account/me.html" aria-label="Comquat"><img src="/img/comquat-logo-reversed.svg" alt="Comquat" width="150" height="34"></a>

@@ -135,3 +135,13 @@ test("the story and 'tell us why' notes count in matching; private notes never d
 test("strengths read as what others would say, with no em-dashes", () => {
   for (const t of TRAITS) { assert.ok(/^(You|People|Routine)\b/.test(t.said), t.said); assert.ok(!/\b(I|my|me|myself)\b/.test(t.said), t.said); }
 });
+
+test("private notes are only kept with explicit consent, and unticking deletes them", () => {
+  const { cleanPrivate } = require("../lib/options/routes");
+  const none = cleanPrivate({ howIWorkBest: "I have ME", helps: { detail: "Quiet room" }, include: true });
+  assert.strictEqual(none.howIWorkBest, ""); assert.deepStrictEqual(none.helps, {}); assert.strictEqual(none.include, false); assert.strictEqual(none.consent.given, false);
+  const yes = cleanPrivate({ howIWorkBest: "Quiet room", helps: { detail: "Written instructions" }, include: true, consent: { given: true, at: "2026-11-27T09:00:00Z", version: "2026-11-27" } });
+  assert.strictEqual(yes.howIWorkBest, "Quiet room"); assert.strictEqual(yes.consent.version, "2026-11-27");
+  const withdrawn = cleanPrivate({ ...yes, consent: { given: false } });
+  assert.strictEqual(withdrawn.howIWorkBest, "");
+});
