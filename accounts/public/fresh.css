@@ -180,3 +180,7 @@ body.fx.fx-landing:not(.fx-builder) section.hero h1{color:#17191C!important}
 body.fx.fx-landing:not(.fx-builder) section.hero .eyebrow{color:#17191C!important;background:rgba(23,25,28,.12)}
 body.fx.fx-landing:not(.fx-builder) section.hero .lead,body.fx.fx-landing:not(.fx-builder) section.hero .fine,body.fx.fx-landing:not(.fx-builder) section.hero .muted{color:#17191C!important}
 body.fx.fx-landing:not(.fx-builder) section.hero .btn.ghost{background:rgba(255,255,255,.3)!important;color:#17191C!important;border-color:rgba(23,25,28,.35)!important}
+
+/* Nov 2026: the menu now carries "Comquat for Job Seekers" and "Comquat for Recruiters",
+   so it's a touch tighter on laptops to keep My account on the same line. */
+@media (min-width:1024px){html body .nav .links,html body header.cq-head nav{gap:8px 11px!important;font-size:13px!important;letter-spacing:.01em!important}}

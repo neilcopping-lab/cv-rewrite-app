@@ -45,9 +45,10 @@
     '<button type="button" class="cqpop-x" data-close aria-label="Close">&times;</button>' +
     '<img class="cqpop-logo" src="/account/img/comquat-logo.svg" alt="Comquat" width="150" height="34">' +
     '<span class="cqpop-kick">Free account</span>' +
-    '<h2 id="cqpop-title">One sign-in. Three job seeker tools.</h2>' +
+    '<h2 id="cqpop-title">One sign-in. Four job seeker tools.</h2>' +
     '<p class="cqpop-lede" id="cqpop-lede">Sign up free and everything you make stays in one place, ready when the next job comes up.</p>' +
     "<ul>" +
+    "<li><strong>Identify Your Options</strong>Not sure what's next? Real careers that may fit you, and a CV for the ones you like.</li>" +
     "<li><strong>CV Rewrite</strong>Your CV rewritten for the job you're going for, without inventing a thing.</li>" +
     "<li><strong>Interview Prep</strong>A report on the company, your opening pitch and the questions to get ready for.</li>" +
     "<li><strong>CV Builder</strong>Build one full CV from scratch, then tailor it for every job with CV Rewrite. Yours in My account once you sign up.</li>" +
