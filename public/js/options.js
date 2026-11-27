@@ -81,35 +81,104 @@
     });
   }
 
-  // ── Step 2: How you work best ────────────────────────────────────────────
-  function s2() {
-    return `<section class="yo-panel"><h2>How you work best</h2>
-      <p class="lead">No right or wrong answers. Just pick what sounds most like you.</p>
-      ${C.workStyle.map((w) => `<div class="yo-q"><fieldset><legend>${esc(w.q)}</legend>${w.a.map((a) => `<label class="yo-opt"><input type="radio" name="ws_${w.id}" value="${esc(a)}" ${A.workStyle[w.id] === a ? "checked" : ""}> ${esc(a)}</label>`).join("")}</fieldset></div>`).join("")}
-      <div class="yo-q"><label class="qt" for="hiwb">Anything else that helps you do your best work? (optional)</label>
-        <textarea id="hiwb" placeholder="For example: a quiet space, written instructions, regular breaks, hours that fit around caring.">${esc(P.howIWorkBest)}</textarea>
-        <p class="yo-private">Private. This is never sent to the AI and isn't used for matching. It only goes in your report if you choose.</p></div>
-      ${nav(true, true)}</section>`;
-  }
-  function bind2() {
-    C.workStyle.forEach((w) => document.querySelectorAll(`input[name="ws_${w.id}"]`).forEach((r) => r.addEventListener("change", () => { A.workStyle[w.id] = r.value; save(); })));
-    $("#hiwb").addEventListener("input", (e) => { P.howIWorkBest = e.target.value; save(); });
+  // ── Shared bits: one calm line per step, "Why we ask this", and a record button ──
+  const CALM = `<p class="yo-calm">Everything you tell us here is yours. You choose what goes in your report.</p>`;
+  const why = (t) => `<details class="yo-why"><summary>Why we ask this</summary><p>${t}</p></details>`;
+  const canTalk = () => C.aiLevel !== "off" && !!(navigator.mediaDevices && window.MediaRecorder);
+  const micBtn = (forId) => canTalk() ? `<span class="yo-mic-wrap"><button type="button" class="yo-mic" data-mic="${forId}"><span aria-hidden="true">&#127897;</span> Record your answer</button><span class="yo-mic-st" role="status"></span></span>` : "";
+  function bindMics() {
+    document.querySelectorAll("[data-mic]").forEach((btn) => {
+      const ta = document.getElementById(btn.dataset.mic), st = btn.nextElementSibling;
+      let rec = null, stream = null, chunks = [];
+      btn.addEventListener("click", async () => {
+        if (rec && rec.state === "recording") { rec.stop(); return; }
+        try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+        catch (_) { st.textContent = "We couldn't use your microphone. You can type instead."; return; }
+        chunks = [];
+        const type = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg"].find((t) => MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t));
+        rec = type ? new MediaRecorder(stream, { mimeType: type }) : new MediaRecorder(stream);
+        rec.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+        rec.onstop = async () => {
+          stream.getTracks().forEach((t) => t.stop());
+          btn.classList.remove("rec"); btn.innerHTML = '<span aria-hidden="true">&#127897;</span> Record your answer'; btn.disabled = true;
+          st.textContent = "Turning that into words...";
+          const mime = (rec.mimeType || "audio/webm").split(";")[0];
+          const ext = mime.includes("mp4") ? "mp4" : mime.includes("ogg") ? "ogg" : "webm";
+          const fd = new FormData(); fd.append("audio", new Blob(chunks, { type: mime }), "answer." + ext);
+          try {
+            const d = await api("/api/transcribe", { method: "POST", body: fd });
+            const cur = ta.value.trim(); ta.value = (cur ? cur + " " : "") + String(d.text || "").trim();
+            ta.dispatchEvent(new Event("input", { bubbles: true }));
+            st.textContent = "Got it. Have a read and change anything we misheard. The recording itself has been deleted.";
+          } catch (e) { st.textContent = e.message + " You can type instead."; }
+          btn.disabled = false;
+        };
+        rec.start(); btn.classList.add("rec"); btn.innerHTML = '<span aria-hidden="true">&#9632;</span> Stop recording'; st.textContent = "Listening. Press stop when you're done.";
+      });
+    });
   }
 
-  // ── Step 3: What makes you good at stuff ─────────────────────────────────
+  // ── Step 2: How you work best (a story first, then quick choices) ────────
+  function s2() {
+    const heardIds = new Set((A.heard || []).map((h) => h.id));
+    return `<section class="yo-panel"><h2>How you work best</h2>
+      ${CALM}
+      <div class="yo-q yo-story"><label class="qt" for="story">Tell us about a time things went really well, at work or anywhere else. Where were you, who was around, and what were you doing?</label>
+        <textarea id="story" rows="5" placeholder="For example: a busy Saturday at the garden centre, helping customers and getting the deliveries sorted.">${esc(A.story)}</textarea>
+        <div class="yo-row">${micBtn("story")}<button type="button" class="yo-btn ghost small" id="hear">See what we heard</button></div>
+        <div id="heardBox">${heardChips()}</div></div>
+      ${why("So we can suggest jobs where you'd feel at home. Your answers only shape the options we show you. It isn't a test, nobody scores you, and we never decide anything about you from it.")}
+      <h3 class="yo-sub">Prefer to just tap? Pick the one that sounds more like you.</h3>
+      ${C.workStyle.map((w) => `<div class="yo-q"><fieldset><legend>${esc(w.q)}${heardIds.has(w.id) ? ' <span class="yo-from">from your story</span>' : ""}</legend><div class="yo-pics">${w.a.map((ans, i) => `<label class="yo-pic ${A.workStyle[w.id] === ans ? "on" : ""}"><input type="radio" name="ws_${w.id}" value="${esc(ans)}" ${A.workStyle[w.id] === ans ? "checked" : ""}><span class="em" aria-hidden="true">${w.pic ? w.pic[i] : ""}</span><span>${esc(w.show ? w.show[i] : ans)}</span></label>`).join("")}</div></fieldset>
+        <details class="yo-more" ${A.workNotes[w.id] ? "open" : ""}><summary>Tell us why (optional)</summary><textarea id="wn_${w.id}" data-wn="${w.id}" rows="2">${esc(A.workNotes[w.id] || "")}</textarea>${micBtn("wn_" + w.id)}</details></div>`).join("")}
+      <div class="yo-q"><label class="qt" for="hiwb">Anything that helps you have a good day at work? (optional)</label>
+        <textarea id="hiwb" placeholder="For example: a quiet space, written instructions, regular breaks, hours that fit around family.">${esc(P.howIWorkBest)}</textarea>${micBtn("hiwb")}</div>
+      ${nav(true, true)}</section>`;
+  }
+  function heardChips() {
+    const h = A.heard || [];
+    if (!h.length) return "";
+    return `<p class="yo-heard-t">Here's what we heard. Tap any that aren't right to take them off.</p><div class="yo-chips">${h.map((x) => `<button type="button" class="yo-chip ${x.off ? "off" : ""}" data-chip="${x.id}" aria-pressed="${!x.off}">${x.off ? "" : "&#10003; "}${esc(x.label)}</button>`).join("")}</div>`;
+  }
+  function bind2() {
+    $("#story").addEventListener("input", (e) => { A.story = e.target.value; save(); });
+    $("#hear").addEventListener("click", async () => {
+      try {
+        const d = await post("/api/options/heard", { story: A.story });
+        A.heard = d.heard;
+        d.heard.forEach((h) => { A.workStyle[h.id] = h.answer; });
+        save(); render();
+        if (!d.heard.length) savedNote("We couldn't pick anything out yet. Try adding a bit more, or just tap your answers below.");
+      } catch (e) { savedNote(e.message); }
+    });
+    document.querySelectorAll("[data-chip]").forEach((b) => b.addEventListener("click", () => {
+      const h = A.heard.find((x) => x.id === b.dataset.chip); if (!h) return;
+      h.off = !h.off;
+      if (h.off && A.workStyle[h.id] === h.answer) delete A.workStyle[h.id]; else if (!h.off) A.workStyle[h.id] = h.answer;
+      save(); render();
+    }));
+    C.workStyle.forEach((w) => document.querySelectorAll(`input[name="ws_${w.id}"]`).forEach((r) => r.addEventListener("change", () => { A.workStyle[w.id] = r.value; save(); render(); })));
+    document.querySelectorAll("[data-wn]").forEach((t) => t.addEventListener("input", () => { if (t.value.trim()) A.workNotes[t.dataset.wn] = t.value; else delete A.workNotes[t.dataset.wn]; save(); }));
+    $("#hiwb").addEventListener("input", (e) => { P.howIWorkBest = e.target.value; save(); });
+    bindMics();
+  }
+
+  // ── Step 3: What would your mates say? ───────────────────────────────────
   function s3() {
     const picked = new Map(A.traits.map((t) => [t.id, t]));
-    return `<section class="yo-panel"><h2>What makes you good at stuff</h2>
-      <p class="lead">Tick the ones that sound like you, as many as are true. For each one, tell us about one real time you did it. From work or from life, it all counts. No labels, no tests.</p>
+    return `<section class="yo-panel"><h2>What would the people who know you best say you're brilliant at?</h2>
+      ${CALM}
+      <p class="lead">Tick the ones they'd say about you, as many as are true. Then tell us about a time it happened. From work or from life, it all counts.</p>
+      ${why("The strengths you pick, and the moments you share, are matched against what real jobs need. They also give you true examples to use on your CV and in interviews.")}
       ${C.traitGroups.map((g) => `<div class="yo-group"><h3>${esc(g)}</h3>${C.traits.filter((t) => t.group === g).map((t) => {
         const p = picked.get(t.id);
-        return `<div class="yo-trait ${p ? "on" : ""}" data-t="${t.id}"><label class="head"><input type="checkbox" ${p ? "checked" : ""}> ${esc(t.card)}</label>
+        return `<div class="yo-trait ${p ? "on" : ""}" data-t="${t.id}"><label class="head"><input type="checkbox" ${p ? "checked" : ""}> &ldquo;${esc(t.said || t.card)}&rdquo;</label>
           <p class="kinds">Often suits: ${esc(t.kinds)}</p>
-          <div class="more"><label class="qt" for="ex_${t.id}">One real time you did this</label>
-            <textarea id="ex_${t.id}" data-ex="${t.id}" placeholder="What happened, and what came of it?">${esc(p ? p.example : "")}</textarea>
-            ${t.helps ? `<label class="qt" for="hp_${t.id}" style="display:block;margin-top:8px">What helps me (optional, private)</label><input type="text" id="hp_${t.id}" data-hp="${t.id}" placeholder="${esc(t.helps)}" value="${esc(P.helps[t.id] || "")}"><p class="yo-private">Private. Never sent to the AI.</p>` : ""}</div></div>`;
+          <div class="more"><label class="qt" for="ex_${t.id}">Tell us about a time that happened</label>
+            <textarea id="ex_${t.id}" data-ex="${t.id}" placeholder="What happened, and what came of it?">${esc(p ? p.example : "")}</textarea>${micBtn("ex_" + t.id)}
+            ${t.helps ? `<label class="qt" for="hp_${t.id}" style="display:block;margin-top:10px">What helps you have a day like that? (optional)</label><input type="text" id="hp_${t.id}" data-hp="${t.id}" placeholder="${esc(t.helps)}" value="${esc(P.helps[t.id] || "")}">` : ""}</div></div>`;
       }).join("")}</div>`).join("")}
-      <p class="yo-msg" id="exWarn" hidden>Some of the strengths you ticked don't have an example yet. They'll only count once they do.</p>
+      <p class="yo-msg" id="exWarn" hidden>Some of the strengths you ticked don't have a story yet. They'll only count once they do.</p>
       ${nav(true, true)}</section>`;
   }
   function bind3() {
@@ -123,19 +192,22 @@
     });
     document.querySelectorAll("[data-ex]").forEach((ta) => ta.addEventListener("input", () => { const t = A.traits.find((x) => x.id === ta.dataset.ex); if (t) { t.example = ta.value; save(); } }));
     document.querySelectorAll("[data-hp]").forEach((inp) => inp.addEventListener("input", () => { if (inp.value.trim()) P.helps[inp.dataset.hp] = inp.value; else delete P.helps[inp.dataset.hp]; save(); }));
+    bindMics();
   }
 
   // ── Step 4: What matters to you ──────────────────────────────────────────
   function s4() {
     const musts = C.values.filter((v) => A.values[v.id] === "must");
     return `<section class="yo-panel"><h2>What matters to you</h2>
+      ${CALM}
       <p class="lead">Put each card in a pile: Must have, Nice to have or Not bothered. Then pick your top five Must haves.</p>
+      ${why("So the jobs you'd actually enjoy come to the top of your list, not just the ones you could do.")}
       <div class="yo-q">${C.values.map((v) => `<div class="yo-val"><div><b>${esc(v.label)}</b><span>${esc(v.plain)}</span></div>
         <div class="yo-piles" role="group" aria-label="${esc(v.label)}">${[["must", "Must have"], ["nice", "Nice to have"], ["no", "Not bothered"]].map(([p, l]) => `<button type="button" data-v="${v.id}" data-p="${p}" aria-pressed="${A.values[v.id] === p}">${l}</button>`).join("")}</div></div>`).join("")}</div>
       <div class="yo-q"><p class="qt">Your top five Must haves, in order</p>
         ${musts.length ? `<p style="margin:4px 0 0;font-size:14.5px;color:#5B5F66">Tap them in order, most important first. Tap again to take one off.</p><div class="yo-top">${musts.map((v) => { const i = A.topValues.indexOf(v.id); return `<button type="button" data-top="${v.id}" class="${i >= 0 ? "picked" : ""}">${i >= 0 ? i + 1 + ". " : ""}${esc(v.label)}</button>`; }).join("")}</div>` : `<p style="margin:4px 0 0;color:#5B5F66">Put some cards in Must have first.</p>`}</div>
       <div class="yo-q"><label class="qt" for="goodDay">Describe a good day. What would you be doing, and who with?</label>
-        <textarea id="goodDay">${esc(A.goodDay)}</textarea></div>
+        <textarea id="goodDay">${esc(A.goodDay)}</textarea>${micBtn("goodDay")}</div>
       ${nav(true, true)}</section>`;
   }
   function bind4() {
@@ -151,17 +223,20 @@
       save(); render();
     }));
     $("#goodDay").addEventListener("input", (e) => { A.goodDay = e.target.value; save(); });
+    bindMics();
   }
 
   // ── Step 5: Your life, not just your jobs ────────────────────────────────
   function s5() {
-    const q = [["interests", "Your hobbies and interests", "What do you do when you get the chance? Be specific."], ["favourite", "Your favourite things to do", "The things that make time fly."], ["doing", "What you've been doing lately", "Caring, volunteering, running a home, learning something, getting through a tough time. It all counts as experience. You don't need to tell us about health unless you want to."], ["learn", "How you like to learn", "Courses, YouTube, trial and error, someone showing you?"]];
+    const q = [["interests", "Your hobbies and interests", "What do you do when you get the chance? Be specific."], ["favourite", "Your favourite things to do", "The things that make time fly."], ["doing", "What you've been up to lately", "Caring, volunteering, running a home, learning something new. It all counts as experience. Share as much or as little as you like."], ["learn", "How you like to learn", "Courses, YouTube, trial and error, someone showing you?"]];
     return `<section class="yo-panel"><h2>Your life, not just your jobs</h2>
+      ${CALM}
       <p class="lead">Employers hire people, not job histories. Tell us about the rest of your life too.</p>
-      ${q.map(([k, l, h]) => `<div class="yo-q"><label class="qt" for="life_${k}">${l}</label><p style="margin:2px 0 0;font-size:14.5px;color:#5B5F66">${h}</p><textarea id="life_${k}" data-life="${k}">${esc(A.life[k])}</textarea></div>`).join("")}
+      ${why("Lots of real skills come from outside work. This helps us spot them and count them.")}
+      ${q.map(([k, l, h]) => `<div class="yo-q"><label class="qt" for="life_${k}">${l}</label><p style="margin:2px 0 0;font-size:14.5px;color:#5B5F66">${h}</p><textarea id="life_${k}" data-life="${k}">${esc(A.life[k])}</textarea>${micBtn("life_" + k)}</div>`).join("")}
       ${nav(true, true, "Show me my options")}</section>`;
   }
-  function bind5() { document.querySelectorAll("[data-life]").forEach((t) => t.addEventListener("input", () => { A.life[t.dataset.life] = t.value; save(); })); }
+  function bind5() { document.querySelectorAll("[data-life]").forEach((t) => t.addEventListener("input", () => { A.life[t.dataset.life] = t.value; save(); })); bindMics(); }
 
   // ── Step 6: Your options ─────────────────────────────────────────────────
   function s6() {
@@ -207,7 +282,7 @@
       ${r.plan.length ? `<h3>Your plan</h3><ol>${r.plan.map((p) => `<li>${esc(p)}</li>`).join("")}</ol>` : ""}
       ${rep.aiLevel !== "full" ? `<p class="yo-msg ok">Want help answering interview questions about these gaps, and a step-by-step plan? That's a Full help extra. <a href="/account/me.html#ai">Switch on Full help</a></p>` : ""}
       ${r.coachingError ? `<p class="yo-msg">${esc(r.coachingError)}</p>` : ""}
-      <div class="yo-q"><label class="yo-opt"><input type="checkbox" id="incl" ${P.include ? "checked" : ""}> Include my private "How you work best" notes in this report</label>
+      <div class="yo-q"><label class="yo-opt"><input type="checkbox" id="incl" ${P.include ? "checked" : ""}> Include my "good day at work" notes in this report</label>
         ${r.howYouWorkBest ? `<h3>How you work best</h3>${r.howYouWorkBest.notes ? `<p>${esc(r.howYouWorkBest.notes)}</p>` : ""}${r.howYouWorkBest.helps.length ? `<ul>${r.howYouWorkBest.helps.map((h) => `<li>${esc(h.strength)}: ${esc(h.helps)}</li>`).join("")}</ul>` : ""}` : ""}</div>
       <h3>Your next step</h3><p>${esc(r.nextStep)}</p>
       ${r.aiNotice ? `<p class="yo-ai"><b>${esc(r.aiNotice)}</b></p>` : ""}
@@ -254,7 +329,7 @@
       C = await api("/api/options/cards");
       if (!C.signedIn) { location.href = "/account/?next=" + encodeURIComponent("/options-app.html"); return; }
       const p = await api("/api/options/profile");
-      A = p.answers; P = p.private; chosen = p.chosen || [];
+      A = p.answers; P = p.private; chosen = p.chosen || []; A.workNotes = A.workNotes || {}; A.heard = A.heard || [];
       A.pick = chosen[0] ? chosen[0].code : undefined;
       step = A.step || 1;
       const a = C.data.attribution || {};

@@ -113,3 +113,25 @@ test("O*NET links are only kept when the job titles are close", () => {
   assert.ok(occ[0].onet && occ[0].onet.code === "35-1011.00");
   assert.strictEqual(occ[1].onet, null);
 });
+
+test("what we heard: picks likely answers out of a story, one per question, no AI", () => {
+  const { heard } = require("../lib/options/cards");
+  const h = heard("A busy Saturday at the garden centre, helping customers outside. My manager showed me how.");
+  const byId = Object.fromEntries(h.map((x) => [x.id, x.answer]));
+  assert.strictEqual(byId.noise, "Somewhere with a buzz");
+  assert.strictEqual(byId.where, "Outdoors");
+  assert.strictEqual(new Set(h.map((x) => x.id)).size, h.length);
+  assert.deepStrictEqual(heard(""), []);
+});
+
+test("the story and 'tell us why' notes count in matching; private notes never do", () => {
+  const { cleanAnswers, personText } = require("../lib/options/routes");
+  const a = cleanAnswers({ story: "Fixing bikes in the shed", workNotes: { where: "I love fresh air", bogus: "x" }, heard: [{ id: "where", answer: "Outdoors", label: "Out in the fresh air" }, { id: "where", answer: "Moon" }] });
+  assert.ok(personText(a).includes("Fixing bikes") && personText(a).includes("fresh air"));
+  assert.deepStrictEqual(Object.keys(a.workNotes), ["where"]);
+  assert.strictEqual(a.heard.length, 1);
+});
+
+test("strengths read as what others would say, with no em-dashes", () => {
+  for (const t of TRAITS) { assert.ok(/^(You|People|Routine)\b/.test(t.said), t.said); assert.ok(!/\b(I|my|me|myself)\b/.test(t.said), t.said); }
+});
