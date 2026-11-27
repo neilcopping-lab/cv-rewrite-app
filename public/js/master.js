@@ -1869,7 +1869,8 @@
   // The video on its own page (cv.the-common-people.com/video): straight to Your 90
   // seconds, without the CV steps around it. Notes and words still save to the CV.
   function openStudio() {
-    document.body.classList.add("studio");
+    document.body.classList.add("studio", "pitch");
+    var feat = document.querySelector(".cq-head .cq-feat"); if (feat) feat.textContent = "Pitch video";
     applyJourney(); openBuilder();
     $("hero-kicker").textContent = "Comquat pitch video";
     $("hero-title").textContent = "Your pitch video.";
@@ -1947,6 +1948,8 @@
         $("loading").classList.add("hidden"); $("signed-out").classList.remove("hidden");
         // The pitch video page: say so, and come straight back here after signing in.
         if (/[?&]studio=video\b/.test(location.search)) {
+          document.body.classList.add("pitch");
+          var feat0 = document.querySelector(".cq-head .cq-feat"); if (feat0) feat0.textContent = "Pitch video";
           $("hero-kicker").textContent = "Comquat pitch video"; $("hero-title").textContent = "Your pitch video.";
           $("hero-lede").textContent = "Plan it, practise it, record it, style it and share it, one step at a time. Your video stays on your device.";
           var card = $("signed-out");

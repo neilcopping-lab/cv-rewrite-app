@@ -508,3 +508,18 @@ details.pv-more>summary:before,details.v-tips>summary:before{flex:0 0 22px}
 .step[data-key="video"] .guide-card{display:none}
 .pv-nav{padding-bottom:56px}
 @media (min-width:900px){.pv-nav{padding-bottom:0}}
+
+/* ---- Pitch video: its own brand colour, red fading to black (27 Nov 2026).
+   The CV Builder keeps purple-to-pink; the pitch video page and the video step use red to black. ---- */
+body.pitch .hero,body.pitch .mcv-main,body.pitch .layout,#video-card{--kq:#B3192F;--coral:#17191C;--peel:#FCEBEE}
+body.pitch .hero{background:linear-gradient(120deg,#D7263D 0%,#8E1B2B 50%,#17191C 100%)}
+body.pitch.mcv-body .cq-head .cq-feat{background:linear-gradient(120deg,#D7263D,#17191C);color:#fff}
+body.pitch .btn-spark,#video-card .btn-spark{background:linear-gradient(120deg,#D7263D,#17191C);box-shadow:0 6px 16px rgba(215,38,61,.28)}
+#video-card .style-box{border-color:#F6D3D8;background:#FFF6F7}
+#video-card .style em,#video-card .own-style summary{color:#B3192F}
+#video-card .style[aria-checked="true"]{border-color:#B3192F;background:#FCEBEE;box-shadow:0 0 0 3px rgba(179,25,47,.15)}
+#video-card .v-private,#video-card .private-note{background:#FCEBEE}
+#video-card .ai-note{background:#FFF6F7}
+#video-card .ai-warn{border-left-color:#B3192F;background:#FFF1F3}
+#video-card input:focus,#video-card textarea:focus{border-color:#B3192F;box-shadow:0 0 0 4px rgba(179,25,47,.18)}
+#video-card .v-part.live{box-shadow:0 0 0 5px rgba(179,25,47,.14)}
