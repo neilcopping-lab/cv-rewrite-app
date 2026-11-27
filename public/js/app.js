@@ -102,19 +102,43 @@ async function api(url, opts) {
 }
 // Start a long job on the server and poll until it's finished. This is what
 // keeps long CV writes from timing out: each request here is tiny and quick.
-async function runJob(url, body) {
+// If our server restarts mid-job (it does whenever we publish an update), the
+// polls briefly fail and the job is lost. Your CV, advert and answers are kept
+// on the server, so we ride out the blip and quietly start the job once more.
+const RESTART_MSG = "Sorry, our server restarted while we were working on this. Your details are still here, so please press the button again.";
+async function serverBack() {
+  for (let i = 0; i < 45; i++) {
+    try { const r = await fetch("/api/state", { cache: "no-store" }); if (r.ok) return true; } catch (_) {}
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  return false;
+}
+async function runJob(url, body, _retried) {
   const start = await api(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   if (!start.jobId) return start; // server answered directly (older path)
   const startedAt = Date.now();
+  let blips = 0;
   while (true) {
     await new Promise((r) => setTimeout(r, 2000));
-    const s = await api("/api/job/" + start.jobId);
-    if (s.status === "running") {
-      if (Date.now() - startedAt > 5 * 60 * 1000) throw new Error("This is taking longer than expected - please try again.");
+    if (Date.now() - startedAt > 5 * 60 * 1000) throw new Error("This is taking longer than expected - please try again.");
+    let s;
+    try {
+      const r = await fetch("/api/job/" + start.jobId, { cache: "no-store" });
+      if (r.status === 404) s = { status: "unknown" };
+      else if (!r.ok) throw new Error("server " + r.status); // 502/503 while restarting
+      else s = await r.json();
+    } catch (e) {
+      // Server unreachable for a moment: keep waiting (up to ~3 minutes).
+      if (++blips > 90) throw new Error(RESTART_MSG);
       continue;
     }
+    blips = 0;
+    if (s.status === "running") continue;
     if (s.status === "error") throw new Error(s.error || "Something went wrong while writing your CV.");
-    if (s.status === "unknown") throw new Error("We lost track of that request - please try again.");
+    if (s.status === "unknown") {
+      if (!_retried && await serverBack()) return runJob(url, body, true); // the restart lost the job: start it again once
+      throw new Error(RESTART_MSG);
+    }
     return s; // done
   }
 }
@@ -356,7 +380,8 @@ async function resolveMissing() {
   const prog = startProgress("progr", 30, FUN_MESSAGES);
   try {
     const resolutions = [], acceptLeaveOut = [];
-    (STATE.cv.missing || []).forEach((m, i) => {
+    const flagged = (STATE.cv && STATE.cv.missing) || (STATE.pendingDraft && STATE.pendingDraft.missing) || [];
+    flagged.forEach((m, i) => {
       const ta = document.querySelector(`[data-mresolve="${i}"]`);
       const drop = document.querySelector(`[data-mdrop="${i}"]`);
       if (ta && ta.value.trim()) resolutions.push({ item: m.item, answer: ta.value.trim() });
@@ -683,19 +708,6 @@ async function downloadFile(type) {
     busy(s, false, r.headers.get("X-Comquat-Saved") ? 'Downloaded. A copy is saved in <a href="/account/me.html">My documents</a> on your account.' : "Downloaded.");
     try { if (window.comquatAiNudge) window.comquatAiNudge(s.parentNode); } catch (e) {}
     await refreshAccount();
-  // Coming from a card in Your job hunt: bring the advert (and the last CV for
-  // this job) across, so nothing is pasted twice.
-  if (/^[0-9a-f-]{36}$/i.test(p.get("job") || "")) {
-    try {
-      const r = await fetch(`/api/account/jobs/${p.get("job")}`, { credentials: "same-origin", cache: "no-store" });
-      const d = r.ok ? await r.json() : null;
-      if (d && d.job) {
-        STATE.jobId = d.job.id;
-        if (d.job.advert && $("#advertText") && !$("#advertText").value.trim()) $("#advertText").value = d.job.advert;
-        if (d.job.cv_text && $("#cvText") && !$("#cvText").value.trim()) $("#cvText").value = d.job.cv_text;
-      }
-    } catch (e) {}
-  }
     maybeAskFeedback();
   } catch (e) { busy(s, false, "⚠ " + e.message); }
 }
@@ -832,12 +844,28 @@ document.addEventListener("click", (e) => {
   }
   await refreshAccount();
 
+  // Coming from a card in Your job hunt: bring the advert (and the last CV for
+  // this job) across, so nothing is pasted twice.
+  if (/^[0-9a-f-]{36}$/i.test(p.get("job") || "")) {
+    try {
+      const r = await fetch(`/api/account/jobs/${p.get("job")}`, { credentials: "same-origin", cache: "no-store" });
+      const d = r.ok ? await r.json() : null;
+      if (d && d.job) {
+        STATE.jobId = d.job.id;
+        if (d.job.advert && $("#advertText") && !$("#advertText").value.trim()) $("#advertText").value = d.job.advert;
+        if (d.job.cv_text && $("#cvText") && !$("#cvText").value.trim()) $("#cvText").value = d.job.cv_text;
+      }
+    } catch (e) {}
+  }
+
   // Restore work after any reload - including the magic-link sign-in, which
   // reloads the page. If the server session still holds a finished CV, take the
   // user straight back to the design step with everything intact.
   try {
     const stt = await api("/api/state");
-    if (stt.hasCv) {
+    // Arriving from a different job card means a new application, so start at
+    // step 1 with that advert rather than jumping back to the last CV.
+    if (stt.hasCv && (!STATE.jobId || stt.huntJobId === STATE.jobId)) {
       STATE.hasCv = true; STATE.softDone = true;
       if (stt.designId && !STATE.designId) STATE.designId = stt.designId;
       // Rebuild step 3 from the server so the rewritten CV is viewable again

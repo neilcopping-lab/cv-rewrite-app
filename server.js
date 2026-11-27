@@ -71,8 +71,24 @@ app.post("/webhook/stripe", express.raw({ type: "application/json" }), async (re
 
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
+// Work in progress is kept on disk (next to the accounts database, on the Render
+// disk) so a restart or a new publish doesn't wipe everyone's half-finished CV.
+// Each session file is deleted when the three hours are up. SESSION_STORE=memory
+// switches back to the old in-memory store (lost on every restart).
+const { FileSessionStore } = require("./lib/fileSessionStore");
+const SESSION_DIR = process.env.SESSION_DIR || path.join(path.dirname(db.DB_PATH), "sessions");
+let sessionStore;
+if (process.env.SESSION_STORE !== "memory") {
+  try {
+    sessionStore = new FileSessionStore({ dir: SESSION_DIR });
+    console.log("[sessions] kept on disk in", SESSION_DIR);
+  } catch (e) {
+    console.error("[sessions] couldn't use", SESSION_DIR, "- falling back to memory:", e.message);
+  }
+}
 app.use(
   session({
+    store: sessionStore, // undefined = express-session's in-memory store
     secret: process.env.SESSION_SECRET || "dev-secret-change-me",
     resave: false,
     saveUninitialized: true,
@@ -352,7 +368,8 @@ app.get("/api/state", (req, res) => {
   const e = currentEmail(req);
   res.json({
     signedIn: !!e, email: e || null, credits: e ? db.credits(e) : 0, free: FREE_MODE,
-    hasCv: !!st.cv, designId: st.designId || null, coverLetter: !!st.coverLetter
+    hasCv: !!st.cv, designId: st.designId || null, coverLetter: !!st.coverLetter,
+    huntJobId: st.jobId || null // which "Your job hunt" card this CV belongs to, if any
   });
 });
 
@@ -365,7 +382,9 @@ app.get("/api/draft", (req, res) => {
   const cr = st.checkReport || {};
   const fab = cr.fabrication || {};
   const missing = st.cv.missing || [];
-  const blocked = fab.pass === false || missing.length > 0;
+  // Anything the honesty check flagged was already taken out of the CV, so only
+  // questions still waiting for an answer hold up the design step.
+  const blocked = missing.length > 0;
   res.json({
     ok: true, hasCv: true, cv: st.cv, missing,
     programmatic: cr.programmatic || null, review: cr.review || {},
@@ -648,8 +667,13 @@ async function resolveWork(st, { resolutions, acceptLeaveOutArr }, req) {
   ]);
   cv = fab.cleanedCV;
   applyUserLinks(cv, st);
-  // Drop any remaining missing the candidate explicitly accepted leaving out.
-  cv.missing = (cv.missing || []).filter((m) => !acceptLeaveOut.has(m.item));
+  // One re-check settles it. Every rewrite words things a little differently,
+  // so asking about whatever the new draft can't confirm sent people round in
+  // circles and kept "Choose a design" locked. Anything the honesty check
+  // couldn't trace has ALREADY been taken out of the CV (fab.cleanedCV), so we
+  // simply leave it out and say so, rather than asking again.
+  const leftOut = (cv.missing || []).map((m) => m.item).filter((i) => i && !acceptLeaveOut.has(i));
+  cv.missing = [];
 
   scrubCv(cv); // strip mechanical AI clichés
   const prog = checks.run(cv);
@@ -659,8 +683,10 @@ async function resolveWork(st, { resolutions, acceptLeaveOutArr }, req) {
   st.cvVersion = (st.cvVersion || 0) + 1;
   st.paidVersion = null;
 
-  const blocked = cv.missing && cv.missing.length > 0;
-  return { ok: true, cv, missing: cv.missing, downloadBlocked: blocked, programmatic: prog, review, matchReport: st.matchReport };
+  const message = leftOut.length
+    ? `Done. We added what you told us. We also left out ${leftOut.length} detail${leftOut.length > 1 ? "s" : ""} we still couldn't trace to what you gave us, so nothing unconfirmed is on your CV. Have a read, then pick a design.`
+    : "Done. We added what you told us. Have a read, then pick a design.";
+  return { ok: true, cv, missing: [], leftOut, downloadBlocked: false, message, programmatic: prog, review, matchReport: st.matchReport };
 }
 
 // Candidate resolves [MISSING]/flagged items (answer, or accept leaving out).
