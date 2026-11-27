@@ -170,6 +170,7 @@
   // opts.lines: each sentence goes on its own line (lists and notes).
   // One-line boxes get a smaller button, and the words go in without a full stop.
   function mic(ta, label, after, opts) {
+    if (ta && ta.setAttribute) ta.setAttribute("data-voice", "0"); // has its own: the shared /voice.js leaves it alone
     if (!voice) return el("span", { class: "hidden" });
     opts = opts || {};
     var single = ta.tagName === "INPUT";
