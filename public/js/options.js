@@ -127,7 +127,7 @@
         <textarea id="story" rows="5" placeholder="For example: a busy Saturday at the garden centre, helping customers and getting the deliveries sorted.">${esc(A.story)}</textarea>
         <div class="yo-row">${micBtn("story")}<button type="button" class="yo-btn ghost small" id="hear">See what we heard</button></div>
         <div id="heardBox">${heardChips()}</div></div>
-      ${why("So we can suggest jobs where you'd feel at home. Your answers only shape the options we show you. It isn't a test, nobody scores you, and we never decide anything about you from it.")}
+      ${why("So we can suggest jobs where you'd feel at home. Your answers only shape the options we show you. It isn't a test, there are no right or wrong answers, and we never decide anything about you from it.")}
       <h3 class="yo-sub">Prefer to just tap? Pick the one that sounds more like you.</h3>
       ${C.workStyle.map((w) => `<div class="yo-q"><fieldset><legend>${esc(w.q)}${heardIds.has(w.id) ? ' <span class="yo-from">from your story</span>' : ""}</legend><div class="yo-pics">${w.a.map((ans, i) => `<label class="yo-pic ${A.workStyle[w.id] === ans ? "on" : ""}"><input type="radio" name="ws_${w.id}" value="${esc(ans)}" ${A.workStyle[w.id] === ans ? "checked" : ""}><span class="em" aria-hidden="true">${w.pic ? w.pic[i] : ""}</span><span>${esc(w.show ? w.show[i] : ans)}</span></label>`).join("")}</div></fieldset>
         <details class="yo-more" ${A.workNotes[w.id] ? "open" : ""}><summary>Tell us why (optional)</summary><textarea id="wn_${w.id}" data-wn="${w.id}" rows="2">${esc(A.workNotes[w.id] || "")}</textarea>${micBtn("wn_" + w.id)}</details></div>`).join("")}

@@ -135,3 +135,11 @@ test("AI set to Off: every market still gets options and a report, with no AI", 
   } finally { ai.askJSON = orig; }
   assert.strictEqual(called, false);
 });
+
+test("health words are taken out of the text used for matching", () => {
+  const routes = require("../lib/options/routes");
+  const a = routes.cleanAnswers({ story: "I worked in a garden centre while managing my depression and ADHD.", life: { doing: "Hospital appointments for my diabetes." } });
+  const text = require("../lib/options/report").noHealth(routes.personText(a));
+  assert.ok(!/depression|adhd|hospital|diabetes|appointments/i.test(text), text);
+  assert.ok(/garden centre/.test(text));
+});
