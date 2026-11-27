@@ -221,7 +221,7 @@ function renderGaps(g) {
         <span class="muted" data-recs="${id}"></span>
       </div>`;
     }).join("");
-  $$("[data-rec]").forEach((b) => (b.onclick = () => recordAnswer(b.dataset.rec)));
+  wireRecordButtons("#questions");
   storyPickers("#questions [data-answer]");
 }
 
@@ -306,6 +306,8 @@ function renderDraft(j) {
          ${missing.map((m, i) => `<div class="q" data-mi="${i}">
             <div class="qtext">${friendlyGap(m)}</div>
             <textarea data-mresolve="${i}" placeholder="Add the real detail, or leave blank to drop it"></textarea>
+            <button class="btn ghost" type="button" style="font-size:13px;padding:8px 12px" data-rec="m${i}" data-rec-target='[data-mresolve="${i}"]'>● Record answer</button>
+            <span class="muted" data-recs="m${i}"></span>
             <label style="font-family:var(--font-body);text-transform:none;letter-spacing:normal;font-weight:400;font-size:13px"><input type="checkbox" data-mdrop="${i}" style="width:auto"> Leave this one out</label>
           </div>`).join("")}
          <p><button class="btn" id="resolveBtn">Apply my answers and re-check</button></p>
@@ -314,6 +316,7 @@ function renderDraft(j) {
   renderMatchReport(j.matchReport);
   storySaveOffer();
   if (missing.length) {
+    wireRecordButtons("#missingBox");
     const rb = $("#resolveBtn"); if (rb) rb.onclick = resolveMissing;
     const la = $("#leaveAllBtn"); if (la) la.onclick = leaveAllAndContinue;
   }
@@ -763,8 +766,11 @@ async function loadCoverQuestions() {
       <div style="margin:0 0 10px">
         <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:4px;text-transform:none;letter-spacing:normal">${escHtml(q.question)}</label>
         <textarea data-cq="${escHtml(q.id)}" rows="2" placeholder="Optional - in your own words" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font-body);font-size:14px;resize:vertical"></textarea>
+        <button class="btn ghost" type="button" style="font-size:13px;padding:6px 12px;margin-top:4px" data-rec="c_${escHtml(q.id)}" data-rec-target='[data-cq="${escHtml(q.id)}"]'>● Record answer</button>
+        <span class="muted" data-recs="c_${escHtml(q.id)}"></span>
       </div>`).join("");
     _coverQsLoaded = true;
+    wireRecordButtons("#coverQs");
     storyPickers("#coverQs [data-cq]");
   } catch (_) {}
 }
@@ -895,7 +901,17 @@ document.addEventListener("click", (e) => {
 })();
 
 // ── Voice recording ──
-async function recordAnswer(id) {
+// Hook up every "Record answer" button inside `scope`. Each button names the
+// box its words go into with data-rec-target.
+function wireRecordButtons(scope) {
+  document.querySelectorAll(`${scope} [data-rec]`).forEach((b) => {
+    b.onclick = () => recordAnswer(b.dataset.rec, b.dataset.recTarget);
+  });
+}
+// `target` is the box the words go into (defaults to the step 2 answer box).
+// Anything already typed there is kept and the recording is added after it.
+async function recordAnswer(id, target) {
+  target = target || `[data-answer="${id}"]`;
   const label = document.querySelector(`[data-recs="${id}"]`);
   if (!navigator.mediaDevices) { label.textContent = "Recording not supported in this browser."; return; }
   try {
@@ -912,12 +928,14 @@ async function recordAnswer(id) {
       const fd = new FormData();
       fd.append("audio", new Blob(chunks, { type: mime }), "answer." + ext);
       try { const j = await api("/api/transcribe", { method: "POST", body: fd });
-        document.querySelector(`[data-answer="${id}"]`).value = j.text; label.textContent = "Transcribed."; }
+        const box = document.querySelector(target);
+        if (box) { const had = box.value.trim(); box.value = had ? had + " " + j.text : j.text; box.dispatchEvent(new Event("input", { bubbles: true })); }
+        label.textContent = "Transcribed. Have a read and tweak it if you need to."; }
       catch (e) { label.textContent = "⚠ " + e.message + " - you can type your answer instead."; }
     };
     rec.start(); label.textContent = "Recording… click again to stop.";
     const btn = document.querySelector(`[data-rec="${id}"]`);
-    btn.textContent = "■ Stop"; btn.onclick = () => { rec.stop(); btn.textContent = "● Record answer"; btn.onclick = () => recordAnswer(id); };
+    btn.textContent = "■ Stop"; btn.onclick = () => { rec.stop(); btn.textContent = "● Record answer"; btn.onclick = () => recordAnswer(id, target); };
   } catch (e) { label.textContent = "⚠ Mic blocked."; }
 }
 

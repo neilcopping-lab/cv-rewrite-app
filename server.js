@@ -28,6 +28,7 @@ const resolveDesign = (id) => DESIGNER_TEMPLATES.find((t) => t.id === id) || byI
 const payment = require("./lib/payment");
 const email = require("./lib/email");
 const matchReport = require("./lib/matchReport");
+const { dropAlreadyAsked, askedAtStep2 } = require("./lib/askedFilter");
 const db = require("./lib/db");
 const auth = require("./lib/auth");
 const cliches = require("./lib/cliches");
@@ -591,8 +592,11 @@ async function generateWork(st) {
   let cv = await cvGenerator.generate({
     cvText: st.cvText, advertText: st.advertText, gaps: st.gaps,
     answers: st.answers, linksConfirmed: st.linksConfirmed,
-    writingStyle: st.writingStyle, styleSample: st.styleSample
+    writingStyle: st.writingStyle, styleSample: st.styleSample,
+    alreadyAsked: askedAtStep2(st).map((q) => q.question)
   });
+  // Don't re-ask what step 2 already asked, or optional extras (see askedFilter).
+  cv.missing = dropAlreadyAsked(cv.missing, askedAtStep2(st));
   // Private skills match report, built before the honesty gate reshapes the CV.
   st.matchReport = matchReport.build(cv, st.gaps);
 
@@ -658,8 +662,11 @@ async function resolveWork(st, { resolutions, acceptLeaveOutArr }, req) {
   let cv = await cvGenerator.generate({
     cvText: st.cvText, advertText: st.advertText, gaps: st.gaps,
     answers: st.answers, linksConfirmed: st.linksConfirmed,
-    writingStyle: st.writingStyle, styleSample: st.styleSample
+    writingStyle: st.writingStyle, styleSample: st.styleSample,
+    alreadyAsked: askedAtStep2(st).map((q) => q.question)
   });
+  // Don't re-ask what step 2 already asked, or optional extras (see askedFilter).
+  cv.missing = dropAlreadyAsked(cv.missing, askedAtStep2(st));
   st.matchReport = matchReport.build(cv, st.gaps);
   const [fab, review] = await Promise.all([
     fabrication.check(cv, st.sot),
