@@ -4,7 +4,7 @@
   "use strict";
   const $ = (s, el = document) => el.querySelector(s);
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const STEPS = ["Start", "How you work", "Your strengths", "What matters", "Your life", "Your options", "Pick and build"];
+  const STEPS = ["Start", "How you work", "Your strengths", "What matters", "Your life", "Your options", "Your CVs"];
   const QUALS = [["", "Choose one"], ["none", "No qualifications yet"], ["gcse", "GCSEs"], ["level2", "A Level 2 qualification (like an NVQ 2)"], ["alevel", "A levels"], ["level3", "A Level 3 qualification (like a BTEC or NVQ 3)"], ["level4", "Level 4 (like an HNC)"], ["hnd", "HND or foundation degree"], ["degree", "A degree"], ["masters", "A master's degree"], ["phd", "A doctorate"]];
   let C = null, A = null, P = null, chosen = [], options = null, step = 1, saveTimer = null;
 
@@ -244,13 +244,13 @@
     if (!options) return `<section class="yo-panel"><h2>Your options</h2><p>Matching you against ${C.data.count} real UK occupations...</p>${nav(true, false)}</section>`;
     if (options.error) return `<section class="yo-panel"><h2>Your options</h2><p class="yo-msg">${esc(options.error)}</p>${nav(true, false)}</section>`;
     return `<section class="yo-panel"><h2>Your options</h2>
-      <p class="lead">These are the occupations that fit you best right now, from Skills England's official list. Each one says why. It's a starting point, not a verdict.</p>
+      <p class="lead">Here are some options that may be a good fit for you, from Skills England's list of real UK jobs. Each one says why. They're ideas to explore, not a verdict. Pick any you'd like to look at more closely.</p>
       ${options.options.length ? options.options.map((o) => `<div class="yo-card"><div class="fit">${o.fit}%<small>fit</small></div>
         <h3>${esc(o.title)}</h3><p class="meta">${esc([o.route, o.levelNote].filter(Boolean).join(" · "))}</p>
         ${o.overview ? `<p style="margin:6px 0 0">${esc(o.overview)}</p>` : ""}
         ${o.jobTitles.length ? `<p class="meta" style="margin-top:6px">Job titles you'll see: ${esc(o.jobTitles.join(", "))}</p>` : ""}
         <ul>${o.reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
-        <p style="margin:12px 0 0"><button class="yo-btn" type="button" data-pick="${esc(o.code)}">Pick this one</button></p></div>`).join("") : `<p class="yo-msg">We couldn't find a close match yet. Try adding examples to more of your strengths, or sorting more values cards.</p>`}
+        <p style="margin:12px 0 0"><button class="yo-btn" type="button" data-pick="${esc(o.code)}">Take a closer look</button></p></div>`).join("") : `<p class="yo-msg">We couldn't find a close match yet. Try adding examples to more of your strengths, or sorting more values cards.</p>`}
       ${nav(true, false)}</section>`;
   }
   async function bind6() {
@@ -265,7 +265,7 @@
   // ── Step 7: Pick and build ───────────────────────────────────────────────
   let rep = null, repFor = null;
   function s7() {
-    if (!A.pick) return `<section class="yo-panel"><h2>Pick and build</h2><p class="yo-msg">Pick one of your options first.</p>${nav(true, false)}</section>`;
+    if (!A.pick) return `<section class="yo-panel"><h2>Your CVs</h2><p class="yo-msg">Choose one of your options first.</p>${nav(true, false)}</section>`;
     if (repFor !== A.pick || !rep) return `<section class="yo-panel"><h2>Your Options Report</h2><p>Putting your report together...</p></section>`;
     if (rep.error) return `<section class="yo-panel"><h2>Your Options Report</h2><p class="yo-msg">${esc(rep.error)}</p>${nav(true, false)}</section>`;
     const r = rep.report, off = rep.aiLevel === "off";
@@ -287,9 +287,9 @@
       <h3>Your next step</h3><p>${esc(r.nextStep)}</p>
       ${r.aiNotice ? `<p class="yo-ai"><b>${esc(r.aiNotice)}</b></p>` : ""}
       <p style="font-size:13px;color:#5B5F66">${esc(r.sources)}</p>
-      <div class="yo-nav"><button class="yo-btn ghost" type="button" data-go="6">Back to my options</button>
+      <div class="yo-nav"><button class="yo-btn ghost" type="button" data-go="6">See my other options</button>
         <span><button class="yo-btn ghost" type="button" id="print">Print or save as PDF</button>
-        ${off ? `<a class="yo-btn" href="https://the-common-people.com/guide-cv.html">Read the free CV guide</a>` : `<button class="yo-btn" type="button" id="build">Build my CV for this role</button>`}</span></div>
+        ${off ? `<a class="yo-btn" href="https://the-common-people.com/guide-cv.html">Read the free CV guide</a>` : `<button class="yo-btn" type="button" id="build">Create a CV for this option</button>`}</span></div>
       <p class="yo-saved" id="saved" role="status"></p></section>`;
   }
   async function bind7() {
