@@ -7,6 +7,7 @@
   const STEPS = ["Start", "How you work", "Your strengths", "What matters", "Your life", "Your options", "Your CVs"];
   const QUALS = [["", "Choose one"], ["none", "No qualifications yet"], ["gcse", "GCSEs"], ["level2", "A Level 2 qualification (like an NVQ 2)"], ["alevel", "A levels"], ["level3", "A Level 3 qualification (like a BTEC or NVQ 3)"], ["level4", "Level 4 (like an HNC)"], ["hnd", "HND or foundation degree"], ["degree", "A degree"], ["masters", "A master's degree"], ["phd", "A doctorate"]];
   let C = null, A = null, P = null, chosen = [], options = null, step = 1, saveTimer = null;
+  let beyond = null, beyondShown = 1, extra = null;
 
   async function api(url, opts = {}) {
     const r = await fetch(url, { credentials: "same-origin", cache: "no-store", ...opts });
@@ -247,32 +248,82 @@
       <p class="lead">Employers hire people, not job histories. Tell us about the rest of your life too.</p>
       ${why("Lots of real skills come from outside work. This helps us spot them and count them.")}
       ${q.map(([k, l, h]) => `<div class="yo-q"><label class="qt" for="life_${k}">${l}</label><p style="margin:2px 0 0;font-size:14.5px;color:#5B5F66">${h}</p><textarea id="life_${k}" data-life="${k}">${esc(A.life[k])}</textarea>${micBtn("life_" + k)}</div>`).join("")}
+      <div class="yo-q yo-mix"><label class="qt" for="life_mix">Mix your worlds (optional)</label>
+        <p style="margin:2px 0 0;font-size:14.5px;color:#5B5F66">Are there two things you love or care about that don't usually go together? Art and health. Gardening and helping people. History and teaching. Gaming and fairness. Tell us, and we'll look for work that brings them together.</p>
+        <textarea id="life_mix" data-life="mix" rows="3" placeholder="For example: I paint, and I'd love to use it to help people feel better.">${esc(A.life.mix || "")}</textarea>${micBtn("life_mix")}</div>
       ${nav(true, true, "Show me my options")}</section>`;
   }
   function bind5() { document.querySelectorAll("[data-life]").forEach((t) => t.addEventListener("input", () => { A.life[t.dataset.life] = t.value; save(); })); bindMics(); }
 
   // ── Step 6: Your options ─────────────────────────────────────────────────
-  function s6() {
-    if (!C.data.ready) return `<section class="yo-panel"><h2>Your options</h2><p class="yo-msg">The career options aren't ready yet. We're still loading the official UK job data, so please come back soon. Everything you've told us is saved.</p>${nav(true, false)}</section>`;
-    if (!options) return `<section class="yo-panel"><h2>Your options</h2><p>Matching you against ${C.data.count} real UK occupations...</p>${nav(true, false)}</section>`;
-    if (options.error) return `<section class="yo-panel"><h2>Your options</h2><p class="yo-msg">${esc(options.error)}</p>${nav(true, false)}</section>`;
-    return `<section class="yo-panel"><h2>Your options</h2>
-      <p class="lead">Here are some options that may be a good fit for you, from Skills England's list of real UK jobs. Each one says why. They're ideas to explore, not a verdict. Pick any you'd like to look at more closely.</p>
-      ${options.options.length ? options.options.map((o) => `<div class="yo-card"><div class="fit">${o.fit}%<small>fit</small></div>
+  // Two parts: matches from the official Skills England data, and Beyond the
+  // Obvious, our hand-checked list of roles people don't often think of.
+  // The second part works even before the official data is in.
+  function seCard(o) {
+    return `<div class="yo-card"><div class="fit">${o.fit}%<small>fit</small></div>
         <h3>${esc(o.title)}</h3><p class="meta">${esc([o.route, o.levelNote].filter(Boolean).join(" · "))}</p>
         ${o.overview ? `<p style="margin:6px 0 0">${esc(o.overview)}</p>` : ""}
         ${o.jobTitles.length ? `<p class="meta" style="margin-top:6px">Job titles you'll see: ${esc(o.jobTitles.join(", "))}</p>` : ""}
         <ul>${o.reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
-        <p style="margin:12px 0 0"><button class="yo-btn" type="button" data-pick="${esc(o.code)}">Take a closer look</button></p></div>`).join("") : `<p class="yo-msg">We couldn't find a close match yet. Try adding examples to more of your strengths, or sorting more values cards.</p>`}
+        <p style="margin:12px 0 0"><button class="yo-btn" type="button" data-pick="${esc(o.code)}">Take a closer look</button></p></div>`;
+  }
+  function btoCard(o) {
+    return `<div class="yo-card yo-bto"><span class="yo-tag">Beyond the obvious</span>
+        <h3>${esc(o.title)}</h3>
+        ${o.aka.length ? `<p class="meta">Also called: ${esc(o.aka.join(", "))}</p>` : ""}
+        <p style="margin:6px 0 0">${esc(o.what)}</p>
+        <p class="meta" style="margin-top:6px"><b>Why it's easy to miss:</b> ${esc(o.whyMissed)}</p>
+        ${o.reasons.length ? `<ul>${o.reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
+        ${o.worthKnowing.length ? `<p class="yo-worth"><b>Worth knowing:</b> ${esc(o.worthKnowing[0])}</p>` : ""}
+        <p style="margin:12px 0 0"><button class="yo-btn" type="button" data-pick="${esc(o.code)}">Take a closer look</button></p></div>`;
+  }
+  function beyondPart() {
+    if (!beyond) return `<p>Looking for roles you might not have thought of...</p>`;
+    if (beyond.error) return `<p class="yo-msg">${esc(beyond.error)}</p>`;
+    const all = beyond.batches, shown = all.slice(0, beyondShown);
+    const more = beyondShown < all.length;
+    return `${shown.map((b, i) => `${i ? `<h3 class="yo-sub">Something different</h3>` : ""}${b.map(btoCard).join("")}`).join("")}
+      <p class="yo-row-btns">${more ? `<button class="yo-btn ghost" type="button" id="btoMore">Show me something different</button>` : `<span class="yo-done-note">That's every role in our list for now. We add more as we check them.</span>`}</p>`;
+  }
+  function s6() {
+    const head = `<h2>Your options</h2>`;
+    const bto = `<section class="yo-beyond" aria-labelledby="btoH"><h3 class="yo-sub" id="btoH">Roles you might not have thought of</h3>
+      <p class="lead">Some of the best jobs never come up in a careers chat, because they're new, small or sit between two worlds. These come from our hand-checked list, and every one links to where we found it.</p>
+      ${beyondPart()}</section>`;
+    if (!C.data.ready) return `<section class="yo-panel">${head}<p class="yo-msg">Your matches from the official UK job data aren't ready yet, because we're still loading it. Everything you've told us is saved. In the meantime, here are some roles you might not have thought of.</p>${bto}${nav(true, false)}</section>`;
+    if (!options) return `<section class="yo-panel">${head}<p>Matching you against ${C.data.count} real UK occupations...</p>${nav(true, false)}</section>`;
+    if (options.error) return `<section class="yo-panel">${head}<p class="yo-msg">${esc(options.error)}</p>${bto}${nav(true, false)}</section>`;
+    return `<section class="yo-panel">${head}
+      <p class="lead">Here are some options that may be a good fit for you, from Skills England's list of real UK jobs. Each one says why. They're ideas to explore, not a verdict. Pick any you'd like to look at more closely.</p>
+      ${options.options.length ? options.options.map(seCard).join("") : `<p class="yo-msg">We couldn't find a close match yet. Try adding examples to more of your strengths, or sorting more values cards.</p>`}
+      ${extra && extra.options ? `<h3 class="yo-sub">Something different</h3><p style="margin:0;font-size:15px;color:#5B5F66">From other areas of work, so you can see a wider spread.</p>${extra.options.length ? extra.options.map(seCard).join("") : `<p class="yo-msg">We've shown you the closest matches across every area of work.</p>`}` : ""}
+      ${extra && extra.error ? `<p class="yo-msg">${esc(extra.error)}</p>` : ""}
+      ${options.options.length && !extra ? `<p class="yo-row-btns"><button class="yo-btn ghost" type="button" id="seMore">Show me something different</button></p>` : ""}
+      ${bto}
       ${nav(true, false)}</section>`;
   }
   async function bind6() {
+    if (!beyond) {
+      try { beyond = await post("/api/options/beyond"); } catch (e) { beyond = { error: e.message }; }
+      render(); return;
+    }
     if (C.data.ready && !options) {
       try { options = await post("/api/options/match"); } catch (e) { options = { error: e.message }; }
-      render();
-      return;
+      render(); return;
     }
     document.querySelectorAll("[data-pick]").forEach((b) => b.addEventListener("click", () => { A.pick = b.dataset.pick; go(7); }));
+    const bm = $("#btoMore");
+    if (bm) bm.addEventListener("click", () => {
+      beyondShown++; render();
+      const hs = document.querySelectorAll(".yo-beyond h3.yo-sub"); const h = hs[hs.length - 1];
+      if (h) { h.setAttribute("tabindex", "-1"); h.focus(); }
+    });
+    const sm = $("#seMore");
+    if (sm) sm.addEventListener("click", async () => {
+      sm.disabled = true; sm.textContent = "Looking further afield...";
+      try { extra = await post("/api/options/match", { different: true, seen: options.options.map((o) => o.code) }); } catch (e) { extra = { error: e.message }; }
+      render();
+    });
   }
 
   // ── Step 7: Pick and build ───────────────────────────────────────────────
@@ -282,6 +333,7 @@
     if (repFor !== A.pick || !rep) return `<section class="yo-panel"><h2>Your Options Report</h2><p>Putting your report together...</p></section>`;
     if (rep.error) return `<section class="yo-panel"><h2>Your Options Report</h2><p class="yo-msg">${esc(rep.error)}</p>${nav(true, false)}</section>`;
     const r = rep.report, off = rep.aiLevel === "off";
+    if (r.kind === "beyond") return s7beyond(r, off);
     return `<section class="yo-panel yo-report"><h2>Your Options Report: ${esc(r.role.title)}</h2>
       <p class="lead">Just for you. This report never goes to an employer. Your CV is a separate document.</p>
       <h3>Your match: ${r.match.percent}%</h3><div class="bar"><i style="width:${r.match.percent}%"></i></div>
@@ -300,6 +352,30 @@
       <h3>Your next step</h3><p>${esc(r.nextStep)}</p>
       ${r.aiNotice ? `<p class="yo-ai"><b>${esc(r.aiNotice)}</b></p>` : ""}
       <p style="font-size:13px;color:#5B5F66">${esc(r.sources)}</p>
+      <div class="yo-nav"><button class="yo-btn ghost" type="button" data-go="6">See my other options</button>
+        <span><button class="yo-btn ghost" type="button" id="print">Print or save as PDF</button>
+        ${off ? `<a class="yo-btn" href="https://the-common-people.com/guide-cv.html">Read the free CV guide</a>` : `<button class="yo-btn" type="button" id="build">Create a CV for this option</button>`}</span></div>
+      <p class="yo-saved" id="saved" role="status"></p></section>`;
+  }
+  const links = (list) => `<ul>${list.map((n) => `<li><a href="${esc(n.url)}" target="_blank" rel="noopener">${esc(n.name)}<span class="sr-only"> (opens in a new tab)</span></a></li>`).join("")}</ul>`;
+  function s7beyond(r, off) {
+    return `<section class="yo-panel yo-report">
+      <p class="yo-tag-line"><span class="yo-tag">Beyond the obvious</span></p>
+      <h2>Your Options Report: ${esc(r.role.title)}</h2>
+      <p class="lead">Just for you. This report never goes to an employer. Your CV is a separate document.</p>
+      ${r.role.aka.length ? `<p class="meta">Also called: ${esc(r.role.aka.join(", "))}</p>` : ""}
+      <h3>What the work is</h3><p>${esc(r.what)}</p>
+      <p><b>Why it's easy to miss:</b> ${esc(r.whyMissed)}</p>
+      ${r.reasons.length ? `<h3>Why it might suit you</h3><ul>${r.reasons.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+      <p class="yo-msg ok">${esc(r.noMatchNote)}</p>
+      <h3>How people get in</h3><ul>${r.waysIn.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>
+      ${r.worthKnowing.length ? `<h3>Worth knowing first</h3><ul>${r.worthKnowing.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+      ${r.networks.length ? `<h3>Who to talk to</h3>${links(r.networks)}` : ""}
+      <h3>Your next steps</h3><ol>${r.nextSteps.map((x) => `<li>${esc(x)}</li>`).join("")}</ol>
+      <div class="yo-q" ${consentOn() ? "" : "hidden"}><label class="yo-opt"><input type="checkbox" id="incl" ${P.include ? "checked" : ""}> Include my "good day at work" notes in this report</label>
+        ${r.howYouWorkBest ? `<h3>How you work best</h3>${r.howYouWorkBest.notes ? `<p>${esc(r.howYouWorkBest.notes)}</p>` : ""}${r.howYouWorkBest.helps.length ? `<ul>${r.howYouWorkBest.helps.map((h) => `<li>${esc(h.strength)}: ${esc(h.helps)}</li>`).join("")}</ul>` : ""}` : ""}</div>
+      <h3>Where we found this</h3>${links(r.sources)}
+      <p style="font-size:13px;color:#5B5F66">Checked by The Com'mon People on ${esc(new Date(r.checked + "T12:00:00Z").toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }))}. Things change, so check the details with the sources before you make a big decision.</p>
       <div class="yo-nav"><button class="yo-btn ghost" type="button" data-go="6">See my other options</button>
         <span><button class="yo-btn ghost" type="button" id="print">Print or save as PDF</button>
         ${off ? `<a class="yo-btn" href="https://the-common-people.com/guide-cv.html">Read the free CV guide</a>` : `<button class="yo-btn" type="button" id="build">Create a CV for this option</button>`}</span></div>
@@ -331,7 +407,7 @@
     const n = $("#next");
     if (n) n.addEventListener("click", () => {
       if (step === 3) { const missing = A.traits.some((t) => String(t.example || "").trim().length < 10); const w = $("#exWarn"); if (missing && w && w.hidden) { w.hidden = false; return; } }
-      if (step === 5) options = null;
+      if (step === 5) { options = null; beyond = null; beyondShown = 1; extra = null; }
       go(step + 1);
     });
   }
