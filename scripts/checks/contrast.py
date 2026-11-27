@@ -1,4 +1,4 @@
-"""Contrast test for the Identify Your Options landing page.
+"""Contrast test for the Beyond the Obvious landing page.
 For every piece of text on the page, hides the text, screenshots the box behind it,
 finds the worst background pixel and works out the WCAG contrast ratio against the text colour.
 WCAG AA: 4.5:1 for normal text, 3:1 for large text (24px+, or 18.66px+ bold)."""
@@ -29,6 +29,8 @@ JS = """() => {
     const t = walker.currentNode; if (!t.textContent.trim()) continue;
     const el = t.parentElement; const cs = getComputedStyle(el);
     if (cs.visibility === 'hidden' || cs.display === 'none') continue;
+    // Screen-reader-only text (clipped to 1px) is never seen, so it has no colour contrast to test.
+    const eb = el.getBoundingClientRect(); if (eb.width <= 1 || eb.height <= 1) continue;
     const r = document.createRange(); r.selectNodeContents(t);
     for (const b of r.getClientRects()) {
       if (b.width < 2 || b.height < 2) continue;

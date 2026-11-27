@@ -1,4 +1,4 @@
-// Runs the REAL cv-rewrite-app server (accounts, sign-in page, Identify Your Options)
+// Runs the REAL cv-rewrite-app server (accounts, sign-in page, Beyond the Obvious)
 // with only Supabase swapped for an in-memory stand-in, so sign-in journeys can be
 // driven end to end in a browser. Test data only.
 const APP = require("path").resolve(__dirname, "../..");

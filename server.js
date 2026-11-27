@@ -115,7 +115,7 @@ startInactiveAccountJob();
 // The automatic bias test of the CV Builder's write-ups: after any change to
 // the AI instructions, and quarterly. The report is emailed (lib/biasTest.js).
 if (require.main === module && accountsOn()) require("./lib/biasTest").start({ admin: accountsAdmin() });
-// Identify Your Options (Nov 2026): career options matched against Skills England
+// Beyond the Obvious (Nov 2026): career options matched against Skills England
 // and O*NET data, Your Options Report, then a tailored CV through CV Rewrite.
 require("./lib/options/routes").mount(app, { accountsOn });
 app.get(["/options", "/options/"], (req, res) => res.redirect(302, "/options.html"));

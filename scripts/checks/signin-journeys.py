@@ -1,4 +1,4 @@
-"""Sign-in journeys for Identify Your Options, driven in a real browser against the real app.
+"""Sign-in journeys for Beyond the Obvious, driven in a real browser against the real app.
 Each test starts signed out unless it says otherwise."""
 import json, urllib.request, urllib.parse
 from playwright.sync_api import sync_playwright
@@ -69,7 +69,7 @@ with sync_playwright() as p:
         sent_to_signin = "next=%2Foptions-app.html" in pg.url
         sign_in(pg, "plain@test.local")
         pg.wait_for_url("**/options-app.html**", timeout=6000)
-        check("Landing page > Find my options > sign in with password > lands in Identify Your Options", sent_to_signin and app_loaded(pg), pg.url)
+        check("Landing page > Find my options > sign in with password > lands in Beyond the Obvious", sent_to_signin and app_loaded(pg), pg.url)
     run('# 1. Landing page button, signed out, sign in with password', t0)
 
     def t1():
@@ -77,7 +77,7 @@ with sync_playwright() as p:
         pg.goto(B + "/account/"); sign_in(pg, "plain@test.local"); pg.wait_for_url("**/account/me.html**", timeout=6000)
         pg.goto(B + "/account/?next=" + urllib.parse.quote("/options-app.html"))
         pg.wait_for_url("**/options-app.html**", timeout=6000)
-        check("Already signed in > sign-in page skips straight to Identify Your Options", app_loaded(pg), pg.url)
+        check("Already signed in > sign-in page skips straight to Beyond the Obvious", app_loaded(pg), pg.url)
     run('# 2. Already signed in: sign-in page sends them straight on', t1)
 
     def t2():
@@ -107,7 +107,7 @@ with sync_playwright() as p:
         q = urllib.parse.urlparse(link).query
         pg.goto(B + "/auth/confirm?" + q + "&type=magiclink&token_hash=" + token("plain@test.local"))
         pg.wait_for_url("**/options-app.html**", timeout=6000)
-        check("Signed out > Email me a link > click the link > lands in Identify Your Options", good_link and app_loaded(pg), link)
+        check("Signed out > Email me a link > click the link > lands in Beyond the Obvious", good_link and app_loaded(pg), link)
         ctx.close()
 
     def t5():
@@ -125,7 +125,7 @@ with sync_playwright() as p:
         q = urllib.parse.urlparse(link).query
         pg.goto(B + "/auth/confirm?" + q + "&type=signup&token_hash=" + token("new@test.local"))
         pg.wait_for_url("**/options-app.html**", timeout=6000)
-        check("New account from the app > confirm email > lands in Identify Your Options", good_link and app_loaded(pg), link)
+        check("New account from the app > confirm email > lands in Beyond the Obvious", good_link and app_loaded(pg), link)
         ctx.close()
 
     def t6():
@@ -135,7 +135,7 @@ with sync_playwright() as p:
         pg.wait_for_selector("#panel-mfa:not(.hidden)", timeout=6000)
         pg.fill('#form-mfa input[name="code"]', "123456"); pg.click('#form-mfa button[type="submit"]')
         pg.wait_for_url("**/options-app.html**", timeout=6000)
-        check("Two-step sign-in > password then app code > lands in Identify Your Options", app_loaded(pg), pg.url)
+        check("Two-step sign-in > password then app code > lands in Beyond the Obvious", app_loaded(pg), pg.url)
         ctx.close()
     run('# 7. Two-step sign-in', t6)
 
@@ -145,7 +145,7 @@ with sync_playwright() as p:
         pg.wait_for_selector("#panel-mfa:not(.hidden)", timeout=6000)
         pg.fill('#form-mfa input[name="code"]', "123456"); pg.click('#form-mfa button[type="submit"]')
         pg.wait_for_url("**/options-app.html**", timeout=6000)
-        check("Two-step with an emailed link > app code > lands in Identify Your Options", app_loaded(pg), pg.url)
+        check("Two-step with an emailed link > app code > lands in Beyond the Obvious", app_loaded(pg), pg.url)
         ctx.close()
 
     def t8():
@@ -155,7 +155,7 @@ with sync_playwright() as p:
         pg.click('#form-login button[type="submit"]'); pg.wait_for_selector("#msg.err", timeout=6000)
         first_ok = "next=%2Foptions-app.html" in pg.url
         sign_in(pg, "plain@test.local"); pg.wait_for_url("**/options-app.html**", timeout=6000)
-        check("Wrong password, then right one > still lands in Identify Your Options", first_ok and app_loaded(pg), pg.url)
+        check("Wrong password, then right one > still lands in Beyond the Obvious", first_ok and app_loaded(pg), pg.url)
         ctx.close()
     run('# 9. Wrong password: stays on sign-in with a message, still remembers the app', t8)
 
@@ -168,7 +168,7 @@ with sync_playwright() as p:
         pg.wait_for_url("**/account/**", timeout=6000)
         bounced = "next=%2Foptions-app.html" in pg.url
         sign_in(pg, "plain@test.local"); pg.wait_for_url("**/options-app.html**", timeout=6000)
-        check("Signed out mid-journey > sign in again > back in Identify Your Options", bounced and app_loaded(pg), pg.url)
+        check("Signed out mid-journey > sign in again > back in Beyond the Obvious", bounced and app_loaded(pg), pg.url)
         ctx.close()
     run('# 10. Session ends mid-journey: next save bounces to sign-in and back to the app', t9)
 
@@ -177,7 +177,7 @@ with sync_playwright() as p:
         pg.goto(B + "/account/"); sign_in(pg, "plain@test.local")
         pg.wait_for_url("**/account/me.html**", timeout=6000)
         href = pg.get_attribute('a.tool[href*="options"]', "href")
-        check("Plain sign-in > My account, whose Identify Your Options card points to the app", href and href.endswith("/options.html"), f"{pg.url} card={href}")
+        check("Plain sign-in > My account, whose Beyond the Obvious card points to the app", href and href.endswith("/options.html"), f"{pg.url} card={href}")
         ctx.close()
     run('# 11. Signing in from the plain sign-in page (no app chosen) goes to My account', t10)
 

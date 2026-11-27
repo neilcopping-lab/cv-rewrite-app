@@ -1,4 +1,4 @@
-// Identify Your Options: the seven-step journey (Nov 2026).
+// Beyond the Obvious: the seven-step journey (Nov 2026).
 // Calm pages, one step at a time, saved to the person's account as they go.
 (function () {
   "use strict";

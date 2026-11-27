@@ -1,4 +1,4 @@
-// Weekly check harness for Identify Your Options: a stand-in signed-in account and
+// Weekly check harness for Beyond the Obvious: a stand-in signed-in account and
 // TEST FIXTURE occupations. Not part of the app.
 const path = require("path");
 const APP = path.resolve(__dirname, "../..");

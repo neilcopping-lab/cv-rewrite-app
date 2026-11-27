@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Weekly checks for Identify Your Options (weekly until the end of February 2027, then monthly).
+# Weekly checks for Beyond the Obvious (weekly until the end of February 2027, then monthly).
 # Runs from a clone of cv-rewrite-app. Needs node, python3 with playwright, and Chrome.
 # Uses stand-ins for the login service and the job data, with TEST data only.
 #   1. The app's automated tests (npm test), including the seven target-group tests.
