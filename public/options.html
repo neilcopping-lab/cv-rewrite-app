@@ -135,17 +135,19 @@ select{color:#17191C!important;border:1.5px solid #E9DCC8!important}
 <link rel="stylesheet" href="/account/fresh.css?v=20261121b">
 <script defer data-site-id="88bb72ef-58ce-4e73-a307-471e35e35b1b" data-api="https://savri.io" src="https://savri.io/script.js"></script>
 <style id="comquat-options">
-/* Identify Your Options. Electric lemon, chosen by Neil on 27 Nov 2026: fluorescent yellow
-   into acid lime, always with black (#17191C) text. Black on these yellows is 13.8 to 16.3 to 1.
-   Never white text on the yellow. Keep the yellow to banners, cards, buttons and highlights:
-   question pages stay calm on white. */
-body.fx.fx-options{--hero:linear-gradient(120deg,#F9FF4A 0%,#E6FF1A 45%,#C6F500 100%);--badge:linear-gradient(135deg,#F9FF4A,#C6F500);--app:#17191C}
-body.fx.fx-options section.hero,body.fx.fx-options section.hero h1,body.fx.fx-options section.hero p,body.fx.fx-options section.hero .lead,body.fx.fx-options section.hero .eyebrow,body.fx.fx-options section.hero .fine,body.fx.fx-options section.hero .muted{color:#17191C!important}
-body.fx.fx-options section.hero:after{background:#fff!important;opacity:.35!important}
-body.fx.fx-options section.hero .price-flag{background:#17191C!important;color:#E6FF1A!important}
-body.fx.fx-options section.hero .btn.accent{background:#17191C!important;color:#E6FF1A!important;border-color:#17191C!important}
-body.fx.fx-options section.hero .btn.ghost{color:#17191C!important;border-color:#17191C!important;background:transparent!important}
-body.fx.fx-options main .btn.accent{background:#17191C!important;color:#E6FF1A!important;border-color:#17191C!important}
+/* Identify Your Options. Night shift, chosen by Neil on 27 Nov 2026: black, with
+   fluorescent yellow (#E6FF1A) doing the shouting. White or yellow text on black
+   (17.9 and 15.7 to 1); black text on yellow (15.7 to 1). Never white on yellow.
+   Yellow is kept to headlines, buttons, cards and highlights: question pages stay calm on white. */
+body.fx.fx-options{--hero:linear-gradient(120deg,#17191C 0%,#1E2019 70%,#2B2E12 100%);--badge:#17191C;--app:#17191C}
+html body.fx.fx-landing.fx-options section.hero,html body.fx.fx-landing.fx-options section.hero p,html body.fx.fx-landing.fx-options section.hero .lead,html body.fx.fx-landing.fx-options section.hero .fine,html body.fx.fx-landing.fx-options section.hero .muted{color:#fff!important}
+html body.fx.fx-landing.fx-options section.hero h1{color:#E6FF1A!important}
+html body.fx.fx-landing.fx-options section.hero .eyebrow{background:#E6FF1A!important;color:#17191C!important}
+html body.fx.fx-landing.fx-options section.hero:after{background:#E6FF1A!important;opacity:.14!important}
+html body.fx.fx-landing.fx-options section.hero .price-flag{background:#E6FF1A!important;color:#17191C!important}
+html body.fx.fx-landing.fx-options section.hero .btn.accent,html body.fx.fx-options main .btn.accent{background:#E6FF1A!important;color:#17191C!important;border-color:#E6FF1A!important}
+html body.fx.fx-landing.fx-options section.hero .btn.ghost{color:#fff!important;border-color:#fff!important;background:transparent!important}
+body.fx.fx-options main>section:not(.hero) .btn.accent{background:#17191C!important;color:#E6FF1A!important;border-color:#17191C!important}
 body.fx.fx-options main>section:not(.hero) .eyebrow{color:#17191C!important}
 body.fx.fx-options .whatlist strong{color:#17191C!important;background:linear-gradient(transparent 55%,#E6FF1A 55%)}
 body.fx.fx-options .tile .ic{color:#17191C!important}
@@ -154,7 +156,8 @@ body.fx.fx-options .btn.ghost:hover{border-color:#17191C!important}
 .cq-brand .cq-feat.yo{background:#17191C;color:#E6FF1A}
 .jgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:22px}
 .jcard{position:relative;overflow:hidden;background:#fff;border:2px solid #E9DCC8;border-radius:22px;padding:28px 22px 24px;box-shadow:0 10px 30px rgba(23,25,28,.06)}
-.jcard:before{content:"";position:absolute;left:0;right:0;top:0;height:8px;background:linear-gradient(90deg,#F9FF4A,#C6F500)}
+.jcard:before{content:"";position:absolute;left:0;right:0;top:0;height:8px;background:#17191C}
+.jcard:after{content:"";position:absolute;left:0;right:0;top:8px;height:4px;background:#E6FF1A}
 .jcard h3{font-size:22px;margin:0 0 8px}.jcard p{margin:0;color:#3F444B;font-size:15.5px;line-height:1.5}
 .safe{border-radius:20px;background:#fff;border:1px solid #E9DCC8;padding:22px 24px;margin-top:22px;box-shadow:0 10px 26px rgba(23,25,28,.06)}
 .safe ul{margin:6px 0 0 1.1em;padding:0;line-height:1.65;font-size:15.5px}
