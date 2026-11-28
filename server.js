@@ -11,6 +11,9 @@ const extract = require("./lib/extractText");
 const { transcribe, transcribeWords } = require("./lib/transcribe");
 const gapEngine = require("./lib/gapEngine");
 const cvGenerator = require("./lib/cvGenerator");
+const cvWriter = require("./lib/cvWriter");
+const careerRecord = require("./lib/careerRecord");
+const readability = require("./lib/readability");
 const sourceOfTruth = require("./lib/sourceOfTruth");
 const fabrication = require("./lib/fabricationChecker");
 const checks = require("./lib/checks");
@@ -377,6 +380,71 @@ app.get("/api/state", (req, res) => {
 // Rebuild the step-3 "review" payload from the session, so the rewritten CV can
 // be re-displayed after a reload / sign-in even though the browser lost its
 // in-memory copy. Same shape the /api/generate result uses.
+// The career record as the page sees it (without each role's full CV text).
+function publicRecord(r) {
+  if (!r) return null;
+  return {
+    name: r.name, currentTitle: r.currentTitle, warnings: r.warnings || [],
+    roles: (r.roles || []).map(({ source, ...x }) => x),
+    education: (r.education || []).map((e) => e.text),
+    interests: r.interests || [],
+  };
+}
+
+// What goes into the file: the CV, without the skills-match page if the
+// person has switched it off.
+function outCv(st) {
+  const cv = st.includeMatch === false ? { ...st.cv, skillsMatch: [] } : st.cv;
+  return sanitizeForOutput(cv);
+}
+
+// Edit one line of the CV at step 3, in the person's own words. An empty value
+// removes the line. Their edits are theirs (they confirm the CV is true before
+// downloading), so they aren't AI-checked, but they are checked for holes.
+const EDITABLE = /^(header\.targetRole|personalStatement|experience\.(\d+)\.(responsibilities|achievements)\.(\d+|new)|skills\.(\d+)\.(skill|proof)|interests\.(\d+|new)|skillsMatch\.(\d+)\.proof)$/;
+app.post("/api/draft/edit", (req, res) => {
+  const st = S(req);
+  if (!st.cv) return res.status(400).json({ error: "Write your CV first." });
+  const path = String(req.body.path || "");
+  const value = String(req.body.value == null ? "" : req.body.value).replace(/\s+/g, " ").trim().slice(0, 1200);
+  if (!EDITABLE.test(path)) return res.status(400).json({ error: "That part can't be edited here." });
+  if (/[\u2014\u2013]/.test(value)) return res.status(400).json({ error: "Please use a comma or full stop instead of a dash." });
+  const cv = st.cv;
+  const p = path.split(".");
+  const markYou = (arr, i) => { if (arr) arr[i] = "you"; };
+  if (p[0] === "header") { cv.header.targetRole = value; st.headline = value || null; }
+  else if (p[0] === "personalStatement") { cv.personalStatement = value; cv.statementBy = "you"; }
+  else if (p[0] === "experience") {
+    const r = cv.experience[+p[1]]; if (!r) return res.status(400).json({ error: "We couldn't find that role." });
+    r.sources = r.sources || { responsibilities: [], achievements: [] };
+    const k = p[2], arr = r[k], src = r.sources[k];
+    if (p[3] === "new") { if (value) { arr.push(value); src.push("you"); } }
+    else { const i = +p[3]; if (i >= arr.length) return res.status(400).json({ error: "We couldn't find that line." }); if (value) { arr[i] = value; markYou(src, i); } else { arr.splice(i, 1); src.splice(i, 1); } }
+  } else if (p[0] === "skills") {
+    const i = +p[1]; if (!cv.skills[i]) return res.status(400).json({ error: "We couldn't find that skill." });
+    cv.skillSources = cv.skillSources || [];
+    if (!value && p[2] === "skill") { cv.skills.splice(i, 1); cv.skillSources.splice(i, 1); }
+    else { cv.skills[i][p[2]] = value; cv.skillSources[i] = "you"; }
+  } else if (p[0] === "interests") {
+    cv.interestSources = cv.interestSources || [];
+    if (p[1] === "new") { if (value) { cv.interests.push(value); cv.interestSources.push("you"); } }
+    else { const i = +p[1]; if (value) { cv.interests[i] = value; cv.interestSources[i] = "you"; } else { cv.interests.splice(i, 1); cv.interestSources.splice(i, 1); } }
+  } else if (p[0] === "skillsMatch") {
+    const i = +p[1]; if (!cv.skillsMatch[i]) return res.status(400).json({ error: "We couldn't find that row." });
+    if (value) cv.skillsMatch[i].proof = value; else cv.skillsMatch.splice(i, 1);
+  }
+  st.cvRev = (st.cvRev || 0) + 1;
+  res.json({ ok: true, cv, broken: value ? readability.isBroken(value) : false });
+});
+
+// Step 4 options: include the skills-match page or not.
+app.post("/api/draft/options", (req, res) => {
+  const st = S(req);
+  if (typeof req.body.includeMatch === "boolean") st.includeMatch = req.body.includeMatch;
+  st.cvRev = (st.cvRev || 0) + 1;
+  res.json({ ok: true, includeMatch: st.includeMatch !== false });
+});
+
 app.get("/api/draft", (req, res) => {
   const st = S(req);
   if (!st.cv) return res.json({ ok: false, hasCv: false });
@@ -389,11 +457,13 @@ app.get("/api/draft", (req, res) => {
   res.json({
     ok: true, hasCv: true, cv: st.cv, missing,
     programmatic: cr.programmatic || null, review: cr.review || {},
+    read: st.cv.read || null,
+    includeMatch: st.includeMatch !== false,
     matchReport: st.matchReport || matchReport.build(st.cv, st.gaps),
     downloadBlocked: blocked,
     message: blocked
-      ? "We found gaps or claims we couldn't trace to what you told us. Answer these before downloading, or tell us to leave them out."
-      : "Clean. Pick a design and download."
+      ? "We found a few details we couldn't trace to what you told us, so we've left them out. You can add the real detail below, or carry on."
+      : "Here's your CV. Have a read through every line below, change anything that isn't right, then pick a design."
   });
 });
 
@@ -545,6 +615,14 @@ async function saveJobCard(req, st) {
       const { data } = await req.sb.from("job_hunt").update(row).eq("id", st.jobId).eq("user_id", req.user.id).select("id").maybeSingle();
       if (data) return;
     }
+    // Same advert already in their job hunt? Update that card rather than
+    // adding another (27 Nov 2026: seven copies of one job appeared).
+    const { data: same } = await req.sb.from("job_hunt").select("id").eq("user_id", req.user.id).eq("advert", row.advert).order("updated_at", { ascending: false }).limit(1);
+    if (same && same[0]) {
+      st.jobId = same[0].id;
+      await req.sb.from("job_hunt").update(row).eq("id", st.jobId).eq("user_id", req.user.id);
+      return;
+    }
     const { data } = await req.sb.from("job_hunt").insert({ ...row, title: row.title || "A job I'm applying for", user_id: req.user.id }).select("id").single();
     if (data) st.jobId = data.id;
   } catch (e) { console.error("[jobhunt] save:", e.message); }
@@ -555,7 +633,15 @@ app.post("/api/gaps", async (req, res) => {
   try {
     const st = S(req);
     if (!st.cvText || !st.advertText) return res.status(400).json({ error: "Add your CV and the advert first." });
-    st.gaps = await gapEngine.detectGaps({ cvText: st.cvText, advertText: st.advertText });
+    // The career record (every role, with dates copied and checked) is read
+    // at the same time as the gap analysis, so step 2 can show both.
+    const [gaps, rec] = await Promise.all([
+      gapEngine.detectGaps({ cvText: st.cvText, advertText: st.advertText }),
+      careerRecord.extract({ cvText: st.cvText, advertText: st.advertText }),
+    ]);
+    st.gaps = gaps;
+    st.record = rec;
+    st.headline = null;
     st.questions = await gapEngine.buildQuestions({ cvText: st.cvText, advertText: st.advertText, gaps: st.gaps });
     st.fit = fitVerdict(st.gaps.requirements || []);
     res.json({
@@ -563,7 +649,9 @@ app.post("/api/gaps", async (req, res) => {
       ok: true,
       requirements: st.gaps.requirements || [],
       gapQuestions: st.questions.gapQuestions || [],
+      priorityQuestions: st.questions.priorityQuestions || [],
       sectionQuestions: st.questions.sectionQuestions || [],
+      record: publicRecord(st.record),
       note: st.gaps.note
     });
   } catch (e) {
@@ -584,44 +672,43 @@ app.post("/api/transcribe", (req, res, next) => (aiLevel.gate(req, res, "core", 
 
 // ─── Step 3, generate + fabrication gate ───────────────────────────────────
 // The slow pipeline, run as a background job (see startJob).
-async function generateWork(st) {
-  // Build source-of-truth BEFORE generating (Section 9).
-  st.sot = await sourceOfTruth.build({ cvText: st.cvText, answers: st.answers });
+// The facts the person corrected or added at step 2 count as their own words
+// for the honesty check.
+function confirmedFacts(st) {
+  const r = st.record;
+  if (!r || !r.confirmed) return [];
+  const lines = careerRecord.onCv(r).map((x) => `${x.title}, ${x.company}, ${x.dates}${x.location ? ", " + x.location : ""}`);
+  const extra = [...(r.education || []).map((e) => e.text), ...(r.interests || [])];
+  return [{ question: "The roles, dates, qualifications and interests I confirmed", answer: [...lines, ...extra].join("\n") }];
+}
 
-  // Generate the draft.
-  let cv = await cvGenerator.generate({
-    cvText: st.cvText, advertText: st.advertText, gaps: st.gaps,
-    answers: st.answers, linksConfirmed: st.linksConfirmed,
-    writingStyle: st.writingStyle, styleSample: st.styleSample,
-    alreadyAsked: askedAtStep2(st).map((q) => q.question)
-  });
-  // Don't re-ask what step 2 already asked, or optional extras (see askedFilter).
-  cv.missing = dropAlreadyAsked(cv.missing, askedAtStep2(st));
-  // Private skills match report, built before the honesty gate reshapes the CV.
+// Write the CV from the checked career record, then honesty-check it and take
+// out anything broken. Shared by "Write my CV", "Regenerate" and re-checks.
+async function writeAndCheck(st) {
+  if (!st.record) st.record = await careerRecord.extract({ cvText: st.cvText, advertText: st.advertText });
+  const answers = [...(st.answers || []), ...confirmedFacts(st)];
+  st.sot = await sourceOfTruth.build({ cvText: st.cvText, answers });
+
+  let cv = await cvWriter.write(st);
   st.matchReport = matchReport.build(cv, st.gaps);
-
-  // HARD GATE (fabrication) and the advisory self-review don't depend on each
-  // other, so run them together to save a whole round-trip. The gate stays on
-  // the strong model; the review runs on the faster model inside reviewer.js.
-  const [fab, review] = await Promise.all([
-    fabrication.check(cv, st.sot),
-    reviewer.selfReview(cv, { advertText: st.advertText })
-  ]);
+  const fab = await fabrication.check(cv, st.sot);
   cv = fab.cleanedCV;
   applyUserLinks(cv, st); // the user's own links, added after the gate
-
-  scrubCv(cv); // strip mechanical AI clichés before checks/preview
-
-  // Programmatic Section 8 checks.
+  scrubCv(cv);            // strip mechanical AI clichés
+  const broken = readability.gate(cv); // never a sentence with a hole in it
   const prog = checks.run(cv);
-
-  st.cv = cv;
-  st.checkReport = { fabrication: fab, programmatic: prog, review };
-  // New finished CV: it hasn't had a credit spent on it yet.
+  const review = { soundsHuman: null, overstatements: [], notes: [] };
+  st.checkReport = { fabrication: fab, programmatic: prog, review, removedBroken: broken.length };
   st.cvVersion = (st.cvVersion || 0) + 1;
+  st.cvRev = 0;
   st.paidVersion = null;
+  return { cv, fab, prog, review };
+}
 
-  const blocked = !fab.pass || (cv.missing && cv.missing.length > 0);
+async function generateWork(st) {
+  const { cv, fab, prog, review } = await writeAndCheck(st);
+  st.cv = cv;
+  const blocked = (cv.missing && cv.missing.length > 0);
   return {
     ok: true,
     cv,
@@ -631,10 +718,11 @@ async function generateWork(st) {
     programmatic: prog,
     matchReport: st.matchReport,
     review,
+    read: cv.read || null,
     downloadBlocked: blocked,
     message: blocked
-      ? "We found gaps or claims we couldn't trace to what you told us. Answer these before downloading, or tell us to leave them out."
-      : "Clean. Pick a design and download."
+      ? "We found a few details we couldn't trace to what you told us, so we've left them out. You can add the real detail below, or carry on."
+      : "Here's your CV. Have a read through every line below, change anything that isn't right, then pick a design."
   };
 }
 
@@ -644,56 +732,35 @@ app.post("/api/generate", (req, res) => {
   if (!st.cvText || !st.advertText) return res.status(400).json({ error: "Add your CV and the advert first." });
   if (overGenCap(st)) return res.status(429).json({ error: "rewrite-limit" });
   st.answers = req.body.answers || st.answers || [];
+  // The career record as the person checked it at step 2.
+  if (req.body.record && st.record) st.record = careerRecord.applyEdits(st.record, req.body.record);
+  if (typeof req.body.headline === "string") st.headline = req.body.headline.trim().slice(0, 120) || null;
   st.linksConfirmed = req.body.linksConfirmed || req.body.links || st.linksConfirmed || {};
   if (req.body.links) st.links = req.body.links;
-  const jobId = startJob(req, () => generateWork(st));
+  const jobId = startJob(req, () => generateWork(st).then((r) => { saveJobCard(req, st); return r; }));
   res.status(202).json({ jobId });
 });
 
 // Candidate resolves [MISSING]/flagged items (answer, or accept leaving out).
 async function resolveWork(st, { resolutions, acceptLeaveOutArr }, req) {
   const acceptLeaveOut = new Set(acceptLeaveOutArr || []);
-  // Fold answers back into the answer set and regenerate for a clean pass.
+  // Fold answers back into the answer set and write it again.
   st.answers = (st.answers || []).concat(
     resolutions.filter((r) => r.answer).map((r) => ({ question: r.item, answer: r.answer }))
   );
-  st.sot = await sourceOfTruth.build({ cvText: st.cvText, answers: st.answers });
-
-  let cv = await cvGenerator.generate({
-    cvText: st.cvText, advertText: st.advertText, gaps: st.gaps,
-    answers: st.answers, linksConfirmed: st.linksConfirmed,
-    writingStyle: st.writingStyle, styleSample: st.styleSample,
-    alreadyAsked: askedAtStep2(st).map((q) => q.question)
-  });
-  // Don't re-ask what step 2 already asked, or optional extras (see askedFilter).
-  cv.missing = dropAlreadyAsked(cv.missing, askedAtStep2(st));
-  st.matchReport = matchReport.build(cv, st.gaps);
-  const [fab, review] = await Promise.all([
-    fabrication.check(cv, st.sot),
-    reviewer.selfReview(cv, { advertText: st.advertText })
-  ]);
-  cv = fab.cleanedCV;
-  applyUserLinks(cv, st);
-  // One re-check settles it. Every rewrite words things a little differently,
-  // so asking about whatever the new draft can't confirm sent people round in
-  // circles and kept "Choose a design" locked. Anything the honesty check
-  // couldn't trace has ALREADY been taken out of the CV (fab.cleanedCV), so we
-  // simply leave it out and say so, rather than asking again.
+  const { cv, prog, review } = await writeAndCheck(st);
+  // One re-check settles it. Anything the honesty check couldn't trace has
+  // ALREADY been taken out of the CV, so we leave it out and say so, rather
+  // than asking again.
   const leftOut = (cv.missing || []).map((m) => m.item).filter((i) => i && !acceptLeaveOut.has(i));
   cv.missing = [];
-
-  scrubCv(cv); // strip mechanical AI clichés
-  const prog = checks.run(cv);
   st.cv = cv;
   saveJobCard(req, st);
-  st.checkReport = { fabrication: fab, programmatic: prog, review };
-  st.cvVersion = (st.cvVersion || 0) + 1;
-  st.paidVersion = null;
 
   const message = leftOut.length
     ? `Done. We added what you told us. We also left out ${leftOut.length} detail${leftOut.length > 1 ? "s" : ""} we still couldn't trace to what you gave us, so nothing unconfirmed is on your CV. Have a read, then pick a design.`
     : "Done. We added what you told us. Have a read, then pick a design.";
-  return { ok: true, cv, missing: [], leftOut, downloadBlocked: false, message, programmatic: prog, review, matchReport: st.matchReport };
+  return { ok: true, cv, missing: [], leftOut, downloadBlocked: false, message, programmatic: prog, review, read: cv.read || null, matchReport: st.matchReport };
 }
 
 // Candidate resolves [MISSING]/flagged items (answer, or accept leaving out).
@@ -759,10 +826,9 @@ app.get("/api/designs", (req, res) => res.json({ designs, designerTemplates: DES
 
 app.post("/api/preview", (req, res) => {
   const st = S(req);
-  const cv = st.cv || req.body.cv;
-  if (!cv) return res.status(400).json({ error: "No CV to preview yet." });
+  if (!st.cv) return res.status(400).json({ error: "No CV to preview yet." });
   st.designId = req.body.designId || st.designId || designs[0].id;
-  const clean = sanitizeForOutput(cv);
+  const clean = outCv(st);
   if (isDesigner(st.designId)) {
     // Full HTML document, the front-end shows it in an iframe.
     return res.json({ ok: true, designId: st.designId, designer: true, html: renderDesignerHtml(clean, st.designId) });
@@ -782,8 +848,10 @@ app.get("/api/preview-pdf", async (req, res) => {
     const st = S(req);
     if (!st.cv) return res.status(400).send("No CV to preview yet.");
     const reqId = req.query.design || st.designId || designs[0].id;
-    const clean = sanitizeForOutput(st.cv);
-    const key = `${st.cvVersion || 0}:${reqId}`;
+    const clean = outCv(st);
+    // Keyed by session as well: the cache is shared by everyone using the app,
+    // so without it two people's first CVs could share a preview.
+    const key = `${req.sessionID}:${st.cvVersion || 0}.${st.cvRev || 0}:${reqId}`;
     let buf = _pvGet(key);
     if (!buf) {
       if (isDesigner(reqId)) {
@@ -1218,7 +1286,7 @@ app.get("/api/download", async (req, res) => {
     // Clean any leftover "[MISSING]" placeholders and drop empty entries, so the
     // file is a tidy CV with unanswered gaps simply left out (the fabricated
     // content was already stripped during the honesty check).
-    const cleanCv = sanitizeForOutput(st.cv);
+    const cleanCv = outCv(st);
     if (!hasContent(cleanCv)) return res.status(400).json({ error: "There isn't enough content to build a CV yet. Please generate one first." });
 
     const userEmail = currentEmail(req);

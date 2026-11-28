@@ -195,6 +195,7 @@ function renderGaps(g) {
     } else fb.classList.add("hidden");
   }
   if (g.note) { const n = $("#gapNote"); n.classList.remove("hidden"); n.textContent = g.note; }
+  renderRecord(g.record);
   const reqs = g.requirements || [];
   const covered = reqs.filter((r) => r.status === "covered").length;
   const thin = reqs.filter((r) => r.status === "thin").length;
@@ -202,16 +203,20 @@ function renderGaps(g) {
   $("#reqSummary").innerHTML = reqs.length
     ? `<div class="notice">Against the advert, <strong>${covered}</strong> requirements are already covered by your CV, <strong>${thin}</strong> are thin and <strong>${missing}</strong> are missing. We only ask about genuine gaps.</div>`
     : "";
-  STATE.questions = [...(g.gapQuestions || []), ...(g.sectionQuestions || [])];
+  STATE.questions = [
+    ...(g.priorityQuestions || []).map((q) => ({ ...q, priority: true })),
+    ...(g.gapQuestions || []),
+    ...(g.sectionQuestions || [])
+  ];
   if (!STATE.questions.length) {
     // Nothing genuinely missing - don't invent questions.
     $("#questions").innerHTML = `<div class="notice"><strong>Nothing to add.</strong> Your CV already covers what we need for this role, so there's nothing to ask. Press <em>Write my CV</em> whenever you're ready.</div>`;
     return;
   }
   $("#questions").innerHTML =
-    `<p class="muted" style="margin:0 0 8px">All optional. Only fill in what isn't already on your CV - skip anything that's already covered.</p>` +
+    `<h3 style="margin:18px 0 4px">A few questions</h3><p class="muted" style="margin:0 0 8px">All optional. The first ones are about what this job cares about most, so the more real detail you give (how many people, where, what changed), the better your CV. Skip anything that's already on your CV.</p>` +
     STATE.questions.map((q, i) => {
-      const tag = q.requirement ? "Gap" : (q.section || "Optional");
+      const tag = q.priority ? "Matters most for this job" : q.requirement ? "Gap" : (q.section || "Optional");
       const id = q.id || "q" + i;
       return `<div class="q" data-qid="${id}">
         <div class="tag">${tag}</div>
@@ -233,10 +238,13 @@ $("#go2").onclick = async () => {
     const answers = STATE.questions.map((q) => {
       const id = q.id;
       const ta = document.querySelector(`[data-answer="${id}"]`);
-      return { id, question: q.question, answer: ta ? ta.value.trim() : "" };
+      return { id, question: q.question, answer: ta ? ta.value.trim() : "", fromStory: !!(ta && ta.dataset.fromStory) };
     }).filter((a) => a.answer);
     STATE.answers = answers;
-    const j = await runJob("/api/generate", { answers });
+    const record = collectRecord();
+    const body = { answers };
+    if (record) { body.record = record; body.headline = record.currentTitle; }
+    const j = await runJob("/api/generate", body);
     STATE.cv = j.cv; STATE.pendingDraft = j; prog.done(); showStep(3);
     if (STATE.softDone) { revealDraft(j); }
     else { $("#draftContent").classList.add("hidden"); $("#softEmailGate").classList.remove("hidden"); const sm = $("#softMsg"); if (sm) sm.textContent = ""; }
@@ -314,6 +322,8 @@ function renderDraft(j) {
        </details>`
     : "";
   renderMatchReport(j.matchReport);
+  renderRead(j.read || (j.cv && j.cv.read));
+  renderCvEdit(j.cv || STATE.cv);
   storySaveOffer();
   if (missing.length) {
     wireRecordButtons("#missingBox");
@@ -335,6 +345,7 @@ function renderDraft(j) {
   prog.filter((p) => p.severity !== "info").forEach((p) => notes.push(p.detail));
   $("#reviewBox").innerHTML = notes.length ? `<div class="notice sans"><strong>Automated checks:</strong><br>${notes.map((n) => "• " + n).join("<br>")}</div>` : `<div class="notice sans">Automated checks passed: UK spelling, no banned punctuation, standard headings, every figure traced to your source.</div>`;
   previewDraft();
+  const im = $("#includeMatch"); if (im && typeof j.includeMatch === "boolean") im.checked = j.includeMatch;
 }
 
 // Skills match report: how the rewritten CV lines up with the job advert,
@@ -998,16 +1009,28 @@ async function storyPickers(sel) {
     pick.style.cssText = "display:block;margin:6px 0;max-width:100%;font-size:13px;padding:6px 8px";
     pick.innerHTML = `<option value="">Use a story from my bank…</option>` +
       stories.map((st, i) => `<option value="${i}">${escHtml(st.title || "Untitled story")}</option>`).join("");
-    pick.onchange = () => {
+    // Choosing a story doesn't add it: only the Add button does, so a slip of
+    // the mouse or the arrow keys can't drop a story into an answer
+    // (28 Nov 2026: three stories ended up in one answer by accident).
+    const add = document.createElement("button");
+    add.type = "button"; add.className = "btn ghost"; add.textContent = "Add this story";
+    add.style.cssText = "padding:6px 8px;font-size:13px;margin-left:6px"; add.disabled = true;
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:6px 0";
+    pick.style.margin = "0";
+    pick.onchange = () => { add.disabled = !pick.value; };
+    add.onclick = () => {
       const st = stories[Number(pick.value)];
       if (st) {
-        const add = storyText(st);
-        ta.value = ta.value.trim() ? ta.value.trim() + "\n\n" + add : add;
+        const text = storyText(st);
+        ta.value = ta.value.trim() ? ta.value.trim() + "\n\n" + text : text;
+        ta.dataset.fromStory = "1";
         ta.dispatchEvent(new Event("input", { bubbles: true }));
       }
-      pick.value = "";
+      pick.value = ""; add.disabled = true;
     };
-    ta.insertAdjacentElement("afterend", pick);
+    wrap.appendChild(pick); wrap.appendChild(add);
+    ta.insertAdjacentElement("afterend", wrap);
   });
 }
 async function storySaveOffer() {
@@ -1074,5 +1097,179 @@ async function storySaveOffer() {
     } finally {
       btn.disabled = false;
     }
+  });
+})();
+
+// ── The rebuilt flow (28 Nov 2026) ──────────────────────────────────────────
+// Step 2 starts with the career record: every role copied from the CV, with
+// its dates checked against the CV word for word. The person fixes anything
+// wrong and chooses how much space each role gets. Step 3 shows the CV line
+// by line, with where each line came from, and lets them change any line.
+
+const escAttr = (s) => escHtml(s).replace(/"/g, "&quot;");
+const LEVEL_LABEL = { full: "Full detail", short: "Keep it short", out: "Leave it out" };
+const FIELD_WORD = { employer: "employer", title: "job title", dates: "dates" };
+
+function roleRow(r, i) {
+  const warn = (r.checks || []).length
+    ? `<p class="small" style="margin:6px 0 0;color:#B42318">We couldn't find this exact ${r.checks.map((c) => FIELD_WORD[c] || c).join(" or ")} in your CV. Please check it's right.</p>` : "";
+  const why = r.why ? `<p class="small muted" style="margin:6px 0 0">${r.relevance === "high" ? "Very relevant: " : r.relevance === "low" ? "Less relevant: " : ""}${escHtml(r.why)}</p>` : "";
+  return `<div class="rec-role" data-rid="${escAttr(r.id)}" style="background:#fff;border:1px solid #E9DCC8;border-radius:14px;padding:12px 14px;margin:10px 0">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px">
+      <label class="small" style="margin:0">Job title<input data-f="title" value="${escAttr(r.title)}" aria-label="Job title for role ${i + 1}"></label>
+      <label class="small" style="margin:0">Employer<input data-f="company" value="${escAttr(r.company)}" aria-label="Employer for role ${i + 1}"></label>
+      <label class="small" style="margin:0">Dates<input data-f="dates" value="${escAttr(r.dates)}" aria-label="Dates for role ${i + 1}"></label>
+      <label class="small" style="margin:0">On your CV<select data-f="level" aria-label="How much space role ${i + 1} gets">
+        ${Object.keys(LEVEL_LABEL).map((k) => `<option value="${k}"${r.level === k ? " selected" : ""}>${LEVEL_LABEL[k]}</option>`).join("")}
+      </select></label>
+    </div>${why}${warn}
+  </div>`;
+}
+
+function renderRecord(rec) {
+  const box = $("#recordBox"); if (!box) return;
+  STATE.record = rec || null;
+  if (!rec || !(rec.roles || []).length) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="q" style="padding:16px">
+    <div class="tag">Your facts</div>
+    <h3 style="margin:4px 0 6px">Your career, as we read it</h3>
+    <p class="muted" style="margin:0 0 8px">We've copied every role from your CV, ${rec.roles.length} in all. Nothing here is written by AI. Check the job titles and dates, fix anything that's wrong, and choose how much space each role gets. Older roles still count: if one shows what this job wants, give it full detail.</p>
+    ${(rec.warnings || []).map((w) => `<div class="notice" style="margin:8px 0">${escHtml(w)}</div>`).join("")}
+    <label class="small" style="display:block;margin:10px 0 4px">The line under your name<input id="recHeadline" value="${escAttr(rec.currentTitle || "")}" aria-describedby="recHeadlineHint"></label>
+    <p class="small muted" id="recHeadlineHint" style="margin:0 0 6px">Usually your current job title. You can change it, but it should be true.</p>
+    <div id="recRoles">${rec.roles.map(roleRow).join("")}</div>
+    <p style="margin:6px 0"><button type="button" class="btn ghost" id="recAdd" style="padding:8px 4px">+ Add a role we missed</button></p>
+    <details style="margin-top:6px"><summary style="cursor:pointer;padding:6px 0">Education and interests (${(rec.education || []).length} and ${(rec.interests || []).length})</summary>
+      <label class="small" style="display:block;margin:8px 0 4px">Education and training, one per line<textarea id="recEdu" data-novoice rows="${Math.min(10, (rec.education || []).length + 2)}">${escHtml((rec.education || []).join("\n"))}</textarea></label>
+      <label class="small" style="display:block;margin:8px 0 4px">Interests, one per line<textarea id="recInt" data-novoice rows="${Math.min(8, (rec.interests || []).length + 2)}">${escHtml((rec.interests || []).join("\n"))}</textarea></label>
+    </details>
+  </div>`;
+  let added = 0;
+  $("#recAdd").onclick = () => {
+    added++;
+    $("#recRoles").insertAdjacentHTML("beforeend", roleRow({ id: "u" + added, title: "", company: "", dates: "", level: "full" }, rec.roles.length + added - 1));
+    const last = $("#recRoles").lastElementChild; const f = last && last.querySelector("input"); if (f) f.focus();
+  };
+}
+
+function collectRecord() {
+  if (!STATE.record) return null;
+  const roles = $$("#recRoles .rec-role").map((row) => {
+    const v = (f) => { const el = row.querySelector(`[data-f="${f}"]`); return el ? el.value.trim() : ""; };
+    return { id: row.dataset.rid, title: v("title"), company: v("company"), dates: v("dates"), level: v("level") || "full" };
+  }).filter((r) => r.title || r.company);
+  const lines = (sel) => { const el = $(sel); return el ? el.value.split("\n").map((x) => x.trim()).filter(Boolean) : undefined; };
+  return { roles, currentTitle: ($("#recHeadline") || {}).value || "", education: lines("#recEdu"), interests: lines("#recInt") };
+}
+
+// Where a line came from, as a small label.
+const SRC = {
+  cv: ["From your CV", "#5B5F66", "#F2EEE6"],
+  answer: ["From your answer", "#0B6E63", "#E3F4F1"],
+  story: ["From your story bank", "#6B3FA0", "#F1E9FB"],
+  you: ["You wrote this", "#17191C", "#FFE9D2"],
+  written: ["Written from your CV", "#5B5F66", "#F2EEE6"],
+};
+const chip = (k) => { const c = SRC[k] || SRC.cv; return `<span class="cq-src" style="display:inline-block;font-size:11px;font-weight:700;color:${c[1]};background:${c[2]};border-radius:999px;padding:2px 8px;margin-right:6px;white-space:nowrap">${c[0]}</span>`; };
+
+function lineHtml(path, text, src, label) {
+  return `<div class="cq-ln" style="display:flex;gap:6px;align-items:flex-start;margin:4px 0">
+    <span style="flex:none;margin-top:2px">${chip(src)}</span>
+    <span class="cq-txt" data-path="${escAttr(path)}" contenteditable="true" role="textbox" aria-multiline="true" aria-label="${escAttr(label)}" tabindex="0" style="flex:1;min-width:0;padding:2px 4px;border-radius:6px;outline-offset:2px">${escHtml(text)}</span>
+    <button type="button" class="cq-del" data-path="${escAttr(path)}" aria-label="Remove: ${escAttr(String(text).slice(0, 60))}" title="Remove this line" style="flex:none;background:none;border:0;color:#9A3412;cursor:pointer;font-size:16px;line-height:1;padding:2px 4px">&times;</button>
+  </div>`;
+}
+
+function renderCvEdit(cv) {
+  const box = $("#cvEdit"); if (!box) return;
+  if (!cv || !(cv.experience || []).length) { box.innerHTML = ""; return; }
+  const roleBlocks = (cv.experience || []).map((r, i) => {
+    const src = r.sources || {};
+    const lines = [
+      ...(r.responsibilities || []).map((b, j) => lineHtml(`experience.${i}.responsibilities.${j}`, b, (src.responsibilities || [])[j] || "cv", `${r.title} line ${j + 1}`)),
+      ...(r.achievements || []).map((b, j) => lineHtml(`experience.${i}.achievements.${j}`, b, (src.achievements || [])[j] || "cv", `${r.title} achievement ${j + 1}`)),
+    ].join("");
+    return `<div style="margin:14px 0 6px">
+      <p style="margin:0;font-weight:700">${escHtml(r.title)} · ${escHtml(r.company)} <span class="muted" style="font-weight:400">· ${escHtml(r.dates || "no dates")}</span></p>
+      ${lines || `<p class="small muted" style="margin:4px 0">No lines for this role yet.</p>`}
+      <button type="button" class="btn ghost cq-add" data-path="experience.${i}.responsibilities.new" style="padding:4px 2px;font-size:13px">+ Add a line</button>
+    </div>`;
+  }).join("");
+  const skills = (cv.skills || []).map((s, i) => lineHtml(`skills.${i}.proof`, `${s.proof}`, (cv.skillSources || [])[i] || "cv", `Proof for ${s.skill}`).replace('<span class="cq-txt"', `<strong style="flex:none;margin-top:2px">${escHtml(s.skill)}:</strong><span class="cq-txt"`)).join("");
+  const ints = (cv.interests || []).map((t, i) => lineHtml(`interests.${i}`, t, (cv.interestSources || [])[i] || "cv", `Interest ${i + 1}`)).join("");
+  box.innerHTML = `<div class="q" style="padding:16px;margin-top:16px">
+    <div class="tag">Your CV, line by line</div>
+    <p class="muted" style="margin:6px 0 10px">Each line says where it came from. Click any line to change it, or press &times; to remove it. Changes are saved as you go and the preview below updates.</p>
+    <p class="small" style="margin:0 0 4px;font-weight:700">The line under your name</p>
+    ${lineHtml("header.targetRole", (cv.header && cv.header.targetRole) || "", "you", "The line under your name").replace(/<button[\s\S]*?<\/button>/, "")}
+    <p class="small" style="margin:12px 0 4px;font-weight:700">Opening paragraph</p>
+    ${lineHtml("personalStatement", cv.personalStatement || "", cv.statementBy === "you" ? "you" : "written", "Opening paragraph").replace(/<button[\s\S]*?<\/button>/, "")}
+    <p class="small" style="margin:14px 0 4px;font-weight:700">Key skills</p>${skills}
+    <p class="small" style="margin:14px 0 0;font-weight:700">Career history</p>${roleBlocks}
+    <p class="small" style="margin:14px 0 4px;font-weight:700">Interests</p>${ints}
+    <button type="button" class="btn ghost cq-add" data-path="interests.new" style="padding:4px 2px;font-size:13px">+ Add an interest</button>
+    <p class="small muted" id="cvEditMsg" role="status" style="margin:8px 0 0"></p>
+  </div>`;
+  wireCvEdit();
+}
+
+let _pvTimer = null;
+function refreshPreviewSoon() {
+  clearTimeout(_pvTimer);
+  _pvTimer = setTimeout(() => { STATE.previewV = (STATE.previewV || 0) + 1; previewDraft(); }, 1200);
+}
+async function saveLine(path, value) {
+  const msg = $("#cvEditMsg");
+  if (/[—–]/.test(value)) { if (msg) msg.textContent = "Please use a comma or full stop instead of a dash."; return false; }
+  try {
+    const j = await api("/api/draft/edit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path, value }) });
+    STATE.cv = j.cv; if (STATE.pendingDraft) STATE.pendingDraft.cv = j.cv;
+    if (msg) msg.textContent = j.broken ? "Saved. That line looks unfinished, so give it another read." : "Saved.";
+    refreshPreviewSoon();
+    return true;
+  } catch (e) { if (msg) msg.textContent = "⚠ " + e.message; return false; }
+}
+function wireCvEdit() {
+  $$("#cvEdit .cq-txt").forEach((el) => {
+    el.dataset.was = el.textContent;
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); el.blur(); } });
+    el.addEventListener("blur", async () => {
+      const v = el.textContent.replace(/\s+/g, " ").trim();
+      if (v === el.dataset.was) return;
+      if (await saveLine(el.dataset.path, v)) { el.dataset.was = v; const c = el.parentNode.querySelector(".cq-src"); if (c) c.outerHTML = chip("you"); }
+    });
+  });
+  $$("#cvEdit .cq-del").forEach((b) => b.onclick = async () => { if (await saveLine(b.dataset.path, "")) renderCvEdit(STATE.cv); });
+  $$("#cvEdit .cq-add").forEach((b) => b.onclick = () => {
+    const holder = document.createElement("div");
+    holder.innerHTML = lineHtml(b.dataset.path, "", "you", "New line");
+    const ln = holder.firstElementChild; b.parentNode.insertBefore(ln, b);
+    const t = ln.querySelector(".cq-txt"); t.dataset.was = "";
+    ln.querySelector(".cq-del").remove();
+    t.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); t.blur(); } });
+    t.addEventListener("blur", async () => { const v = t.textContent.replace(/\s+/g, " ").trim(); if (v && await saveLine(b.dataset.path, v)) renderCvEdit(STATE.cv); else if (!v) ln.remove(); });
+    t.focus();
+  });
+}
+
+function renderRead(read) {
+  const box = $("#readBox"); if (!box) return;
+  if (!read || (!read.verdict && !(read.issues || []).length)) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="notice" style="border-left:6px solid #0B6E63">
+    <strong>A hiring manager's read.</strong> ${escHtml(read.verdict || "")}
+    ${(read.issues || []).length ? `<details style="margin-top:6px"><summary style="cursor:pointer">What they noticed (${read.issues.length})</summary><ul style="margin:6px 0 0 18px">${read.issues.map((x) => `<li>${escHtml(x)}</li>`).join("")}</ul><p class="small muted" style="margin:6px 0 0">We've already fixed repeats and anything that contradicted the rest of your CV. The rest is worth a look in the lines below.</p></details>` : ""}
+  </div>`;
+}
+
+// Step 4: include the skills-match page or not.
+(function () {
+  const cb = document.getElementById("includeMatch");
+  if (!cb) return;
+  cb.addEventListener("change", async () => {
+    try {
+      await api("/api/draft/options", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ includeMatch: cb.checked }) });
+      STATE.previewV = (STATE.previewV || 0) + 1;
+      livePreview();
+    } catch (_) {}
   });
 })();
