@@ -128,3 +128,18 @@ test("where a line came from is worked out from the words, not the AI's label", 
   assert.equal(attribute("Winner of the Newcomer of the Year award", cvText, answers, "A1"), "cv");
   assert.equal(attribute("Ipswich Town fan who loves gigs and festivals", cvText, answers, "cv"), "story");
 });
+
+test("a line mixing CV facts with an answer's facts is labelled as including the answer", () => {
+  const { attribute } = require("../lib/cvWriter");
+  const cvText = "Managing a team of senior permanent consultants at Tate. Building a consultative relationship with clients.";
+  const answers = [{ question: "Team?", answer: "I managed a team in our Home Counties office and in our Nottingham office" }];
+  assert.equal(attribute("Managed senior permanent consultants across Home Counties and Nottingham offices at Tate", cvText, answers, "cv"), "answer");
+});
+
+test("the number check treats 9 years and 9-year as the same figure", () => {
+  const { checkNumbers } = require("../lib/fabricationChecker");
+  const { extractNumbers } = require("../lib/sourceOfTruth");
+  const corpus = "a client I worked with for 9 years";
+  const sot = { corpus, corpusLower: corpus.toLowerCase(), numbers: extractNumbers(corpus) };
+  assert.deepEqual(checkNumbers({ experience: [{ responsibilities: ["Grew a 9-year client relationship"] }] }, sot), []);
+});

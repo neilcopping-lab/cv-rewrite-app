@@ -696,6 +696,16 @@ async function writeAndCheck(st) {
   st.matchReport = matchReport.build(cv, st.gaps);
   const fab = await fabrication.check(cv, st.sot);
   cv = fab.cleanedCV;
+  // If the honesty check had to take out the whole opening paragraph (it can
+  // happen when the rewrite reached for something they hadn't told us), check
+  // the first version and use that instead of leaving it blank.
+  if (String(cv.personalStatement || "").trim().length < 40 && written.statementFirst) {
+    try {
+      const alt = await fabrication.check({ personalStatement: written.statementFirst, experience: [], skills: [], skillsMatch: [], interests: [], education: [] }, st.sot);
+      if (String(alt.cleanedCV.personalStatement || "").trim().length >= 40) cv.personalStatement = alt.cleanedCV.personalStatement;
+    } catch (_) {}
+  }
+  delete cv.statementFirst;
   applyUserLinks(cv, st); // the user's own links, added after the gate
   scrubCv(cv);            // strip mechanical AI clichés
   const broken = readability.gate(cv); // never a sentence with a hole in it

@@ -72,7 +72,7 @@ function startProgress(hostId, estimate, messages) {
   host.innerHTML =
     '<div class="progress"><div class="bar"><i></i></div>' +
     '<div class="meta"><span class="msg"></span><span class="secs">0s</span></div>' +
-    '<div class="eta">Usually under 2 minutes - you can keep this tab open.</div></div>';
+    '<div class="eta">' + (id === "prog1" ? "Usually about a minute" : "Usually 3 to 5 minutes, because we read every line of your CV") + ' - you can keep this tab open.</div></div>';
   const fill = host.querySelector(".bar > i");
   const secsEl = host.querySelector(".secs");
   const msgEl = host.querySelector(".msg");
