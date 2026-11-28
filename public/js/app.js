@@ -1116,10 +1116,10 @@ function roleRow(r, i) {
   const why = r.why ? `<p class="small muted" style="margin:6px 0 0">${r.relevance === "high" ? "Very relevant: " : r.relevance === "low" ? "Less relevant: " : ""}${escHtml(r.why)}</p>` : "";
   return `<div class="rec-role" data-rid="${escAttr(r.id)}" style="background:#fff;border:1px solid #E9DCC8;border-radius:14px;padding:12px 14px;margin:10px 0">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px">
-      <label class="small" style="margin:0">Job title<input data-f="title" value="${escAttr(r.title)}" aria-label="Job title for role ${i + 1}"></label>
-      <label class="small" style="margin:0">Employer<input data-f="company" value="${escAttr(r.company)}" aria-label="Employer for role ${i + 1}"></label>
-      <label class="small" style="margin:0">Dates<input data-f="dates" value="${escAttr(r.dates)}" aria-label="Dates for role ${i + 1}"></label>
-      <label class="small" style="margin:0">On your CV<select data-f="level" aria-label="How much space role ${i + 1} gets">
+      <label class="small" style="margin:0;display:block;font-weight:700">Job title<input data-f="title" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border:1px solid #E0D3BE;border-radius:10px;font:inherit;font-size:15px;background:#fff;color:#17191C" value="${escAttr(r.title)}" aria-label="Job title for role ${i + 1}"></label>
+      <label class="small" style="margin:0;display:block;font-weight:700">Employer<input data-f="company" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border:1px solid #E0D3BE;border-radius:10px;font:inherit;font-size:15px;background:#fff;color:#17191C" value="${escAttr(r.company)}" aria-label="Employer for role ${i + 1}"></label>
+      <label class="small" style="margin:0;display:block;font-weight:700">Dates<input data-f="dates" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border:1px solid #E0D3BE;border-radius:10px;font:inherit;font-size:15px;background:#fff;color:#17191C" value="${escAttr(r.dates)}" aria-label="Dates for role ${i + 1}"></label>
+      <label class="small" style="margin:0;display:block;font-weight:700">On your CV<select data-f="level" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border:1px solid #E0D3BE;border-radius:10px;font:inherit;font-size:15px;background:#fff;color:#17191C" aria-label="How much space role ${i + 1} gets">
         ${Object.keys(LEVEL_LABEL).map((k) => `<option value="${k}"${r.level === k ? " selected" : ""}>${LEVEL_LABEL[k]}</option>`).join("")}
       </select></label>
     </div>${why}${warn}
@@ -1135,13 +1135,13 @@ function renderRecord(rec) {
     <h3 style="margin:4px 0 6px">Your career, as we read it</h3>
     <p class="muted" style="margin:0 0 8px">We've copied every role from your CV, ${rec.roles.length} in all. Nothing here is written by AI. Check the job titles and dates, fix anything that's wrong, and choose how much space each role gets. Older roles still count: if one shows what this job wants, give it full detail.</p>
     ${(rec.warnings || []).map((w) => `<div class="notice" style="margin:8px 0">${escHtml(w)}</div>`).join("")}
-    <label class="small" style="display:block;margin:10px 0 4px">The line under your name<input id="recHeadline" value="${escAttr(rec.currentTitle || "")}" aria-describedby="recHeadlineHint"></label>
+    <label class="small" style="display:block;margin:10px 0 4px;font-weight:700">The line under your name<input id="recHeadline" style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border:1px solid #E0D3BE;border-radius:10px;font:inherit;font-size:15px;background:#fff;color:#17191C;max-width:520px" value="${escAttr(rec.currentTitle || "")}" aria-describedby="recHeadlineHint"></label>
     <p class="small muted" id="recHeadlineHint" style="margin:0 0 6px">Usually your current job title. You can change it, but it should be true.</p>
     <div id="recRoles">${rec.roles.map(roleRow).join("")}</div>
     <p style="margin:6px 0"><button type="button" class="btn ghost" id="recAdd" style="padding:8px 4px">+ Add a role we missed</button></p>
     <details style="margin-top:6px"><summary style="cursor:pointer;padding:6px 0">Education and interests (${(rec.education || []).length} and ${(rec.interests || []).length})</summary>
-      <label class="small" style="display:block;margin:8px 0 4px">Education and training, one per line<textarea id="recEdu" data-novoice rows="${Math.min(10, (rec.education || []).length + 2)}">${escHtml((rec.education || []).join("\n"))}</textarea></label>
-      <label class="small" style="display:block;margin:8px 0 4px">Interests, one per line<textarea id="recInt" data-novoice rows="${Math.min(8, (rec.interests || []).length + 2)}">${escHtml((rec.interests || []).join("\n"))}</textarea></label>
+      <label class="small" style="display:block;margin:8px 0 4px">Education and training, one per line<textarea id="recEdu" data-novoice style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border:1px solid #E0D3BE;border-radius:10px;font:inherit;font-size:15px;background:#fff;color:#17191C" rows="${Math.min(10, (rec.education || []).length + 2)}">${escHtml((rec.education || []).join("\n"))}</textarea></label>
+      <label class="small" style="display:block;margin:8px 0 4px">Interests, one per line<textarea id="recInt" data-novoice style="display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border:1px solid #E0D3BE;border-radius:10px;font:inherit;font-size:15px;background:#fff;color:#17191C" rows="${Math.min(8, (rec.interests || []).length + 2)}">${escHtml((rec.interests || []).join("\n"))}</textarea></label>
     </details>
   </div>`;
   let added = 0;
