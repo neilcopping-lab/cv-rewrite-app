@@ -120,7 +120,7 @@ async function runJob(url, body, _retried) {
   let blips = 0;
   while (true) {
     await new Promise((r) => setTimeout(r, 2000));
-    if (Date.now() - startedAt > 5 * 60 * 1000) throw new Error("This is taking longer than expected - please try again.");
+    if (Date.now() - startedAt > 9 * 60 * 1000) throw new Error("This is taking longer than expected - please try again.");
     let s;
     try {
       const r = await fetch("/api/job/" + start.jobId, { cache: "no-store" });

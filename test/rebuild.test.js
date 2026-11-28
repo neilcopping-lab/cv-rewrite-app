@@ -119,3 +119,12 @@ test("output keeps the person's choice of full or short, at any age of role", ()
   assert.equal(out.experience[0].responsibilities.length, 2);  // short
   assert.equal(out.experience[0].level, undefined);
 });
+
+test("where a line came from is worked out from the words, not the AI's label", () => {
+  const { attribute } = require("../lib/cvWriter");
+  const cvText = "Managing a team of senior permanent consultants. Winner of the Newcomer of the Year award.";
+  const answers = [{ question: "Team?", answer: "I managed a team of consultants in our Home Counties office and in our Nottingham office" }, { question: "Fun", answer: "Ipswich Town fan, gigs and festivals", fromStory: true }];
+  assert.equal(attribute("Managed consultants across the Home Counties and Nottingham offices", cvText, answers, "cv"), "answer");
+  assert.equal(attribute("Winner of the Newcomer of the Year award", cvText, answers, "A1"), "cv");
+  assert.equal(attribute("Ipswich Town fan who loves gigs and festivals", cvText, answers, "cv"), "story");
+});

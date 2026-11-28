@@ -687,9 +687,12 @@ function confirmedFacts(st) {
 async function writeAndCheck(st) {
   if (!st.record) st.record = await careerRecord.extract({ cvText: st.cvText, advertText: st.advertText });
   const answers = [...(st.answers || []), ...confirmedFacts(st)];
-  st.sot = await sourceOfTruth.build({ cvText: st.cvText, answers });
-
-  let cv = await cvWriter.write(st);
+  const [sot, written] = await Promise.all([
+    sourceOfTruth.build({ cvText: st.cvText, answers }),
+    cvWriter.write(st),
+  ]);
+  st.sot = sot;
+  let cv = written;
   st.matchReport = matchReport.build(cv, st.gaps);
   const fab = await fabrication.check(cv, st.sot);
   cv = fab.cleanedCV;
